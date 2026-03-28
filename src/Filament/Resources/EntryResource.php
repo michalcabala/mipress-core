@@ -57,8 +57,6 @@ class EntryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Položky';
 
-    protected static bool $shouldRegisterNavigation = false;
-
     public static function getNavigationItems(): array
     {
         return Collection::ordered()
