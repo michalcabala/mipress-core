@@ -37,7 +37,7 @@ class UserResource extends Resource
 {
     protected static ?string $model = User::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-users';
+    protected static string|\BackedEnum|null $navigationIcon = 'fal-users';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Uživatelé';
 
@@ -159,8 +159,8 @@ class UserResource extends Resource
                 IconColumn::make('email_verified_at')
                     ->label('Ověřen')
                     ->boolean()
-                    ->trueIcon('heroicon-o-check-badge')
-                    ->falseIcon('heroicon-o-x-circle')
+                    ->trueIcon('fal-badge-check')
+                    ->falseIcon('fal-circle-xmark')
                     ->state(fn (User $record): bool => $record->email_verified_at !== null),
 
                 TextColumn::make('created_at')
