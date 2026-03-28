@@ -275,10 +275,13 @@ class EntryForm
                                         ->visible(fn (): bool => auth()->user()?->isSuperAdmin() || auth()->user()?->isAdmin())
                                         ->requiresConfirmation()
                                         ->action(function (EditRecord $livewire, Entry $record): void {
+                                            $collectionHandle = $record->collection?->handle;
                                             $record->forceDelete();
                                             Notification::make()->title('Položka byla trvale smazána')->success()->send();
 
-                                            $livewire->redirect(EntryResource::getUrl('index'));
+                                            $livewire->redirect(EntryResource::getUrl('index', [
+                                                'collection' => $collectionHandle,
+                                            ]));
                                         }),
                                 ])->fullWidth(),
 
