@@ -34,8 +34,12 @@ class EntryResource extends Resource
 
     public static function getNavigationItems(): array
     {
-        return Collection::ordered()
-            ->get()
+        /** @var \Illuminate\Database\Eloquent\Collection<int, Collection>|null $collections */
+        static $collections = null;
+
+        $collections ??= Collection::ordered()->get();
+
+        return $collections
             ->map(fn (Collection $collection) => NavigationItem::make($collection->name)
                 ->icon($collection->icon ?? 'heroicon-o-document')
                 ->group('Obsah')
@@ -54,7 +58,14 @@ class EntryResource extends Resource
             return null;
         }
 
-        return Collection::where('handle', $handle)->with('blueprint')->first();
+        /** @var array<string, Collection|null> $cache */
+        static $cache = [];
+
+        if (! array_key_exists($handle, $cache)) {
+            $cache[$handle] = Collection::where('handle', $handle)->with('blueprint')->first();
+        }
+
+        return $cache[$handle];
     }
 
     public static function getEloquentQuery(): Builder
