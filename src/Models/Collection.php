@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,7 +50,7 @@ class Collection extends Model
         return $this->hasMany(Entry::class);
     }
 
-    public function scopeOrdered(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order');
     }

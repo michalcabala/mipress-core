@@ -37,9 +37,11 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\ListEntries;
+use MiPress\Core\Filament\Resources\EntryResource\RelationManagers\AuditLogsRelationManager;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 
@@ -91,6 +93,10 @@ class EntryResource extends Resource
 
         if ($collection) {
             $query->where('collection_id', $collection->id);
+        }
+
+        if (auth()->user()?->hasRole(UserRole::Contributor->value)) {
+            $query->where('author_id', auth()->id());
         }
 
         return $query;
@@ -274,6 +280,13 @@ class EntryResource extends Resource
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    public static function getRelationManagers(): array
+    {
+        return [
+            AuditLogsRelationManager::class,
+        ];
     }
 
     public static function getPages(): array

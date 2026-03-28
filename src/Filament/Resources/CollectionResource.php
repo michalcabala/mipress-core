@@ -21,7 +21,6 @@ use Filament\Tables\Table;
 use MiPress\Core\Filament\Resources\CollectionResource\Pages\CreateCollection;
 use MiPress\Core\Filament\Resources\CollectionResource\Pages\EditCollection;
 use MiPress\Core\Filament\Resources\CollectionResource\Pages\ListCollections;
-use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
 
 class CollectionResource extends Resource

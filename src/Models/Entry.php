@@ -12,12 +12,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Traits\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Entry extends Model
 {
-    use HasFactory, HasSlug, SoftDeletes;
+    use Auditable, HasFactory, HasSlug, SoftDeletes;
 
     protected $table = 'entries';
 
@@ -33,7 +34,10 @@ class Entry extends Model
         'sort_order',
         'origin_id',
         'locale',
+        'review_note',
     ];
+
+    protected array $auditExclude = ['data'];
 
     protected $attributes = [
         'data' => '{}',

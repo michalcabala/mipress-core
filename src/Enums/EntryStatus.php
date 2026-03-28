@@ -9,15 +9,19 @@ use Filament\Support\Contracts\HasLabel;
 enum EntryStatus: string implements HasLabel
 {
     case Draft = 'draft';
+    case InReview = 'in_review';
     case Published = 'published';
     case Scheduled = 'scheduled';
+    case Rejected = 'rejected';
 
     public function getLabel(): string
     {
         return match ($this) {
             self::Draft => 'Koncept',
+            self::InReview => 'Ke schválení',
             self::Published => 'Publikováno',
             self::Scheduled => 'Naplánováno',
+            self::Rejected => 'Zamítnuto',
         };
     }
 
@@ -25,8 +29,10 @@ enum EntryStatus: string implements HasLabel
     {
         return match ($this) {
             self::Draft => 'gray',
+            self::InReview => 'info',
             self::Published => 'success',
             self::Scheduled => 'warning',
+            self::Rejected => 'danger',
         };
     }
 }
