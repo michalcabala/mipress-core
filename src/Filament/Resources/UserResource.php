@@ -31,6 +31,21 @@ class UserResource extends Resource
 
     protected static ?int $navigationSort = 10;
 
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'email'];
+    }
+
+    public static function getGlobalSearchResultDetails(User $record): array
+    {
+        return [
+            'E-mail' => $record->email,
+            'Role' => $record->roles->pluck('name')->join(', ') ?: '—',
+        ];
+    }
+
     public static function canDelete(Model $record): bool
     {
         return ! $record->isSuperAdmin();

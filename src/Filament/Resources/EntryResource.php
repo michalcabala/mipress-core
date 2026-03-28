@@ -32,6 +32,8 @@ class EntryResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Položky';
 
+    protected static ?string $recordTitleAttribute = 'title';
+
     public static function getNavigationItems(): array
     {
         /** @var \Illuminate\Database\Eloquent\Collection<int, Collection>|null $collections */
@@ -84,6 +86,24 @@ class EntryResource extends Resource
         }
 
         return $query;
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'slug', 'collection.name'];
+    }
+
+    public static function getGlobalSearchResultDetails(Entry $record): array
+    {
+        return [
+            'Sekce' => $record->collection?->name ?? '—',
+            'Stav' => $record->status->getLabel(),
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['collection']);
     }
 
     public static function form(Schema $schema): Schema
