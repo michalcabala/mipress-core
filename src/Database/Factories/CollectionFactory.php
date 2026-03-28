@@ -18,7 +18,7 @@ class CollectionFactory extends Factory
             'name' => $this->faker->words(2, true),
             'handle' => $this->faker->unique()->slug(2),
             'blueprint_id' => Blueprint::factory(),
-            'icon' => 'fas-file-lines',
+            'icon' => 'far-file-lines',
             'route' => null,
             'dated' => false,
             'slugs' => true,

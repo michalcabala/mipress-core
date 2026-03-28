@@ -32,7 +32,7 @@ class EditEntry extends EditRecord
             $this->getSaveFormAction()->formId('form'),
             Action::make('submitForReview')
                 ->label('Odeslat ke schválení')
-                ->icon('fas-paper-plane')
+                ->icon('far-paper-plane')
                 ->color('info')
                 ->visible(fn (Entry $record): bool => in_array($record->status, [EntryStatus::Draft, EntryStatus::Rejected])
                     && ! auth()->user()?->can('entry.publish'))
@@ -49,7 +49,7 @@ class EditEntry extends EditRecord
 
             Action::make('publishDirect')
                 ->label('Publikovat')
-                ->icon('fas-circle-check')
+                ->icon('far-circle-check')
                 ->color('success')
                 ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Draft
                     && auth()->user()?->can('entry.publish'))
@@ -66,7 +66,7 @@ class EditEntry extends EditRecord
 
             Action::make('approve')
                 ->label('Schválit a publikovat')
-                ->icon('fas-circle-check')
+                ->icon('far-circle-check')
                 ->color('success')
                 ->visible(fn (Entry $record): bool => $record->status === EntryStatus::InReview
                     && auth()->user()?->can('entry.publish'))
@@ -84,7 +84,7 @@ class EditEntry extends EditRecord
 
             Action::make('schedule')
                 ->label('Naplánovat')
-                ->icon('fas-calendar-check')
+                ->icon('far-calendar-check')
                 ->color('warning')
                 ->visible(fn (Entry $record): bool => $record->status === EntryStatus::InReview
                     && auth()->user()?->can('entry.publish'))
@@ -105,7 +105,7 @@ class EditEntry extends EditRecord
 
             Action::make('reject')
                 ->label('Zamítnout')
-                ->icon('fas-circle-xmark')
+                ->icon('far-circle-xmark')
                 ->color('danger')
                 ->visible(fn (Entry $record): bool => $record->status === EntryStatus::InReview
                     && auth()->user()?->can('entry.publish'))
@@ -126,7 +126,7 @@ class EditEntry extends EditRecord
 
             Action::make('returnToDraft')
                 ->label('Vrátit do konceptu')
-                ->icon('fas-rotate-left')
+                ->icon('far-rotate-left')
                 ->color('gray')
                 ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Published
                     && (auth()->id() === $record->author_id || auth()->user()?->can('entry.publish')))

@@ -18,7 +18,7 @@ class CollectionResource extends Resource
 {
     protected static ?string $model = Collection::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'fas-layer-group';
+    protected static string|\BackedEnum|null $navigationIcon = 'far-layer-group';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 

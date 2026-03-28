@@ -40,7 +40,7 @@ class CollectionForm
                         ->label('Ikona')
                         ->nullable()
                         ->maxLength(100)
-                        ->placeholder('fas-file-lines')
+                        ->placeholder('far-file-lines')
                         ->helperText('Název Blade ikony (např. fas-file-lines)'),
                 ]),
             ]),

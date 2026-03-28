@@ -14,7 +14,7 @@ class AuditLogsRelationManager extends RelationManager
 
     protected static ?string $title = 'Historie změn';
 
-    protected static ?string $icon = 'fas-clock-rotate-left';
+    protected static ?string $icon = 'far-clock-rotate-left';
 
     public function isReadOnly(): bool
     {

@@ -25,7 +25,7 @@ class EntryResource extends Resource
 {
     protected static ?string $model = Entry::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'fas-file-lines';
+    protected static string|\BackedEnum|null $navigationIcon = 'far-file-lines';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Obsah';
 
