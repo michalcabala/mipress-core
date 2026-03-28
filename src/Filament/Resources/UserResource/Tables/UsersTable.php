@@ -17,6 +17,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Enums\UserRole;
 
 class UsersTable
@@ -24,6 +25,7 @@ class UsersTable
     public static function table(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('roles'))
             ->columns([
                 TextColumn::make('name')
                     ->label('Jméno')
@@ -76,10 +78,10 @@ class UsersTable
             ->actions([
                 EditAction::make(),
                 DeleteAction::make()
-                    ->hidden(fn (User $record): bool => $record->isSuperAdmin()),
+                    ->hidden(fn (User $record): bool => $record->roles->contains('name', UserRole::SuperAdmin->value)),
                 RestoreAction::make(),
                 ForceDeleteAction::make()
-                    ->hidden(fn (User $record): bool => $record->isSuperAdmin()),
+                    ->hidden(fn (User $record): bool => $record->roles->contains('name', UserRole::SuperAdmin->value)),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

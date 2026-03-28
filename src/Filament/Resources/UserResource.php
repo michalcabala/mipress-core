@@ -61,8 +61,7 @@ class UserResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ])
-            ->with('roles');
+            ]);
     }
 
     public static function getPages(): array
