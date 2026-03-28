@@ -66,10 +66,10 @@ class EntryForm
         $components = [
             Grid::make([
                 'default' => 1,
-                'lg' => 3,
-            ])->schema([
+                'lg' => 4,
+            ])->columnSpanFull()->schema([
                 Grid::make(1)
-                    ->columnSpan(['default' => 1, 'lg' => 2])
+                    ->columnSpan(['default' => 1, 'lg' => 3])
                     ->schema([
                         Section::make('Obsah')
                             ->icon('heroicon-o-document-text')
@@ -251,7 +251,9 @@ class EntryForm
                                             AuditLog::logStatusChange($record, EntryStatus::Rejected, $oldStatus, $data['reason']);
                                             Notification::make()->title('Položka zamítnuta')->warning()->send();
                                         }),
+                                ])->fullWidth(),
 
+                                Actions::make([
                                     Action::make('moveToTrash')
                                         ->label('Přesunout do koše')
                                         ->icon('far-trash-can')
@@ -278,7 +280,9 @@ class EntryForm
 
                                             $livewire->redirect(EntryResource::getUrl('index'));
                                         }),
+                                ])->fullWidth(),
 
+                                Actions::make([
                                     Action::make('duplicate')
                                         ->label('Duplikovat')
                                         ->icon('far-copy')
