@@ -32,7 +32,7 @@ class MiPressPlugin implements Plugin
     public function boot(Panel $panel): void
     {
         FilamentIcon::register([
-            PanelsIconAlias::PAGES_DASHBOARD_NAVIGATION_ITEM => 'fal-gauge-high',
+            PanelsIconAlias::PAGES_DASHBOARD_NAVIGATION_ITEM => 'fas-gauge-high',
         ]);
     }
 }
