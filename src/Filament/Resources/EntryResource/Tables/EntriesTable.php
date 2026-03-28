@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Tables;
 
+use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -23,6 +24,11 @@ class EntriesTable
     {
         return $table
             ->columns([
+                CuratorColumn::make('featured_image_id')
+                    ->label('Obrázek')
+                    ->height(44)
+                    ->width(64)
+                    ->circular(false),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()

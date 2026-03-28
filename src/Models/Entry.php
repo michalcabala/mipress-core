@@ -13,14 +13,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Traits\Auditable;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
-class Entry extends Model implements HasMedia
+class Entry extends Model
 {
-    use Auditable, HasFactory, HasSlug, InteractsWithMedia, SoftDeletes;
+    use Auditable, HasFactory, HasSlug, SoftDeletes;
 
     protected $table = 'entries';
 
@@ -37,6 +35,7 @@ class Entry extends Model implements HasMedia
         'origin_id',
         'locale',
         'review_note',
+        'featured_image_id',
     ];
 
     protected array $auditExclude = ['data'];
@@ -89,11 +88,9 @@ class Entry extends Model implements HasMedia
         return $this->belongsTo(self::class, 'origin_id');
     }
 
-    public function registerMediaCollections(): void
+    public function featuredImage(): BelongsTo
     {
-        $this->addMediaCollection('featured_image')->singleFile();
-        $this->addMediaCollection('gallery');
-        $this->addMediaCollection('attachments');
+        return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'featured_image_id');
     }
 
     public function scopePublished(Builder $query): Builder

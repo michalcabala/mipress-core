@@ -32,6 +32,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\AuditLog;
@@ -115,19 +116,15 @@ class EntryForm
                                     ->label('SEO popis')
                                     ->maxLength(160)
                                     ->rows(3),
-                                FileUpload::make('featured_image')
+                            ]),
+
+                        Section::make('Média')
+                            ->icon('heroicon-o-photo')
+                            ->schema([
+                                CuratorPicker::make('featured_image_id')
+                                    ->relationship('featuredImage', 'id')
                                     ->label('Hlavní obrázek')
-                                    ->image()
-                                    ->disk('public')
-                                    ->directory('entries')
-                                    ->imageEditor()
-                                    ->imageEditorAspectRatioOptions([
-                                        '16:9' => '16:9',
-                                        '4:3' => '4:3',
-                                        '1:1' => '1:1',
-                                        '1.91:1' => '1.91:1',
-                                    ])
-                                    ->visibility('public')
+                                    ->helperText('Vyberte obrázek z knihovny médií.')
                                     ->nullable(),
                             ]),
                     ]),
@@ -414,7 +411,7 @@ class EntryForm
             'radio' => Radio::make($handle)->label($label)->options($fieldDef['options'] ?? []),
             'datetime' => DateTimePicker::make($handle)->label($label),
             'date' => DatePicker::make($handle)->label($label),
-            'media' => TextInput::make($handle)->label($label)->helperText('Curator bude přidán'),
+            'media' => CuratorPicker::make($handle)->label($label),
             'color' => ColorPicker::make($handle)->label($label),
             'tags' => TagsInput::make($handle)->label($label),
             'repeater' => Repeater::make($handle)->label($label)->schema([
