@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
+use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryHistory;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\ListEntries;
 use MiPress\Core\Filament\Resources\EntryResource\RelationManagers\AuditLogsRelationManager;
 use MiPress\Core\Filament\Resources\EntryResource\Schemas\EntryForm;
@@ -110,7 +111,7 @@ class EntryResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return EntryForm::form($schema);
+        return EntryForm::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -131,6 +132,7 @@ class EntryResource extends Resource
             'index' => ListEntries::route('/'),
             'create' => CreateEntry::route('/create'),
             'edit' => EditEntry::route('/{record}/edit'),
+            'history' => EntryHistory::route('/{record}/history'),
         ];
     }
 }
