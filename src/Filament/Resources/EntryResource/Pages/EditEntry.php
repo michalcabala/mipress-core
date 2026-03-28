@@ -43,7 +43,7 @@ class EditEntry extends EditRecord
 
             Action::make('publishDirect')
                 ->label('Publikovat')
-                ->icon('fas-check-circle')
+                ->icon('fas-circle-check')
                 ->color('success')
                 ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Draft
                     && auth()->user()?->can('entry.publish'))
