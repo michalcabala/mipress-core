@@ -11,6 +11,7 @@ use Filament\View\PanelsIconAlias;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Filament\Resources\MediaResource;
 use MiPress\Core\Filament\Resources\UserResource;
 
 class MiPressPlugin implements Plugin
@@ -32,6 +33,7 @@ class MiPressPlugin implements Plugin
             BlueprintResource::class,
             CollectionResource::class,
             EntryResource::class,
+            MediaResource::class,
         ]);
     }
 

@@ -13,12 +13,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Traits\Auditable;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
-class Entry extends Model
+class Entry extends Model implements HasMedia
 {
-    use Auditable, HasFactory, HasSlug, SoftDeletes;
+    use Auditable, HasFactory, HasSlug, InteractsWithMedia, SoftDeletes;
 
     protected $table = 'entries';
 
@@ -85,6 +87,13 @@ class Entry extends Model
     public function origin(): BelongsTo
     {
         return $this->belongsTo(self::class, 'origin_id');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('featured_image')->singleFile();
+        $this->addMediaCollection('gallery');
+        $this->addMediaCollection('attachments');
     }
 
     public function scopePublished(Builder $query): Builder
