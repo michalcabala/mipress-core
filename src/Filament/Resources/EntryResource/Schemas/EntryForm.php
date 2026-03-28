@@ -29,6 +29,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use MiPress\Core\Enums\EntryStatus;
@@ -201,7 +202,7 @@ class EntryForm
                             ->schema([
                                 Placeholder::make('status_badge')
                                     ->label('Aktuální stav')
-                                    ->content(fn (Entry $record): string => $record->status->getLabel()),
+                                    ->content(fn (Entry $record): HtmlString => new HtmlString('<span class="fi-badge fi-color-gray fi-size-sm">'.e($record->status->getLabel()).'</span>')),
 
                                 Placeholder::make('published_status_at')
                                     ->label('Datum publikování')
