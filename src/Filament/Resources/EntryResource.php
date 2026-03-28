@@ -103,6 +103,15 @@ class EntryResource extends Resource
     public static function form(Schema $schema): Schema
     {
         $collection = static::getCurrentCollection();
+
+        if (! $collection) {
+            $record = $schema->getRecord();
+
+            if ($record instanceof Entry && $record->collection_id) {
+                $collection = $record->load('collection.blueprint')->collection;
+            }
+        }
+
         $blueprint = $collection?->blueprint;
 
         $metaFields = [
