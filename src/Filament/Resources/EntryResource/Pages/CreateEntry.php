@@ -12,16 +12,27 @@ class CreateEntry extends CreateRecord
 {
     protected static string $resource = EntryResource::class;
 
+    public string $collectionHandle = '';
+
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->collectionHandle = request()->query('collection', '');
+    }
+
     protected function getRedirectUrl(): string
     {
         return static::$resource::getUrl('index', [
-            'collection' => request()->query('collection'),
+            'collection' => $this->collectionHandle,
         ]);
     }
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $collection = Collection::where('handle', request()->query('collection'))->first();
+        $collection = filled($this->collectionHandle)
+            ? Collection::where('handle', $this->collectionHandle)->first()
+            : null;
 
         if ($collection && empty($data['collection_id'])) {
             $data['collection_id'] = $collection->id;
