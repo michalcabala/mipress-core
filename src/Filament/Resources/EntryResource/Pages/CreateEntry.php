@@ -45,6 +45,18 @@ class CreateEntry extends CreateRecord
         return $data;
     }
 
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getCreateFormAction()->formId('form'),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [];
+    }
+
     public function getTitle(): string
     {
         $collection = EntryResource::getCurrentCollection();

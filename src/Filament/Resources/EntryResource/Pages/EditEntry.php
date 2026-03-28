@@ -21,9 +21,15 @@ class EditEntry extends EditRecord
 {
     protected static string $resource = EntryResource::class;
 
+    protected function getFormActions(): array
+    {
+        return [];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
+            $this->getSaveFormAction()->formId('form'),
             Action::make('submitForReview')
                 ->label('Odeslat ke schválení')
                 ->icon('fas-paper-plane')
