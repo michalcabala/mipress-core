@@ -9,6 +9,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
@@ -93,8 +94,9 @@ class EntryResource extends Resource
         return ['title', 'slug', 'collection.name'];
     }
 
-    public static function getGlobalSearchResultDetails(Entry $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
+        /** @var Entry $record */
         return [
             'Sekce' => $record->collection?->name ?? '—',
             'Stav' => $record->status->getLabel(),

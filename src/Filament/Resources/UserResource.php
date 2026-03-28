@@ -35,15 +35,7 @@ class UserResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['name', 'email'];
-    }
-
-    public static function getGlobalSearchResultDetails(User $record): array
-    {
-        return [
-            'E-mail' => $record->email,
-            'Role' => $record->roles->pluck('name')->join(', ') ?: '—',
-        ];
+        return ['name'];
     }
 
     public static function canDelete(Model $record): bool
