@@ -6,6 +6,8 @@ namespace MiPress\Core\Filament;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Filament\Support\Facades\FilamentIcon;
+use Filament\View\PanelsIconAlias;
 use MiPress\Core\Filament\Resources\UserResource;
 
 class MiPressPlugin implements Plugin
@@ -29,6 +31,8 @@ class MiPressPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        //
+        FilamentIcon::register([
+            PanelsIconAlias::PAGES_DASHBOARD_NAVIGATION_ITEM => 'fal-gauge-high',
+        ]);
     }
 }
