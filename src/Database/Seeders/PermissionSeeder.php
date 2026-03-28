@@ -26,6 +26,10 @@ class PermissionSeeder extends Seeder
         'blueprint.create',
         'blueprint.update',
         'blueprint.delete',
+        'media.view',
+        'media.upload',
+        'media.update',
+        'media.delete',
     ];
 
     private const ROLE_PERMISSIONS = [
@@ -37,11 +41,16 @@ class PermissionSeeder extends Seeder
             'entry.update',
             'entry.delete',
             'entry.publish',
+            'media.view',
+            'media.upload',
+            'media.update',
         ],
         UserRole::Contributor->value => [
             'entry.view',
             'entry.create',
             'entry.update',
+            'media.view',
+            'media.upload',
         ],
     ];
 
