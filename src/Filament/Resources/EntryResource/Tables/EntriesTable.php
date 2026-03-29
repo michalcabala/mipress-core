@@ -24,11 +24,9 @@ class EntriesTable
     {
         return $table
             ->columns([
-                CuratorColumn::make('featured_image_id')
+                CuratorColumn::make('featuredImage')
                     ->label('Obrázek')
-                    ->height(44)
-                    ->width(64)
-                    ->circular(false),
+                    ->size(40),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()

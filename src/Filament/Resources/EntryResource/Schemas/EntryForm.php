@@ -4,18 +4,19 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Schemas;
 
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\ColorPicker;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
@@ -32,7 +33,6 @@ use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\AuditLog;
@@ -116,16 +116,6 @@ class EntryForm
                                     ->label('SEO popis')
                                     ->maxLength(160)
                                     ->rows(3),
-                            ]),
-
-                        Section::make('Média')
-                            ->icon('heroicon-o-photo')
-                            ->schema([
-                                CuratorPicker::make('featured_image_id')
-                                    ->relationship('featuredImage', 'id')
-                                    ->label('Hlavní obrázek')
-                                    ->helperText('Vyberte obrázek z knihovny médií.')
-                                    ->nullable(),
                             ]),
                     ]),
 
@@ -324,6 +314,15 @@ class EntryForm
                                     ->content(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
                             ]),
 
+                        Section::make('Hlavní obrázek')
+                            ->icon('heroicon-o-photo')
+                            ->schema([
+                                CuratorPicker::make('featured_image_id')
+                                    ->relationship('featuredImage', 'id')
+                                    ->label('')
+                                    ->nullable(),
+                            ]),
+
                         Section::make('Nastavení')
                             ->icon('heroicon-o-cog-6-tooth')
                             ->schema([
@@ -418,7 +417,8 @@ class EntryForm
                 TextInput::make('value')->label('Hodnota'),
             ])->addActionLabel('Přidat záznam'),
             'keyvalue' => KeyValue::make($handle)->label($label),
-            'markdown' => MarkdownEditor::make($handle)->label($label),
+            'richtext' => RichEditor::make($handle)->label($label)->columnSpanFull(),
+            'markdown' => MarkdownEditor::make($handle)->label($label)->columnSpanFull(),
             'mason' => TextInput::make($handle)->label($label)->helperText('Mason bricks budou definovány'),
             default => TextInput::make($handle)->label($label)->maxLength(255),
         };
