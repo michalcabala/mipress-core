@@ -18,7 +18,7 @@ class BlueprintResource extends Resource
 {
     protected static ?string $model = Blueprint::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'far-pen-ruler';
+    protected static string|\BackedEnum|null $navigationIcon = 'fal-pen-ruler';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 

@@ -26,7 +26,7 @@ class EntryResource extends Resource
 {
     protected static ?string $model = Entry::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'far-file-lines';
+    protected static string|\BackedEnum|null $navigationIcon = 'fal-file-lines';
 
     protected static string|\UnitEnum|null $navigationGroup = 'Obsah';
 
@@ -75,7 +75,11 @@ class EntryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()
-            ->withoutGlobalScopes([SoftDeletingScope::class]);
+            ->withoutGlobalScopes([SoftDeletingScope::class])
+            ->with([
+                'featuredImage',
+                'author' => fn ($q) => $q->without('roles'),
+            ]);
 
         $collection = static::getCurrentCollection();
 
