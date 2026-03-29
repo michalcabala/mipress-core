@@ -7,10 +7,8 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Url;
 use MiPress\Core\Filament\Resources\EntryResource;
-use MiPress\Core\Models\Collection;
 
 class ListEntries extends ListRecords
 {
@@ -21,20 +19,7 @@ class ListEntries extends ListRecords
 
     public function table(Table $table): Table
     {
-        return parent::table($table)
-            ->modifyQueryUsing(function (Builder $query): Builder {
-                if (! $this->collectionHandle) {
-                    return $query;
-                }
-
-                $collection = Collection::where('handle', $this->collectionHandle)->first();
-
-                if ($collection) {
-                    return $query->where('collection_id', $collection->id);
-                }
-
-                return $query;
-            });
+        return parent::table($table);
     }
 
     protected function getHeaderActions(): array
@@ -49,12 +34,6 @@ class ListEntries extends ListRecords
 
     public function getTitle(): string
     {
-        if (! $this->collectionHandle) {
-            return 'Položky';
-        }
-
-        $collection = Collection::where('handle', $this->collectionHandle)->first();
-
-        return $collection?->name ?? 'Položky';
+        return EntryResource::getCurrentCollection()?->name ?? 'Položky';
     }
 }
