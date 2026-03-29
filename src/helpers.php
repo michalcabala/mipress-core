@@ -2,13 +2,93 @@
 
 declare(strict_types=1);
 
+use Illuminate\Support\Collection as SupportCollection;
+use MiPress\Core\Models\Collection;
+use MiPress\Core\Models\Entry;
+use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Theme\ThemeManager;
 
 if (! function_exists('theme_asset')) {
-    function theme_asset(string $path): string
+    function theme_asset(string $path, ?string $slug = null): string
     {
-        $slug = app(ThemeManager::class)->getActive();
+        $slug ??= app(ThemeManager::class)->getActive();
 
-        return asset("themes/{$slug}/{$path}");
+        return theme_file('assets/'.ltrim($path, '/'), $slug);
+    }
+}
+
+if (! function_exists('theme_file')) {
+    function theme_file(string $path, ?string $slug = null): string
+    {
+        $slug ??= app(ThemeManager::class)->getActive();
+        $encodedPath = implode('/', array_map(
+            static fn (string $segment): string => rawurlencode($segment),
+            array_filter(explode('/', str_replace('\\', '/', ltrim($path, '/'))), 'strlen'),
+        ));
+
+        return route('mipress.theme.asset', [
+            'theme' => $slug,
+            'path' => $encodedPath,
+        ], false);
+    }
+}
+
+if (! function_exists('mipress_routable_collections')) {
+    /**
+     * @return SupportCollection<int, Collection>
+     */
+    function mipress_routable_collections(): SupportCollection
+    {
+        try {
+            return Collection::query()
+                ->ordered()
+                ->where('slugs', true)
+                ->whereNotNull('route')
+                ->get()
+                ->values();
+        } catch (Throwable) {
+            return collect();
+        }
+    }
+}
+
+if (! function_exists('mipress_public_collections')) {
+    /**
+     * @return SupportCollection<int, Collection>
+     */
+    function mipress_public_collections(): SupportCollection
+    {
+        return mipress_routable_collections()
+            ->filter(fn (Collection $collection): bool => filled($collection->getArchivePath()))
+            ->values();
+    }
+}
+
+if (! function_exists('mipress_collection_archive_path')) {
+    function mipress_collection_archive_path(Collection $collection): ?string
+    {
+        return $collection->getArchivePath();
+    }
+}
+
+if (! function_exists('mipress_entry_url')) {
+    function mipress_entry_url(Entry $entry): ?string
+    {
+        return $entry->getPublicUrl();
+    }
+}
+
+if (! function_exists('global_set')) {
+    function global_set(string $expression, mixed $default = null): mixed
+    {
+        $manager = app(GlobalSetManager::class);
+
+        if (! str_contains($expression, '.')) {
+            return $manager->find($expression);
+        }
+
+        [$handle, $key] = explode('.', $expression, 2);
+
+        return $manager->get($handle, $key, $default);
     }
 }

@@ -8,6 +8,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
+use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Theme\ThemeManager;
 use MiPress\Core\Theme\ThemeManifest;
 
@@ -25,9 +26,17 @@ class ThemeSettings extends Page
 
     protected static ?string $title = 'Správa témat';
 
-    /**
-     * @return Collection<int, ThemeManifest>
-     */
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && $user->hasAnyRole([
+            UserRole::SuperAdmin->value,
+            UserRole::Admin->value,
+        ]);
+    }
+
+    /** @return Collection<int, ThemeManifest> */
     public function getThemes(): Collection
     {
         return app(ThemeManager::class)->discover();
@@ -36,6 +45,19 @@ class ThemeSettings extends Page
     public function getActiveTheme(): string
     {
         return app(ThemeManager::class)->getActive();
+    }
+
+    public function getActiveThemeManifest(): ?ThemeManifest
+    {
+        return $this->getThemes()->firstWhere('slug', $this->getActiveTheme());
+    }
+
+    /** @return Collection<int, ThemeManifest> */
+    public function getInactiveThemes(): Collection
+    {
+        $active = $this->getActiveTheme();
+
+        return $this->getThemes()->reject(fn (ThemeManifest $t): bool => $t->slug === $active)->values();
     }
 
     public function activateTheme(string $slug): void

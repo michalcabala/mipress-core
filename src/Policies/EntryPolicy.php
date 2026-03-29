@@ -17,10 +17,6 @@ class EntryPolicy
 
     public function view(User $user, Entry $entry): bool
     {
-        if ($user->hasRole(UserRole::Contributor->value)) {
-            return $entry->author_id === $user->id;
-        }
-
         return $user->hasPermissionTo('entry.view');
     }
 

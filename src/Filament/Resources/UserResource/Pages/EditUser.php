@@ -34,9 +34,9 @@ class EditUser extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $this->pendingRole = $data['role'] ?? null;
+        $role = $data['role'] ?? null;
+        $this->pendingRole = $role instanceof UserRole ? $role->value : $role;
         unset($data['role']);
-        unset($data['password_confirmation']);
 
         if (empty($data['password'])) {
             unset($data['password']);
@@ -68,16 +68,6 @@ class EditUser extends EditRecord
                 Notification::make()
                     ->title('Nelze přiřadit')
                     ->body('Superadministrátor již existuje. Může být pouze jeden.')
-                    ->danger()
-                    ->send();
-
-                $this->halt();
-            }
-
-            if (! $this->record->email_verified_at) {
-                Notification::make()
-                    ->title('Nelze přiřadit')
-                    ->body('Superadministrátor musí mít ověřený e-mail.')
                     ->danger()
                     ->send();
 

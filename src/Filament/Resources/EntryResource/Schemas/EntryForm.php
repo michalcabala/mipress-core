@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Schemas;
 
 use Awcodes\Curator\Components\Forms\CuratorPicker;
+use Awcodes\Mason\Enums\SidebarPosition;
+use Awcodes\Mason\Mason;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\ColorPicker;
@@ -32,17 +34,18 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Models\AuditLog;
+use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 
 class EntryForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $collection = EntryResource::getCurrentCollection();
+        $collection = self::resolveCollection($schema);
 
         if (! $collection) {
             $record = $schema->getRecord();
@@ -56,13 +59,6 @@ class EntryForm
         $hasSlug = (bool) ($collection?->slugs);
         $record = $schema->getRecord();
         $isEdit = $record instanceof Entry;
-        $recordId = $schema->getRecord()?->id;
-
-        $uniqueSlugRule = $collection
-            ? Rule::unique('entries', 'slug')
-                ->where('collection_id', $collection->id)
-                ->ignore($recordId)
-            : null;
 
         $components = [
             Grid::make([
@@ -95,10 +91,7 @@ class EntryForm
                                         ->required($hasSlug)
                                         ->visible($hasSlug)
                                         ->maxLength(200)
-                                        ->rules(array_filter([
-                                            'alpha_dash',
-                                            $uniqueSlugRule,
-                                        ])),
+                                        ->rules(['alpha_dash']),
                                 ]),
                                 ...self::buildBlueprintSections($blueprint),
                             ]),
@@ -359,6 +352,23 @@ class EntryForm
         return static::configure($schema);
     }
 
+    private static function resolveCollection(Schema $schema): ?Collection
+    {
+        $livewire = method_exists($schema, 'getLivewire') ? $schema->getLivewire() : null;
+
+        if ($livewire !== null && property_exists($livewire, 'collectionHandle')) {
+            $handle = $livewire->collectionHandle;
+
+            if (filled($handle)) {
+                return Collection::where('handle', $handle)
+                    ->with('blueprint')
+                    ->first();
+            }
+        }
+
+        return EntryResource::getCurrentCollection();
+    }
+
     /**
      * @return array<int, Section>
      */
@@ -419,7 +429,19 @@ class EntryForm
             'keyvalue' => KeyValue::make($handle)->label($label),
             'richtext' => RichEditor::make($handle)->label($label)->columnSpanFull(),
             'markdown' => MarkdownEditor::make($handle)->label($label)->columnSpanFull(),
-            'mason' => TextInput::make($handle)->label($label)->helperText('Mason bricks budou definovány'),
+            'mason' => Mason::make($handle)
+                ->label($label)
+                ->bricks(EditorialBrickCollection::make())
+                ->previewLayout('layouts.mason-preview')
+                ->colorModeToggle()
+                ->defaultColorMode('light')
+                ->doubleClickToEdit()
+                ->displayActionsAsGrid()
+                ->sortBricks()
+                ->sidebarPosition(SidebarPosition::End)
+                ->extraInputAttributes(['style' => 'min-height: 42rem;'])
+                ->columnSpanFull(),
+            'hidden' => Hidden::make($handle),
             default => TextInput::make($handle)->label($label)->maxLength(255),
         };
 

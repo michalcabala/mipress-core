@@ -30,6 +30,10 @@ class PermissionSeeder extends Seeder
         'media.upload',
         'media.update',
         'media.delete',
+        'global_set.view',
+        'global_set.create',
+        'global_set.update',
+        'global_set.delete',
     ];
 
     private const ROLE_PERMISSIONS = [

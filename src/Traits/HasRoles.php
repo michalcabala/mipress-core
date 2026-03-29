@@ -46,13 +46,18 @@ trait HasRoles
         return $this->hasRole(UserRole::Contributor->value);
     }
 
+    public function hasMfaEnabled(): bool
+    {
+        return (bool) ($this->has_email_authentication ?? false);
+    }
+
     public function canAccessPanel(Panel $panel): bool
     {
-        // TODO: Enforce 2FA for SuperAdmin once a 2FA package is integrated.
-        // if ($this->isSuperAdmin() && ! $this->hasTwoFactorEnabled()) {
-        //     return false;
-        // }
-
-        return $this->isSuperAdmin() || $this->isAdmin();
+        return $this->hasAnyRole([
+            UserRole::SuperAdmin->value,
+            UserRole::Admin->value,
+            UserRole::Editor->value,
+            UserRole::Contributor->value,
+        ]);
     }
 }

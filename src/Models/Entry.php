@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Models;
 
 use App\Models\User;
+use Awcodes\Mason\Support\MasonRenderer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Traits\Auditable;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
@@ -51,7 +53,6 @@ class Entry extends Model
         'data' => 'array',
         'status' => EntryStatus::class,
         'published_at' => 'datetime',
-        'dated' => 'boolean',
         'sort_order' => 'integer',
     ];
 
@@ -110,5 +111,144 @@ class Entry extends Model
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order');
+    }
+
+    public function getPublicUrl(): ?string
+    {
+        $collection = $this->collection;
+
+        if (! $collection instanceof Collection || ! filled($collection->route)) {
+            return null;
+        }
+
+        $missingParameter = false;
+        $resolved = preg_replace_callback(
+            '/\{([a-zA-Z_][a-zA-Z0-9_]*)\}/',
+            function (array $matches) use (&$missingParameter): string {
+                $value = $this->resolveRouteParameter($matches[1]);
+
+                if (! filled($value)) {
+                    $missingParameter = true;
+
+                    return '';
+                }
+
+                return $value;
+            },
+            $collection->route,
+        );
+
+        if (! is_string($resolved) || $missingParameter) {
+            return null;
+        }
+
+        $resolved = preg_replace('#/+#', '/', $resolved) ?? $resolved;
+
+        return filled($resolved) ? $resolved : null;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function getMasonContent(): array
+    {
+        $content = $this->data['content'] ?? null;
+
+        if (! is_array($content)) {
+            return [];
+        }
+
+        return $content;
+    }
+
+    public function hasMasonContent(): bool
+    {
+        return $this->getMasonContent() !== [];
+    }
+
+    public function renderMasonContent(): string
+    {
+        return MasonRenderer::make($this->getMasonContent())
+            ->bricks(EditorialBrickCollection::make())
+            ->toUnsafeHtml();
+    }
+
+    public function getExcerpt(int $words = 28): string
+    {
+        foreach (['excerpt', 'summary', 'perex', 'intro'] as $key) {
+            $value = $this->data[$key] ?? null;
+
+            if (is_string($value) && trim($value) !== '') {
+                return trim($value);
+            }
+        }
+
+        $text = $this->extractReadableText();
+
+        return (string) str($text)->squish()->words($words, '…');
+    }
+
+    public function getReadingTimeMinutes(): int
+    {
+        $configured = $this->data['reading_time'] ?? null;
+
+        if (is_numeric($configured) && (int) $configured > 0) {
+            return (int) $configured;
+        }
+
+        $wordCount = str_word_count($this->extractReadableText());
+
+        return max(1, (int) ceil($wordCount / 220));
+    }
+
+    private function resolveRouteParameter(string $parameter): ?string
+    {
+        return match ($parameter) {
+            'slug' => $this->slug,
+            'year' => $this->published_at?->format('Y'),
+            'month' => $this->published_at?->format('m'),
+            'day' => $this->published_at?->format('d'),
+            default => $this->resolveCustomRouteParameter($parameter),
+        };
+    }
+
+    private function resolveCustomRouteParameter(string $parameter): ?string
+    {
+        $dataValue = $this->data[$parameter] ?? null;
+
+        if (is_scalar($dataValue) && $dataValue !== '') {
+            return (string) $dataValue;
+        }
+
+        $attributeValue = $this->getAttribute($parameter);
+
+        if (is_scalar($attributeValue) && $attributeValue !== '') {
+            return (string) $attributeValue;
+        }
+
+        return null;
+    }
+
+    private function extractReadableText(): string
+    {
+        if ($this->hasMasonContent()) {
+            return MasonRenderer::make($this->getMasonContent())
+                ->bricks(EditorialBrickCollection::make())
+                ->toText();
+        }
+
+        $segments = [];
+
+        foreach ($this->data as $key => $value) {
+            if (in_array($key, ['meta_title', 'meta_description', 'reading_time'], true)) {
+                continue;
+            }
+
+            if (is_string($value)) {
+                $segments[] = strip_tags($value);
+            }
+        }
+
+        return trim(implode(' ', $segments));
     }
 }

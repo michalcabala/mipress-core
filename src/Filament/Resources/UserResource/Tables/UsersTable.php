@@ -15,10 +15,12 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Enums\UserRole;
+use MiPress\Core\Filament\Resources\UserResource;
 
 class UsersTable
 {
@@ -59,6 +61,14 @@ class UsersTable
                     ->falseIcon('fal-circle-xmark')
                     ->state(fn (User $record): bool => $record->email_verified_at !== null),
 
+                IconColumn::make('has_email_authentication')
+                    ->label('MFA')
+                    ->boolean()
+                    ->trueIcon('fal-shield-check')
+                    ->falseIcon('fal-shield-xmark')
+                    ->trueColor('success')
+                    ->falseColor('gray'),
+
                 TextColumn::make('created_at')
                     ->label('Vytvořen')
                     ->dateTime('d.m.Y H:i')
@@ -73,22 +83,44 @@ class UsersTable
             ])
             ->defaultSort('created_at', 'desc')
             ->filters([
+                SelectFilter::make('role')
+                    ->label('Role')
+                    ->options(UserRole::class)
+                    ->query(fn (Builder $query, array $data): Builder => $query->when(
+                        $data['value'],
+                        fn (Builder $query, string $role): Builder => $query->role($role),
+                    )),
                 TrashedFilter::make(),
             ])
             ->actions([
-                EditAction::make(),
+                EditAction::make()
+                    ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && UserResource::canEdit($record)),
                 DeleteAction::make()
-                    ->hidden(fn (User $record): bool => $record->roles->contains('name', UserRole::SuperAdmin->value)),
-                RestoreAction::make(),
+                    ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && ! $record->isSuperAdmin()),
+                RestoreAction::make()
+                    ->visible(fn (User $record): bool => self::canManageUsers() && $record->trashed()),
                 ForceDeleteAction::make()
-                    ->hidden(fn (User $record): bool => $record->roles->contains('name', UserRole::SuperAdmin->value)),
+                    ->visible(fn (User $record): bool => self::canManageUsers() && $record->trashed() && ! $record->isSuperAdmin()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    DeleteBulkAction::make()
+                        ->visible(fn (): bool => self::canManageUsers()),
+                    RestoreBulkAction::make()
+                        ->visible(fn (): bool => self::canManageUsers()),
+                    ForceDeleteBulkAction::make()
+                        ->visible(fn (): bool => self::canManageUsers()),
                 ]),
             ]);
+    }
+
+    private static function canManageUsers(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && $user->hasAnyRole([
+            UserRole::SuperAdmin->value,
+            UserRole::Admin->value,
+        ]);
     }
 }

@@ -13,6 +13,7 @@ final readonly class ThemeManifest
         public string $slug,
         public string $version,
         public string $author,
+        public ?string $description,
         public ?string $screenshot,
         public string $path,
     ) {}
@@ -33,6 +34,7 @@ final readonly class ThemeManifest
             slug: $data['slug'],
             version: $data['version'],
             author: $data['author'] ?? '',
+            description: $data['description'] ?? null,
             screenshot: $data['screenshot'] ?? null,
             path: $path,
         );

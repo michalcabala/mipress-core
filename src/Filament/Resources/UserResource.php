@@ -11,6 +11,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Filament\Resources\UserResource\Pages\CreateUser;
 use MiPress\Core\Filament\Resources\UserResource\Pages\EditUser;
 use MiPress\Core\Filament\Resources\UserResource\Pages\ListUsers;
@@ -38,19 +39,53 @@ class UserResource extends Resource
         return ['name'];
     }
 
+    public static function canCreate(): bool
+    {
+        return self::isAdminOrAbove();
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        if (! self::isAdminOrAbove()) {
+            return false;
+        }
+
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if (! $record->isSuperAdmin()) {
+            return true;
+        }
+
+        return $user->isSuperAdmin();
+    }
+
     public static function canDelete(Model $record): bool
     {
-        return ! $record->isSuperAdmin();
+        return self::isAdminOrAbove() && ! $record->isSuperAdmin();
     }
 
     public static function canDeleteAny(): bool
     {
-        return true;
+        return self::isAdminOrAbove();
     }
 
     public static function canForceDelete(Model $record): bool
     {
-        return ! $record->isSuperAdmin();
+        return self::isAdminOrAbove() && ! $record->isSuperAdmin();
+    }
+
+    private static function isAdminOrAbove(): bool
+    {
+        $user = auth()->user();
+
+        return $user !== null && $user->hasAnyRole([
+            UserRole::SuperAdmin->value,
+            UserRole::Admin->value,
+        ]);
     }
 
     public static function form(Schema $schema): Schema

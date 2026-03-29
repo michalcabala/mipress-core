@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
+use Livewire\Attributes\Url;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 
@@ -12,6 +13,7 @@ class CreateEntry extends CreateRecord
 {
     protected static string $resource = EntryResource::class;
 
+    #[Url(as: 'collection')]
     public string $collectionHandle = '';
 
     public function mount(): void
@@ -59,7 +61,9 @@ class CreateEntry extends CreateRecord
 
     public function getTitle(): string
     {
-        $collection = EntryResource::getCurrentCollection();
+        $collection = filled($this->collectionHandle)
+            ? Collection::where('handle', $this->collectionHandle)->first()
+            : null;
 
         return $collection
             ? 'Nová položka — '.$collection->name

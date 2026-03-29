@@ -8,52 +8,193 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
 use MiPress\Core\Models\Collection;
+use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Setting;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EntryController extends Controller
 {
+    private const string HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
+
+    public function home(): View
+    {
+        $entry = $this->resolveHomepageEntry();
+
+        if ($entry instanceof Entry) {
+            return $this->renderEntry($entry);
+        }
+
+        if (view()->exists('home')) {
+            return view('home', [
+                'collections' => mipress_public_collections(),
+                'featuredEntries' => Entry::query()
+                    ->with(['collection', 'featuredImage'])
+                    ->published()
+                    ->orderByDesc('published_at')
+                    ->limit(4)
+                    ->get(),
+            ]);
+        }
+
+        return view('welcome');
+    }
+
+    public function asset(string $theme, string $path): BinaryFileResponse
+    {
+        $filePath = $this->resolveThemeFilePath($theme, $path);
+
+        abort_if($filePath === null, 404);
+
+        return response()->file($filePath, [
+            'Cache-Control' => 'public, max-age=3600',
+            'Content-Type' => $this->resolveContentType($filePath),
+        ]);
+    }
+
     public function __invoke(Request $request): View
     {
         $path = '/'.ltrim($request->path(), '/');
 
-        $collection = Collection::where('slugs', true)->get()
-            ->first(fn (Collection $col) => (bool) preg_match($this->routeToRegex($col->route), $path));
+        $archiveCollection = $this->resolveArchiveCollection($path);
 
-        if (! $collection) {
+        if ($archiveCollection instanceof Collection) {
+            return $this->renderArchive($archiveCollection);
+        }
+
+        $entry = $this->resolveEntryFromPath($path);
+
+        if (! $entry instanceof Entry) {
             abort(404);
         }
 
-        $slug = $this->extractSlug($path, $collection->route);
+        return $this->renderEntry($entry);
+    }
 
-        $entry = $collection->entries()
-            ->with(['blueprint', 'featuredImage'])
+    private function resolveHomepageEntry(): ?Entry
+    {
+        $homepageEntryId = Setting::getValue(self::HOMEPAGE_ENTRY_SETTING_KEY);
+
+        if (! filled($homepageEntryId)) {
+            return null;
+        }
+
+        return Entry::query()
+            ->with(['collection', 'blueprint', 'featuredImage'])
             ->published()
-            ->where('slug', $slug)
-            ->firstOrFail();
+            ->find($homepageEntryId);
+    }
+
+    private function resolveEntryFromPath(string $path): ?Entry
+    {
+        $collections = mipress_routable_collections();
+
+        foreach ($collections as $collection) {
+            $slug = $collection->resolveSlugFromPath($path);
+
+            if (! filled($slug)) {
+                continue;
+            }
+
+            return $collection->entries()
+                ->with(['collection', 'blueprint', 'featuredImage'])
+                ->published()
+                ->where('slug', $slug)
+                ->first();
+        }
+
+        return null;
+    }
+
+    private function resolveArchiveCollection(string $path): ?Collection
+    {
+        foreach (mipress_public_collections() as $collection) {
+            if ($collection->isArchivePath($path)) {
+                return $collection;
+            }
+        }
+
+        return null;
+    }
+
+    private function renderEntry(Entry $entry): View
+    {
+        $entry->loadMissing(['collection', 'blueprint', 'featuredImage']);
+        $collection = $entry->collection;
+
+        if (! $collection instanceof Collection) {
+            abort(404);
+        }
 
         $viewHandle = 'entries.'.$collection->handle;
         $viewName = view()->exists($viewHandle) ? $viewHandle : 'entries.page';
+        $relatedEntries = $collection->entries()
+            ->with(['collection', 'featuredImage'])
+            ->published()
+            ->whereKeyNot($entry->getKey())
+            ->orderByDesc('published_at')
+            ->limit(3)
+            ->get();
 
-        return view($viewName, compact('entry', 'collection'));
+        return view($viewName, compact('entry', 'collection', 'relatedEntries'));
     }
 
-    private function routeToRegex(string $route): string
+    private function resolveThemeFilePath(string $theme, string $path): ?string
     {
-        $parts = preg_split('#\{[^}]+\}#', $route) ?: [];
-        $quoted = array_map(fn (string $p) => preg_quote($p, '#'), $parts);
+        $themeRoot = resource_path('themes/'.$theme);
+        $resolvedThemeRoot = realpath($themeRoot);
 
-        return '#^'.implode('[^/]+', $quoted).'$#';
-    }
-
-    private function extractSlug(string $path, string $routeTemplate): string
-    {
-        $parts = preg_split('#\{[^}]+\}#', $routeTemplate) ?: [];
-        $quoted = array_map(fn (string $p) => preg_quote($p, '#'), $parts);
-        $regex = '#^'.implode('([^/]+)', $quoted).'$#';
-
-        if (preg_match($regex, $path, $matches)) {
-            return $matches[1] ?? '';
+        if ($resolvedThemeRoot === false) {
+            return null;
         }
 
-        return '';
+        $normalizedPath = str_replace('\\', '/', ltrim($path, '/'));
+        $candidatePath = realpath($resolvedThemeRoot.DIRECTORY_SEPARATOR.$normalizedPath);
+
+        if ($candidatePath === false) {
+            return null;
+        }
+
+        if (! str_starts_with($candidatePath, $resolvedThemeRoot.DIRECTORY_SEPARATOR)
+            && $candidatePath !== $resolvedThemeRoot) {
+            return null;
+        }
+
+        if (! is_file($candidatePath)) {
+            return null;
+        }
+
+        return $candidatePath;
+    }
+
+    private function renderArchive(Collection $collection): View
+    {
+        $query = $collection->entries()
+            ->with(['collection', 'featuredImage'])
+            ->published();
+
+        $entries = $collection
+            ->applyPublicOrdering($query)
+            ->paginate(9)
+            ->withQueryString();
+
+        $featuredEntry = $entries->getCollection()->first();
+        $viewHandle = 'collections.'.$collection->handle;
+        $viewName = view()->exists($viewHandle) ? $viewHandle : 'collections.archive';
+
+        return view($viewName, [
+            'collection' => $collection,
+            'entries' => $entries,
+            'featuredEntry' => $featuredEntry,
+        ]);
+    }
+
+    private function resolveContentType(string $filePath): string
+    {
+        return match (pathinfo($filePath, PATHINFO_EXTENSION)) {
+            'css' => 'text/css; charset=UTF-8',
+            'js' => 'application/javascript; charset=UTF-8',
+            'json' => 'application/json; charset=UTF-8',
+            default => mime_content_type($filePath) ?: 'application/octet-stream',
+        };
     }
 }

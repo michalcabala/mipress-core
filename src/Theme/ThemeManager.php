@@ -58,7 +58,7 @@ class ThemeManager
     {
         return Cache::remember(self::CACHE_KEY, 3600, function (): string {
             try {
-                return Setting::find(self::SETTING_KEY)?->value ?? self::DEFAULT_THEME;
+                return Setting::getValue(self::SETTING_KEY, self::DEFAULT_THEME) ?? self::DEFAULT_THEME;
             } catch (\Exception) {
                 // settings table may not exist yet during initial install
                 return self::DEFAULT_THEME;

@@ -87,10 +87,6 @@ class EntryResource extends Resource
             $query->where('collection_id', $collection->id);
         }
 
-        if (auth()->user()?->hasRole(UserRole::Contributor->value)) {
-            $query->where('author_id', auth()->id());
-        }
-
         return $query;
     }
 
