@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
@@ -34,6 +35,7 @@ class Entry extends Model
         'published_at',
         'author_id',
         'sort_order',
+        'parent_id',
         'origin_id',
         'locale',
         'review_note',
@@ -54,6 +56,7 @@ class Entry extends Model
         'status' => EntryStatus::class,
         'published_at' => 'datetime',
         'sort_order' => 'integer',
+        'parent_id' => 'integer',
     ];
 
     protected static function newFactory(): EntryFactory
@@ -87,6 +90,16 @@ class Entry extends Model
     public function origin(): BelongsTo
     {
         return $this->belongsTo(self::class, 'origin_id');
+    }
+
+    public function parent(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
     }
 
     public function featuredImage(): BelongsTo

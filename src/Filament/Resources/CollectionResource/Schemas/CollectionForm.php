@@ -54,6 +54,10 @@ class CollectionForm
                         ->label('Používat slug')
                         ->default(true),
                 ]),
+                Toggle::make('hierarchical')
+                    ->label('Hierarchická struktura')
+                    ->helperText('Zapněte pro sekce typu Stránky, kde mohou vznikat podstránky.')
+                    ->default(false),
                 Grid::make(2)->schema([
                     TextInput::make('route')
                         ->label('URL vzor')

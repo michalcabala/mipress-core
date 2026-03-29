@@ -53,6 +53,8 @@ class CreateEntry extends CreateRecord
             $data['blueprint_id'] = $collection->blueprint_id;
         }
 
+        $data['parent_id'] = $this->resolveParentId($data, $collection);
+
         $data['review_note'] = null;
 
         if ($this->createIntent === 'review') {
@@ -79,6 +81,20 @@ class CreateEntry extends CreateRecord
         $data['status'] = EntryStatus::Draft;
 
         return $data;
+    }
+
+    private function resolveParentId(array $data, ?Collection $collection): ?int
+    {
+        $parentId = data_get($data, 'parent_id');
+
+        if (! $collection?->hierarchical || ! is_numeric($parentId)) {
+            return null;
+        }
+
+        return Entry::query()
+            ->where('collection_id', $collection->id)
+            ->whereKey((int) $parentId)
+            ->value('id');
     }
 
     protected function getHeaderActions(): array

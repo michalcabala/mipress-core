@@ -22,6 +22,7 @@ class CollectionFactory extends Factory
             'route' => null,
             'dated' => false,
             'slugs' => true,
+            'hierarchical' => false,
             'sort_direction' => 'asc',
             'sort_order' => $this->faker->numberBetween(0, 100),
         ];

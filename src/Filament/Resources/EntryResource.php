@@ -38,10 +38,7 @@ class EntryResource extends Resource
 
     public static function getNavigationItems(): array
     {
-        /** @var \Illuminate\Database\Eloquent\Collection<int, Collection>|null $collections */
-        static $collections = null;
-
-        $collections ??= Collection::ordered()->get();
+        $collections = Collection::ordered()->get();
 
         $inReviewCounts = [];
 
@@ -87,14 +84,7 @@ class EntryResource extends Resource
             return null;
         }
 
-        /** @var array<string, Collection|null> $cache */
-        static $cache = [];
-
-        if (! array_key_exists($handle, $cache)) {
-            $cache[$handle] = Collection::where('handle', $handle)->with('blueprint')->first();
-        }
-
-        return $cache[$handle];
+        return Collection::where('handle', $handle)->with('blueprint')->first();
     }
 
     public static function getEloquentQuery(): Builder

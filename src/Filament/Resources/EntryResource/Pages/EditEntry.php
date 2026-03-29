@@ -62,6 +62,13 @@ class EditEntry extends EditRecord
         ]);
     }
 
+    protected function mutateFormDataBeforeSave(array $data): array
+    {
+        $data['parent_id'] = $this->resolveParentId($data);
+
+        return $data;
+    }
+
     private function getPrimaryWorkflowAction(): ?Action
     {
         $record = $this->getRecord();
@@ -87,6 +94,34 @@ class EditEntry extends EditRecord
                 ? $this->makeResubmitRejectedAction()
                 : ($canPublish ? $this->makePublishAction('Publikovat') : null),
         };
+    }
+
+    private function resolveParentId(array $data): ?int
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Entry || ! $record->collection?->hierarchical) {
+            return null;
+        }
+
+        $parentId = data_get($data, 'parent_id');
+
+        if (! is_numeric($parentId)) {
+            return null;
+        }
+
+        $resolvedParentId = Entry::query()
+            ->where('collection_id', $record->collection_id)
+            ->whereKey((int) $parentId)
+            ->value('id');
+
+        if (! is_numeric($resolvedParentId)) {
+            return null;
+        }
+
+        return (int) $resolvedParentId === (int) $record->getKey()
+            ? null
+            : (int) $resolvedParentId;
     }
 
     /**

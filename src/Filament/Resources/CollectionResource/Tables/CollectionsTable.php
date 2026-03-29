@@ -40,6 +40,9 @@ class CollectionsTable
                 IconColumn::make('dated')
                     ->label('Datovaný')
                     ->boolean(),
+                IconColumn::make('hierarchical')
+                    ->label('Hierarchie')
+                    ->boolean(),
                 TextColumn::make('entries_count')
                     ->label('Záznamů')
                     ->counts('entries')

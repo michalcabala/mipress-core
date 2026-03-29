@@ -25,6 +25,7 @@ class Collection extends Model
         'route',
         'dated',
         'slugs',
+        'hierarchical',
         'sort_direction',
         'sort_order',
     ];
@@ -32,6 +33,7 @@ class Collection extends Model
     protected $casts = [
         'dated' => 'boolean',
         'slugs' => 'boolean',
+        'hierarchical' => 'boolean',
         'sort_order' => 'integer',
     ];
 

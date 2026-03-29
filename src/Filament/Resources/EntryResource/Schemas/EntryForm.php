@@ -333,6 +333,15 @@ class EntryForm
                         Section::make('Nastavení')
                             ->icon('heroicon-o-cog-6-tooth')
                             ->schema([
+                                Select::make('parent_id')
+                                    ->label('Nadřazená položka')
+                                    ->options(fn (): array => self::getParentOptions($collection, $record))
+                                    ->searchable()
+                                    ->preload()
+                                    ->native(false)
+                                    ->nullable()
+                                    ->visible(fn (): bool => self::supportsHierarchy($collection, $record))
+                                    ->helperText('Použijte pro podstránky v hierarchických sekcích.'),
                                 DateTimePicker::make('published_at')
                                     ->label('Datum publikování')
                                     ->nullable()
@@ -382,6 +391,44 @@ class EntryForm
         }
 
         return EntryResource::getCurrentCollection();
+    }
+
+    private static function supportsHierarchy(?Collection $collection, ?Entry $record): bool
+    {
+        if ($collection instanceof Collection) {
+            return (bool) $collection->hierarchical;
+        }
+
+        if ($record instanceof Entry) {
+            return (bool) $record->collection?->hierarchical;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function getParentOptions(?Collection $collection, ?Entry $record): array
+    {
+        $collectionId = $collection?->getKey() ?: $record?->collection_id;
+
+        if (! $collectionId) {
+            return [];
+        }
+
+        $query = Entry::query()
+            ->where('collection_id', $collectionId)
+            ->orderBy('title');
+
+        if ($record instanceof Entry) {
+            $query->whereKeyNot($record->getKey());
+        }
+
+        return $query
+            ->get(['id', 'title'])
+            ->pluck('title', 'id')
+            ->all();
     }
 
     private static function renderStatusOverview(Entry $record): HtmlString
