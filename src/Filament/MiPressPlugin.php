@@ -8,6 +8,7 @@ use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\View\PanelsIconAlias;
+use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
 use MiPress\Core\Filament\Resources\EntryResource;
@@ -27,12 +28,16 @@ class MiPressPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->resources([
-            UserResource::class,
-            BlueprintResource::class,
-            CollectionResource::class,
-            EntryResource::class,
-        ]);
+        $panel
+            ->resources([
+                UserResource::class,
+                BlueprintResource::class,
+                CollectionResource::class,
+                EntryResource::class,
+            ])
+            ->pages([
+                ThemeSettings::class,
+            ]);
     }
 
     public function boot(Panel $panel): void
