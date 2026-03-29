@@ -29,6 +29,7 @@ class MiPressServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'mipress');
+        $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 
         $this->app->make(ThemeManager::class)->registerViews();
 
