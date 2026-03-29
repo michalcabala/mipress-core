@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Tables;
 
+use App\Models\User;
 use Awcodes\Curator\Components\Tables\CuratorColumn;
+use Filament\Forms\Components\DatePicker;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -16,16 +18,21 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Livewire\Component;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Setting;
 
 class EntriesTable
 {
-    private const string HOMEPAGE_SETTING_KEY = 'site.homepage_entry_id';
+    private const HOMEPAGE_SETTING_KEY = 'site.homepage_entry_id';
 
     public static function table(Table $table): Table
     {
@@ -68,6 +75,43 @@ class EntriesTable
             ])
             ->defaultSort('updated_at', 'desc')
             ->filters([
+                SelectFilter::make('author_id')
+                    ->label('Autor')
+                    ->options(fn (): array => static::getAuthorFilterOptions())
+                    ->searchable(),
+                Filter::make('created_at_range')
+                    ->label('Datum vytvoření')
+                    ->schema([
+                        DatePicker::make('from')->label('Od'),
+                        DatePicker::make('until')->label('Do'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                filled($data['from'] ?? null),
+                                fn (Builder $q): Builder => $q->whereDate('created_at', '>=', $data['from']),
+                            )
+                            ->when(
+                                filled($data['until'] ?? null),
+                                fn (Builder $q): Builder => $q->whereDate('created_at', '<=', $data['until']),
+                            );
+                    }),
+                SelectFilter::make('created_month')
+                    ->label('Měsíc')
+                    ->options(fn (): array => static::getCreatedMonthOptions())
+                    ->query(function (Builder $query, array $data): Builder {
+                        $value = $data['value'] ?? null;
+
+                        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}$/', $value)) {
+                            return $query;
+                        }
+
+                        [$year, $month] = explode('-', $value);
+
+                        return $query
+                            ->whereYear('created_at', (int) $year)
+                            ->whereMonth('created_at', (int) $month);
+                    }),
                 TrashedFilter::make(),
             ])
             ->actions([
@@ -148,5 +192,70 @@ class EntriesTable
     private static function isInPagesCollection(Component $livewire): bool
     {
         return property_exists($livewire, 'collectionHandle') && $livewire->collectionHandle === 'pages';
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function getAuthorFilterOptions(): array
+    {
+        $collection = EntryResource::getCurrentCollection();
+
+        $authorIds = Entry::query()
+            ->when(
+                $collection,
+                fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
+            )
+            ->whereNotNull('author_id')
+            ->distinct()
+            ->pluck('author_id')
+            ->filter();
+
+        if ($authorIds->isEmpty()) {
+            return [];
+        }
+
+        return User::query()
+            ->whereIn('id', $authorIds)
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function getCreatedMonthOptions(): array
+    {
+        $collection = EntryResource::getCurrentCollection();
+
+        $entries = Entry::query()
+            ->when(
+                $collection,
+                fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
+            )
+            ->whereNotNull('created_at')
+            ->orderByDesc('created_at')
+            ->get(['created_at']);
+
+        $values = $entries
+            ->map(fn (Entry $entry): ?string => $entry->created_at?->format('Y-m'))
+            ->filter(fn (?string $value): bool => filled($value))
+            ->unique()
+            ->values();
+
+        $options = [];
+
+        foreach ($values as $value) {
+            try {
+                $date = Carbon::createFromFormat('Y-m', $value);
+                $date->locale('cs_CZ');
+                $options[$value] = (string) str($date->translatedFormat('F Y'))->ucfirst();
+            } catch (\Throwable) {
+                $options[$value] = $value;
+            }
+        }
+
+        return $options;
     }
 }

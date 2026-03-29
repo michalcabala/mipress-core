@@ -53,7 +53,7 @@ class MiPressPlugin implements Plugin
     public function boot(Panel $panel): void
     {
         Table::configureUsing(function (Table $table): void {
-            $table->striped()->stackedOnMobile();
+            $table->striped()->stackedOnMobile()->deferLoading();
         });
 
         FilamentIcon::register([

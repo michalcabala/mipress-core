@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EntryController extends Controller
 {
-    private const string HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
+    private const HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
 
     public function home(): View
     {

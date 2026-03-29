@@ -8,7 +8,6 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Livewire\Attributes\Url;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 
@@ -16,22 +15,32 @@ class ListEntries extends ListRecords
 {
     protected static string $resource = EntryResource::class;
 
-    #[Url(as: 'collection')]
     public string $collectionHandle = '';
+
+    private bool $hasResolvedCollection = false;
+
+    private ?Collection $resolvedCollection = null;
+
+    public function mount(?string $collection = null): void
+    {
+        if (blank($this->collectionHandle)) {
+            $this->collectionHandle = $collection ?: (string) request()->query('collection', '');
+        }
+
+        parent::mount();
+    }
 
     public function table(Table $table): Table
     {
         return parent::table($table)
             ->modifyQueryUsing(function (Builder $query): void {
-                if (blank($this->collectionHandle)) {
+                $collection = $this->resolveCollection();
+
+                if (! $collection) {
                     return;
                 }
 
-                $collection = Collection::where('handle', $this->collectionHandle)->first();
-
-                if ($collection) {
-                    $query->where('collection_id', $collection->id);
-                }
+                $query->where('collection_id', $collection->id);
             });
     }
 
@@ -47,6 +56,29 @@ class ListEntries extends ListRecords
 
     public function getTitle(): string
     {
-        return EntryResource::getCurrentCollection()?->name ?? 'Položky';
+        return $this->resolveCollection()?->name ?? 'Položky';
+    }
+
+    private function resolveCollection(): ?Collection
+    {
+        if ($this->hasResolvedCollection) {
+            return $this->resolvedCollection;
+        }
+
+        $this->hasResolvedCollection = true;
+
+        $this->resolvedCollection = EntryResource::getCurrentCollection();
+
+        if ($this->resolvedCollection) {
+            return $this->resolvedCollection;
+        }
+
+        if (blank($this->collectionHandle)) {
+            return null;
+        }
+
+        $this->resolvedCollection = Collection::where('handle', $this->collectionHandle)->first();
+
+        return $this->resolvedCollection;
     }
 }

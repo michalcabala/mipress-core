@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Policies;
 
 use App\Models\User;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Models\Entry;
 
@@ -28,7 +29,11 @@ class EntryPolicy
     public function update(User $user, Entry $entry): bool
     {
         if ($user->hasRole(UserRole::Contributor->value)) {
-            return $entry->author_id === $user->id;
+            if ($entry->author_id !== $user->id) {
+                return false;
+            }
+
+            return in_array($entry->status, [EntryStatus::Draft, EntryStatus::Rejected, EntryStatus::InReview, EntryStatus::Published], true);
         }
 
         return $user->hasPermissionTo('entry.update');
@@ -36,11 +41,19 @@ class EntryPolicy
 
     public function delete(User $user, Entry $entry): bool
     {
+        if ($entry->status === EntryStatus::Published && ! $user->hasPermissionTo('entry.publish')) {
+            return false;
+        }
+
         return $user->hasPermissionTo('entry.delete');
     }
 
     public function restore(User $user, Entry $entry): bool
     {
+        if ($entry->status === EntryStatus::Published && ! $user->hasPermissionTo('entry.publish')) {
+            return false;
+        }
+
         return $user->hasPermissionTo('entry.delete');
     }
 

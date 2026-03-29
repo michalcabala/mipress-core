@@ -11,7 +11,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use MiPress\Core\Enums\UserRole;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryHistory;
@@ -43,20 +43,45 @@ class EntryResource extends Resource
 
         $collections ??= Collection::ordered()->get();
 
+        $inReviewCounts = [];
+
+        if (static::shouldShowInReviewBadges()) {
+            $inReviewCounts = Entry::query()
+                ->where('status', EntryStatus::InReview)
+                ->selectRaw('collection_id, COUNT(*) as aggregate')
+                ->groupBy('collection_id')
+                ->pluck('aggregate', 'collection_id')
+                ->map(fn (mixed $count): int => (int) $count)
+                ->all();
+        }
+
         return $collections
             ->map(fn (Collection $collection) => NavigationItem::make($collection->name)
                 ->icon($collection->icon ?? 'heroicon-o-document')
                 ->group('Obsah')
                 ->sort($collection->sort_order)
                 ->url(static::getUrl('index', ['collection' => $collection->handle]))
-                ->isActiveWhen(fn () => request()->query('collection') === $collection->handle)
+                ->isActiveWhen(fn () => static::getCurrentCollection()?->handle === $collection->handle)
+                ->badge(
+                    ($inReviewCounts[$collection->id] ?? 0) > 0 ? (string) ($inReviewCounts[$collection->id] ?? 0) : null,
+                    'warning',
+                )
             )
             ->toArray();
     }
 
+    private static function shouldShowInReviewBadges(): bool
+    {
+        return auth()->user()?->hasPermissionTo('entry.publish') === true;
+    }
+
     public static function getCurrentCollection(): ?Collection
     {
-        $handle = request()->query('collection');
+        $routeHandle = request()->route('collection');
+        $queryHandle = request()->query('collection');
+        $handle = is_string($routeHandle) && filled($routeHandle)
+            ? $routeHandle
+            : (is_string($queryHandle) ? $queryHandle : null);
 
         if (! $handle) {
             return null;
@@ -129,8 +154,8 @@ class EntryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListEntries::route('/'),
-            'create' => CreateEntry::route('/create'),
+            'create' => CreateEntry::route('/{collection?}/create'),
+            'index' => ListEntries::route('/{collection?}'),
             'edit' => EditEntry::route('/{record}/edit'),
             'history' => EntryHistory::route('/{record}/history'),
         ];

@@ -60,11 +60,25 @@ class EntryForm
         $record = $schema->getRecord();
         $isEdit = $record instanceof Entry;
 
-        $components = [
+        $components = [];
+
+        if ($isEdit && $record instanceof Entry) {
+            $components[] = Section::make()
+                ->compact()
+                ->schema([
+                    Placeholder::make('status_overview')
+                        ->hiddenLabel()
+                        ->content(fn (): HtmlString => self::renderStatusOverview($record)),
+                ]);
+        }
+
+        $components[] =
             Grid::make([
                 'default' => 1,
                 'lg' => 4,
-            ])->columnSpanFull()->schema([
+            ])->columnSpanFull()
+                ->disabled(fn (): bool => $record instanceof Entry ? self::isReadOnlyForCurrentUser($record) : false)
+                ->schema([
                 Grid::make(1)
                     ->columnSpan(['default' => 1, 'lg' => 3])
                     ->schema([
@@ -116,7 +130,7 @@ class EntryForm
                     ->columnSpan(['default' => 1, 'lg' => 1])
                     ->schema([
                         Section::make('Workflow')
-                            ->visible($isEdit)
+                            ->visible(false)
                             ->schema([
                                 Actions::make([
                                     Action::make('saveAndPublish')
@@ -231,7 +245,7 @@ class EntryForm
                                             AuditLog::logStatusChange($record, EntryStatus::Rejected, $oldStatus, $data['reason']);
                                             Notification::make()->title('Položka zamítnuta')->warning()->send();
                                         }),
-                                ])->fullWidth(),
+                                ])->fullWidth()->visible(false),
 
                                 Actions::make([
                                     Action::make('moveToTrash')
@@ -322,7 +336,9 @@ class EntryForm
                                 DateTimePicker::make('published_at')
                                     ->label('Datum publikování')
                                     ->nullable()
-                                    ->visible(fn (): bool => (bool) auth()->user()?->can('entry.publish')),
+                                    ->visible(fn (): bool => true)
+                                    ->disabled(fn (): bool => ! ((bool) auth()->user()?->can('entry.publish')))
+                                    ->helperText('Prázdné = publikovat ihned, budoucnost = naplánovat publikaci.'),
                                 Select::make('author_id')
                                     ->label('Autor')
                                     ->relationship('author', 'name')
@@ -336,8 +352,7 @@ class EntryForm
                                     ->default(0),
                             ]),
                     ]),
-            ]),
-        ];
+                ]);
 
         if ($collection) {
             $components[] = Hidden::make('collection_id')
@@ -367,6 +382,63 @@ class EntryForm
         }
 
         return EntryResource::getCurrentCollection();
+    }
+
+    private static function renderStatusOverview(Entry $record): HtmlString
+    {
+        $badgeColor = match ($record->status) {
+            EntryStatus::Draft => '#6b7280',
+            EntryStatus::InReview => '#d97706',
+            EntryStatus::Published => '#16a34a',
+            EntryStatus::Scheduled => '#2563eb',
+            EntryStatus::Rejected => '#dc2626',
+        };
+
+        $label = e($record->status->getLabel());
+        $meta = self::renderStatusMeta($record);
+
+        return new HtmlString(
+            '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;">'
+            .'<span style="display:inline-flex;align-items:center;border-radius:9999px;padding:4px 10px;font-size:12px;font-weight:600;background:'.$badgeColor.';color:#fff;">'.$label.'</span>'
+            .'<div style="font-size:14px;line-height:1.5;color:#374151;">'.$meta.'</div>'
+            .'</div>'
+        );
+    }
+
+    private static function renderStatusMeta(Entry $record): string
+    {
+        $statusLog = AuditLog::query()
+            ->with('user')
+            ->where('auditable_type', $record->getMorphClass())
+            ->where('auditable_id', $record->getKey())
+            ->where('action', 'status_changed')
+            ->where('new_values->status', $record->status->value)
+            ->latest('created_at')
+            ->first();
+
+        $actor = e($statusLog?->user?->name ?? 'Systém');
+        $date = e($statusLog?->created_at?->format('j. n. Y H:i') ?? '—');
+
+        return match ($record->status) {
+            EntryStatus::Published => 'Publikováno · schválil '.$actor.' · '.$date,
+            EntryStatus::Rejected => 'Zamítnuto · zamítl '.$actor.' · '.$date.'<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
+            EntryStatus::Scheduled => 'Naplánováno na '.e($record->published_at?->format('j. n. Y H:i') ?? '—').' · naplánoval '.$actor,
+            EntryStatus::InReview => 'Odesláno ke schválení · odeslal '.$actor.' · '.$date,
+            default => '',
+        };
+    }
+
+    private static function isReadOnlyForCurrentUser(Entry $record): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return true;
+        }
+
+        return $user->hasRole('contributor')
+            && (int) $record->author_id === (int) $user->getKey()
+            && $record->status === EntryStatus::InReview;
     }
 
     /**

@@ -12,11 +12,11 @@ use MiPress\Core\Models\Setting;
 
 class ThemeManager
 {
-    private const string CACHE_KEY = 'mipress.theme.active';
+    private const CACHE_KEY = 'mipress.theme.active';
 
-    private const string SETTING_KEY = 'theme.active';
+    private const SETTING_KEY = 'theme.active';
 
-    public const string DEFAULT_THEME = 'default';
+    public const DEFAULT_THEME = 'default';
 
     public function __construct(private readonly string $themesPath) {}
 
