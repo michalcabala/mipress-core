@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\UserResource\Tables;
 
 use App\Models\User;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -93,14 +94,16 @@ class UsersTable
                 TrashedFilter::make(),
             ])
             ->actions([
-                EditAction::make()
-                    ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && UserResource::canEdit($record)),
-                DeleteAction::make()
-                    ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && ! $record->isSuperAdmin()),
-                RestoreAction::make()
-                    ->visible(fn (User $record): bool => self::canManageUsers() && $record->trashed()),
-                ForceDeleteAction::make()
-                    ->visible(fn (User $record): bool => self::canManageUsers() && $record->trashed() && ! $record->isSuperAdmin()),
+                ActionGroup::make([
+                    EditAction::make()
+                        ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && UserResource::canEdit($record)),
+                    DeleteAction::make()
+                        ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && ! $record->isSuperAdmin()),
+                    RestoreAction::make()
+                        ->visible(fn (User $record): bool => self::canManageUsers() && $record->trashed()),
+                    ForceDeleteAction::make()
+                        ->visible(fn (User $record): bool => self::canManageUsers() && $record->trashed() && ! $record->isSuperAdmin()),
+                ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

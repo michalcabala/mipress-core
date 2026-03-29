@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\CollectionResource\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -49,8 +50,10 @@ class CollectionsTable
             ])
             ->defaultSort('sort_order')
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                ActionGroup::make([
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

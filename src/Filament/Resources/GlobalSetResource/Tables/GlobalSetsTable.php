@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\GlobalSetResource\Tables;
 
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
@@ -35,8 +36,10 @@ class GlobalSetsTable
             ])
             ->defaultSort('title')
             ->actions([
-                EditAction::make(),
-                DeleteAction::make(),
+                ActionGroup::make([
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]),
             ]);
     }
 }
