@@ -12,8 +12,10 @@ use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Schema;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Page;
 
 class CreateEntry extends CreateRecord
 {
@@ -27,6 +29,12 @@ class CreateEntry extends CreateRecord
     {
         if (blank($this->collectionHandle)) {
             $this->collectionHandle = $collection ?: (string) request()->query('collection', '');
+        }
+
+        if (static::$resource === EntryResource::class && $this->collectionHandle === Page::COLLECTION_HANDLE) {
+            $this->redirect(PageResource::getUrl('create'), navigate: true);
+
+            return;
         }
 
         parent::mount();

@@ -18,4 +18,14 @@ class CreatePage extends CreateEntry
     {
         parent::mount(Page::COLLECTION_HANDLE);
     }
+
+    public function getTitle(): string
+    {
+        return 'Nová stránka';
+    }
+
+    protected function getRedirectUrl(): string
+    {
+        return static::$resource::getUrl('index');
+    }
 }
