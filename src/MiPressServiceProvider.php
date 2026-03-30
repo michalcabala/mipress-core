@@ -13,6 +13,7 @@ use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\GlobalSet;
+use MiPress\Core\Models\Page;
 use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
 use MiPress\Core\Policies\EntryPolicy;
@@ -49,6 +50,7 @@ class MiPressServiceProvider extends ServiceProvider
         });
 
         Gate::policy(Entry::class, EntryPolicy::class);
+        Gate::policy(Page::class, EntryPolicy::class);
         Gate::policy(Collection::class, CollectionPolicy::class);
         Gate::policy(Blueprint::class, BlueprintPolicy::class);
         Gate::policy(GlobalSet::class, GlobalSetPolicy::class);

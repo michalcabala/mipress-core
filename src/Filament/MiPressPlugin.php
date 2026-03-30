@@ -16,6 +16,7 @@ use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Resources\GlobalSetResource;
+use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Resources\UserResource;
 
 class MiPressPlugin implements Plugin
@@ -42,6 +43,7 @@ class MiPressPlugin implements Plugin
                 UserResource::class,
                 BlueprintResource::class,
                 CollectionResource::class,
+                PageResource::class,
                 EntryResource::class,
                 GlobalSetResource::class,
             ])

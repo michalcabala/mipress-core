@@ -33,11 +33,13 @@ use MiPress\Core\Models\Setting;
 
 class EntriesTable
 {
-    private const HOMEPAGE_SETTING_KEY = 'site.homepage_entry_id';
+    private const HOMEPAGE_PAGE_SETTING_KEY = 'site.homepage_page_id';
+
+    private const LEGACY_HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
 
     public static function table(Table $table): Table
     {
-        $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
+        $homepageId = self::resolveHomepageId();
 
         return $table
             ->columns([
@@ -133,11 +135,12 @@ class EntriesTable
                         })
                         ->requiresConfirmation()
                         ->action(function (Entry $record): void {
-                            $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
+                            $homepageId = self::resolveHomepageId();
                             $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;
 
                             if ($isCurrentHomepage) {
-                                Setting::putValue(self::HOMEPAGE_SETTING_KEY, null);
+                                Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, null);
+                                Setting::putValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY, null);
 
                                 Notification::make()
                                     ->title('Homepage zrušena')
@@ -158,7 +161,7 @@ class EntriesTable
                                 return;
                             }
 
-                            Setting::putValue(self::HOMEPAGE_SETTING_KEY, (string) $record->getKey());
+                            Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, (string) $record->getKey());
 
                             Notification::make()
                                 ->title('Homepage nastavena')
@@ -189,6 +192,12 @@ class EntriesTable
     private static function isInPagesCollection(Component $livewire): bool
     {
         return property_exists($livewire, 'collectionHandle') && $livewire->collectionHandle === 'pages';
+    }
+
+    private static function resolveHomepageId(): ?string
+    {
+        return Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY)
+            ?? Setting::getValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY);
     }
 
     /**
