@@ -4,18 +4,23 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
-use MiPress\Core\Filament\Resources\EntryResource\Pages\ListEntries;
+use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
 use MiPress\Core\Filament\Resources\PageResource;
-use MiPress\Core\Models\Page;
 
-class ListPages extends ListEntries
+class ListPages extends ListRecords
 {
     protected static string $resource = PageResource::class;
 
-    public string $collectionHandle = Page::COLLECTION_HANDLE;
-
-    public function mount(?string $collection = null): void
+    protected function getHeaderActions(): array
     {
-        parent::mount(Page::COLLECTION_HANDLE);
+        return [
+            CreateAction::make(),
+        ];
+    }
+
+    public function getTitle(): string
+    {
+        return 'Stránky';
     }
 }

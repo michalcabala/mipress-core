@@ -5,6 +5,7 @@ declare(strict_types=1);
 use Illuminate\Support\Collection as SupportCollection;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Page;
 use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Theme\ThemeManager;
 
@@ -65,14 +66,14 @@ if (! function_exists('mipress_public_collections')) {
 }
 
 if (! function_exists('mipress_collection_archive_path')) {
-    function mipress_collection_archive_path(Collection $collection): ?string
+    function mipress_collection_archive_path(?Collection $collection): ?string
     {
-        return $collection->getArchivePath();
+        return $collection?->getArchivePath();
     }
 }
 
 if (! function_exists('mipress_entry_url')) {
-    function mipress_entry_url(Entry $entry): ?string
+    function mipress_entry_url(Entry|Page $entry): ?string
     {
         return $entry->getPublicUrl();
     }

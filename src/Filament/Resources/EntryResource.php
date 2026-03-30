@@ -38,7 +38,9 @@ class EntryResource extends Resource
 
     public static function getNavigationItems(): array
     {
-        $collections = Collection::ordered()->get();
+        $collections = Collection::ordered()
+            ->where('handle', '!=', 'pages')
+            ->get();
 
         $inReviewCounts = [];
 

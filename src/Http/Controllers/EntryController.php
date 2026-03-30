@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Illuminate\View\View;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -20,6 +21,12 @@ class EntryController extends Controller
 
     public function home(): View
     {
+        $page = $this->resolveHomepagePage();
+
+        if ($page instanceof Page) {
+            return $this->renderPage($page);
+        }
+
         $entry = $this->resolveHomepageEntry();
 
         if ($entry instanceof Entry) {
@@ -65,17 +72,36 @@ class EntryController extends Controller
 
         $entry = $this->resolveEntryFromPath($path);
 
-        if (! $entry instanceof Entry) {
-            abort(404);
+        if ($entry instanceof Entry) {
+            return $this->renderEntry($entry);
         }
 
-        return $this->renderEntry($entry);
+        $page = $this->resolvePageFromPath($path);
+
+        if ($page instanceof Page) {
+            return $this->renderPage($page);
+        }
+
+        abort(404);
+    }
+
+    private function resolveHomepagePage(): ?Page
+    {
+        $homepagePageId = Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY);
+
+        if (! filled($homepagePageId)) {
+            return null;
+        }
+
+        return Page::query()
+            ->with(['blueprint', 'featuredImage'])
+            ->published()
+            ->find($homepagePageId);
     }
 
     private function resolveHomepageEntry(): ?Entry
     {
-        $homepageEntryId = Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY)
-            ?? Setting::getValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY);
+        $homepageEntryId = Setting::getValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY);
 
         if (! filled($homepageEntryId)) {
             return null;
@@ -119,6 +145,17 @@ class EntryController extends Controller
         return null;
     }
 
+    private function resolvePageFromPath(string $path): ?Page
+    {
+        $slug = ltrim($path, '/');
+
+        return Page::query()
+            ->with(['blueprint', 'featuredImage'])
+            ->published()
+            ->where('slug', $slug)
+            ->first();
+    }
+
     private function renderEntry(Entry $entry): View
     {
         $entry->loadMissing(['collection', 'blueprint', 'featuredImage']);
@@ -139,6 +176,20 @@ class EntryController extends Controller
             ->get();
 
         return view($viewName, compact('entry', 'collection', 'relatedEntries'));
+    }
+
+    private function renderPage(Page $page): View
+    {
+        $page->loadMissing(['blueprint', 'featuredImage']);
+
+        $viewName = view()->exists('entries.page') ? 'entries.page' : 'welcome';
+
+        return view($viewName, [
+            'entry' => $page,
+            'page' => $page,
+            'collection' => null,
+            'relatedEntries' => collect(),
+        ]);
     }
 
     private function resolveThemeFilePath(string $theme, string $path): ?string

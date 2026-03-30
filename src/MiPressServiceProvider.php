@@ -18,6 +18,7 @@ use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
 use MiPress\Core\Policies\EntryPolicy;
 use MiPress\Core\Policies\GlobalSetPolicy;
+use MiPress\Core\Policies\PagePolicy;
 use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Theme\ThemeManager;
 
@@ -50,7 +51,7 @@ class MiPressServiceProvider extends ServiceProvider
         });
 
         Gate::policy(Entry::class, EntryPolicy::class);
-        Gate::policy(Page::class, EntryPolicy::class);
+        Gate::policy(Page::class, PagePolicy::class);
         Gate::policy(Collection::class, CollectionPolicy::class);
         Gate::policy(Blueprint::class, BlueprintPolicy::class);
         Gate::policy(GlobalSet::class, GlobalSetPolicy::class);

@@ -10,12 +10,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Filament\Resources\EntryResource\RelationManagers\AuditLogsRelationManager;
-use MiPress\Core\Filament\Resources\EntryResource\Schemas\EntryForm;
-use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
 use MiPress\Core\Filament\Resources\PageResource\Pages\CreatePage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\EditPage;
-use MiPress\Core\Filament\Resources\PageResource\Pages\PageHistory;
 use MiPress\Core\Filament\Resources\PageResource\Pages\ListPages;
+use MiPress\Core\Filament\Resources\PageResource\Pages\PageHistory;
+use MiPress\Core\Filament\Resources\PageResource\Schemas\PageForm;
+use MiPress\Core\Filament\Resources\PageResource\Tables\PagesTable;
 use MiPress\Core\Models\Page;
 
 class PageResource extends Resource
@@ -48,12 +48,12 @@ class PageResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return EntryForm::configure($schema);
+        return PageForm::configure($schema);
     }
 
     public static function table(Table $table): Table
     {
-        return EntriesTable::table($table);
+        return PagesTable::table($table);
     }
 
     public static function getRelationManagers(): array

@@ -14,29 +14,14 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
-use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Entry;
-use MiPress\Core\Models\Page;
 
 class EditEntry extends EditRecord
 {
     protected static string $resource = EntryResource::class;
 
     protected Width|string|null $maxWidth = Width::Full;
-
-    public function mount(int|string $record): void
-    {
-        parent::mount($record);
-
-        if (
-            static::$resource === EntryResource::class
-            && $this->record instanceof Entry
-            && $this->record->collection?->handle === Page::COLLECTION_HANDLE
-        ) {
-            $this->redirect(PageResource::getUrl('edit', ['record' => $this->record]), navigate: true);
-        }
-    }
 
     protected function getFormActions(): array
     {

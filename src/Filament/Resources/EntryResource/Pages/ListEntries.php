@@ -9,9 +9,7 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Filament\Resources\EntryResource;
-use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Collection;
-use MiPress\Core\Models\Page;
 
 class ListEntries extends ListRecords
 {
@@ -27,12 +25,6 @@ class ListEntries extends ListRecords
     {
         if (blank($this->collectionHandle)) {
             $this->collectionHandle = $collection ?: (string) request()->query('collection', '');
-        }
-
-        if (static::$resource === EntryResource::class && $this->collectionHandle === Page::COLLECTION_HANDLE) {
-            $this->redirect(PageResource::getUrl('index'), navigate: true);
-
-            return;
         }
 
         parent::mount();
