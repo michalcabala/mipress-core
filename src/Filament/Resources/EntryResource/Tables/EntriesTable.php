@@ -37,6 +37,8 @@ class EntriesTable
 
     public static function table(Table $table): Table
     {
+        $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
+
         return $table
             ->columns([
                 CuratorColumn::make('featuredImage')
@@ -46,12 +48,10 @@ class EntriesTable
                     ->label('Titulek')
                     ->searchable()
                     ->sortable()
-                    ->description(function (Entry $record, Component $livewire): ?string {
+                    ->description(function (Entry $record, Component $livewire) use ($homepageId): ?string {
                         if (! static::isInPagesCollection($livewire)) {
                             return null;
                         }
-
-                        $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
 
                         return ((string) $record->getKey()) === $homepageId ? 'Domovská stránka' : null;
                     }),
@@ -118,23 +118,17 @@ class EntriesTable
             ->actions([
                 ActionGroup::make([
                     Action::make('toggleHomepage')
-                        ->label(function (Entry $record): string {
-                            $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
-
+                        ->label(function (Entry $record) use ($homepageId): string {
                             return ((string) $record->getKey()) === $homepageId
                                 ? 'Zrušit homepage'
                                 : 'Nastavit jako homepage';
                         })
-                        ->icon(function (Entry $record): string {
-                            $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
-
+                        ->icon(function (Entry $record) use ($homepageId): string {
                             return ((string) $record->getKey()) === $homepageId
                                 ? 'fal-house-circle-xmark'
                                 : 'fal-house';
                         })
-                        ->color(function (Entry $record): string {
-                            $homepageId = Setting::getValue(self::HOMEPAGE_SETTING_KEY);
-
+                        ->color(function (Entry $record) use ($homepageId): string {
                             return ((string) $record->getKey()) === $homepageId ? 'danger' : 'gray';
                         })
                         ->requiresConfirmation()
