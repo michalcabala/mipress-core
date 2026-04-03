@@ -1,0 +1,66 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MiPress\Core\Jobs;
+
+use App\Models\User;
+use Awcodes\Curator\Models\Media;
+use Filament\Notifications\Notification;
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use MiPress\Core\Services\CurationGenerator;
+
+class RegenerateCurationsJob implements ShouldQueue
+{
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
+
+    /**
+     * @param  array<int>  $mediaIds
+     */
+    public function __construct(
+        public readonly array $mediaIds,
+        public readonly int $userId,
+    ) {}
+
+    public function handle(CurationGenerator $generator): void
+    {
+        $processed = 0;
+        $skipped = 0;
+
+        Media::whereIn('id', $this->mediaIds)
+            ->get()
+            ->each(function (Media $media) use ($generator, &$processed, &$skipped): void {
+                if ($generator->isRasterImage($media)) {
+                    $generator->regenerate($media);
+                    $processed++;
+                } else {
+                    $skipped++;
+                }
+            });
+
+        $recipient = User::find($this->userId);
+
+        if (! $recipient) {
+            return;
+        }
+
+        $body = "Přegenerováno: {$processed}";
+
+        if ($skipped > 0) {
+            $body .= ", přeskočeno (nerastr): {$skipped}";
+        }
+
+        Notification::make()
+            ->title('Ořezy byly přegenerovány')
+            ->body($body)
+            ->success()
+            ->sendToDatabase($recipient);
+    }
+}

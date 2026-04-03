@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MiPress\Core;
 
+use Awcodes\Curator\Config\CurationManager;
+use Awcodes\Curator\Curations\CurationPreset;
 use Awcodes\Curator\Models\Media;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -17,14 +19,15 @@ use MiPress\Core\Models\GlobalSet;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
+use MiPress\Core\Observers\MediaObserver;
 use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
 use MiPress\Core\Policies\EntryPolicy;
 use MiPress\Core\Policies\GlobalSetPolicy;
+use MiPress\Core\Policies\MediaPolicy;
 use MiPress\Core\Policies\PagePolicy;
 use MiPress\Core\Policies\TaxonomyPolicy;
 use MiPress\Core\Policies\TermPolicy;
-use MiPress\Core\Observers\MediaObserver;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSetManager;
@@ -64,6 +67,14 @@ class MiPressServiceProvider extends ServiceProvider
 
         Media::observe(MediaObserver::class);
 
+        app(CurationManager::class)->presets([
+            new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 150, height: 150, format: 'jpeg', quality: 85),
+            new CurationPreset(key: 'medium', label: 'Střední', width: 600, height: null, format: 'jpeg', quality: 85),
+            new CurationPreset(key: 'large', label: 'Velký', width: 1200, height: null, format: 'jpeg', quality: 85),
+            new CurationPreset(key: 'og', label: 'OG Image', width: 1200, height: 630, format: 'jpeg', quality: 85),
+        ]);
+
+        Gate::policy(Media::class, MediaPolicy::class);
         Gate::policy(Entry::class, EntryPolicy::class);
         Gate::policy(Page::class, PagePolicy::class);
         Gate::policy(Collection::class, CollectionPolicy::class);

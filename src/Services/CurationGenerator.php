@@ -19,8 +19,8 @@ class CurationGenerator
 
     private const UPLOAD_CURATIONS = [
         'thumbnail' => ['width' => 150, 'height' => 150, 'mode' => 'cover'],
-        'medium'    => ['width' => 600, 'height' => null, 'mode' => 'scale'],
-        'large'     => ['width' => 1200, 'height' => null, 'mode' => 'scale'],
+        'medium' => ['width' => 600, 'height' => null, 'mode' => 'scale'],
+        'large' => ['width' => 1200, 'height' => null, 'mode' => 'scale'],
     ];
 
     private const OG_CURATION = [
@@ -78,6 +78,39 @@ class CurationGenerator
         return ($media->width ?? 0) >= $width;
     }
 
+    public function deleteCurationFiles(Media $media): void
+    {
+        if (blank($media->curations)) {
+            return;
+        }
+
+        $storage = Storage::disk($media->disk);
+
+        foreach ($media->curations as $item) {
+            $path = $item['curation']['path'] ?? null;
+
+            if ($path && $storage->exists($path)) {
+                $storage->delete($path);
+            }
+        }
+    }
+
+    public function regenerate(Media $media): void
+    {
+        if (! $this->isRasterImage($media)) {
+            return;
+        }
+
+        $this->deleteCurationFiles($media);
+
+        $media->curations = null;
+        $media->saveQuietly();
+        $media->refresh();
+
+        $this->generateOnUpload($media);
+        $this->generateOg($media);
+    }
+
     private function generate(Media $media, string $key, int $width, ?int $height, string $mode): void
     {
         $storage = Storage::disk($media->disk);
@@ -104,18 +137,18 @@ class CurationGenerator
         $existing = $media->curations ?? [];
         $existing[] = [
             'curation' => [
-                'key'        => $key,
-                'disk'       => $media->disk,
-                'directory'  => $media->directory,
+                'key' => $key,
+                'disk' => $media->disk,
+                'directory' => $media->directory,
                 'visibility' => $media->visibility,
-                'name'       => $media->name.'-'.$key.'.'.$media->ext,
-                'path'       => $curationPath,
-                'width'      => $curationWidth,
-                'height'     => $curationHeight,
-                'size'       => $storage->size($curationPath),
-                'type'       => $encodedImage->mediaType(),
-                'ext'        => $media->ext,
-                'url'        => $storage->url($curationPath),
+                'name' => $media->name.'-'.$key.'.'.$media->ext,
+                'path' => $curationPath,
+                'width' => $curationWidth,
+                'height' => $curationHeight,
+                'size' => $storage->size($curationPath),
+                'type' => $encodedImage->mediaType(),
+                'ext' => $media->ext,
+                'url' => $storage->url($curationPath),
             ],
         ];
 
