@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Openplain\FilamentTreeView\Concerns\HasTreeStructure;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Term extends Model
 {
-    use HasFactory, HasSlug;
+    use HasFactory, HasSlug, HasTreeStructure;
 
     protected $table = 'terms';
 
@@ -94,5 +95,10 @@ class Term extends Model
     public function scopeOriginals(Builder $query): Builder
     {
         return $query->whereNull('origin_id');
+    }
+
+    public function getOrderKeyName(): string
+    {
+        return 'sort_order';
     }
 }

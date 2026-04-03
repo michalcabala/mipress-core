@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources;
 
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Navigation\NavigationItem;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -16,6 +18,8 @@ use MiPress\Core\Filament\Resources\TermResource\Schemas\TermForm;
 use MiPress\Core\Filament\Resources\TermResource\Tables\TermsTable;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
+use Openplain\FilamentTreeView\Fields\TextField;
+use Openplain\FilamentTreeView\Tree;
 
 class TermResource extends Resource
 {
@@ -95,6 +99,21 @@ class TermResource extends Resource
     public static function table(Table $table): Table
     {
         return TermsTable::table($table);
+    }
+
+    public static function tree(Tree $tree): Tree
+    {
+        return $tree
+            ->fields([
+                TextField::make('title'),
+                TextField::make('slug')
+                    ->color('gray'),
+            ])
+            ->recordActions([
+                EditAction::make()
+                    ->url(fn (Term $record): string => static::getUrl('edit', ['record' => $record])),
+                DeleteAction::make(),
+            ]);
     }
 
     public static function getPages(): array

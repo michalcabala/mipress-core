@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace MiPress\Core\Models;
 
 use App\Models\User;
+use Awcodes\Curator\Models\Media;
 use Awcodes\Mason\Support\MasonRenderer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\PageFactory;
 use MiPress\Core\Enums\EntryStatus;
@@ -20,12 +20,13 @@ use MiPress\Core\Traits\Auditable;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
 use MiPress\Core\Traits\HasWorkflow;
+use Openplain\FilamentTreeView\Concerns\HasTreeStructure;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Page extends Model
 {
-    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
+    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasTreeStructure, HasWorkflow, SoftDeletes;
 
     protected $table = 'pages';
 
@@ -103,7 +104,7 @@ class Page extends Model
 
     public function featuredImage(): BelongsTo
     {
-        return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'featured_image_id');
+        return $this->belongsTo(Media::class, 'featured_image_id');
     }
 
     public function origin(): BelongsTo
@@ -137,7 +138,12 @@ class Page extends Model
             return null;
         }
 
-        return '/' . $this->slug;
+        return '/'.$this->slug;
+    }
+
+    public function getOrderKeyName(): string
+    {
+        return 'sort_order';
     }
 
     /**
