@@ -73,6 +73,14 @@ class CurationGenerator
         return in_array($media->type, self::RASTER_MIME_TYPES, true);
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public function rasterMimeTypes(): array
+    {
+        return self::RASTER_MIME_TYPES;
+    }
+
     public function shouldGenerate(Media $media, string $key, int $width): bool
     {
         return ($media->width ?? 0) >= $width;

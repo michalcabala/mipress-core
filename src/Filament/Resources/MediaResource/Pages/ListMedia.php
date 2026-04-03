@@ -23,14 +23,16 @@ class ListMedia extends BaseListMedia
                 ->label('Přegenerovat vše')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn (): bool => Filament::auth()->user()?->hasPermissionTo('media.update') ?? false)
-                ->authorize(fn (): bool => Filament::auth()->user()?->hasPermissionTo('media.update') ?? false)
+                ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateAllCurations', Media::class) ?? false)
+                ->authorize(fn (): bool => Filament::auth()->user()?->can('regenerateAllCurations', Media::class) ?? false)
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat všechny ořezy')
                 ->modalDescription('Přegeneruje miniaturní ořezy pro všechny rastrové obrázky v knihovně médií. Pro velký počet souborů bude zpracování probíhat na pozadí.')
                 ->modalSubmitActionLabel('Přegenerovat vše')
                 ->action(function (): void {
-                    $ids = Media::whereIn('type', ['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+                    $generator = app(CurationGenerator::class);
+
+                    $ids = Media::whereIn('type', $generator->rasterMimeTypes())
                         ->pluck('id')
                         ->all();
 
@@ -43,10 +45,9 @@ class ListMedia extends BaseListMedia
                         return;
                     }
 
-                    $userId = auth()->id();
+                    $userId = Filament::auth()->id();
 
                     if (count($ids) <= 10) {
-                        $generator = app(CurationGenerator::class);
                         $processed = 0;
 
                         Media::whereIn('id', $ids)->get()->each(

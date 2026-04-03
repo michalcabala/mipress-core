@@ -44,6 +44,21 @@ class MediaPolicy
         return $user->hasPermissionTo('media.update');
     }
 
+    public function regenerateAllCurations(User $user): bool
+    {
+        return $this->regenerateCurations($user);
+    }
+
+    public function regenerateSelectedCurations(User $user): bool
+    {
+        return $this->regenerateCurations($user);
+    }
+
+    public function regenerateSingleCuration(User $user, Media $media): bool
+    {
+        return $this->regenerateCurations($user);
+    }
+
     public function deleteAny(User $user): bool
     {
         return $user->hasPermissionTo('media.delete');
