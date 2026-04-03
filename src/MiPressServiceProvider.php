@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core;
 
+use Awcodes\Curator\Models\Media;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
@@ -23,8 +24,11 @@ use MiPress\Core\Policies\GlobalSetPolicy;
 use MiPress\Core\Policies\PagePolicy;
 use MiPress\Core\Policies\TaxonomyPolicy;
 use MiPress\Core\Policies\TermPolicy;
+use MiPress\Core\Observers\MediaObserver;
 use MiPress\Core\Services\BlueprintFieldResolver;
+use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSetManager;
+use MiPress\Core\Services\MediaPathGenerator;
 use MiPress\Core\Theme\ThemeManager;
 
 class MiPressServiceProvider extends ServiceProvider
@@ -37,6 +41,8 @@ class MiPressServiceProvider extends ServiceProvider
 
         $this->app->singleton(GlobalSetManager::class);
         $this->app->singleton(BlueprintFieldResolver::class);
+        $this->app->singleton(CurationGenerator::class);
+        $this->app->singleton(MediaPathGenerator::class);
     }
 
     public function boot(): void
@@ -55,6 +61,8 @@ class MiPressServiceProvider extends ServiceProvider
                 }
             });
         });
+
+        Media::observe(MediaObserver::class);
 
         Gate::policy(Entry::class, EntryPolicy::class);
         Gate::policy(Page::class, PagePolicy::class);

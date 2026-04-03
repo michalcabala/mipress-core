@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Mason\EditorialBrickCollection;
+use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Traits\Auditable;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
@@ -72,6 +73,25 @@ class Entry extends Model
     protected static function newFactory(): EntryFactory
     {
         return EntryFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::saved(function (self $entry): void {
+            if (! $entry->og_image_id) {
+                return;
+            }
+
+            if (! $entry->wasChanged('og_image_id') && ! $entry->wasRecentlyCreated) {
+                return;
+            }
+
+            $media = $entry->ogImage()->first();
+
+            if ($media) {
+                app(CurationGenerator::class)->generateOg($media);
+            }
+        });
     }
 
     public function getSlugOptions(): SlugOptions
