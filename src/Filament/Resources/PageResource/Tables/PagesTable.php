@@ -33,6 +33,16 @@ class PagesTable
 {
     private const HOMEPAGE_PAGE_SETTING_KEY = 'site.homepage_page_id';
 
+    /**
+     * @var array<int, int>
+     */
+    private static array $pageDepthCache = [];
+
+    /**
+     * @var array<int, int|null>|null
+     */
+    private static ?array $pageParentMap = null;
+
     public static function table(Table $table): Table
     {
         $homepageId = Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY);
@@ -46,6 +56,7 @@ class PagesTable
                     ->label('Titulek')
                     ->searchable()
                     ->sortable()
+                    ->formatStateUsing(fn (Page $record): string => static::formatHierarchyTitle($record->title, static::getPageDepth($record)))
                     ->description(function (Page $record) use ($homepageId): ?string {
                         return ((string) $record->getKey()) === $homepageId ? 'Domovská stránka' : null;
                     }),
@@ -237,5 +248,60 @@ class PagesTable
         }
 
         return $options;
+    }
+
+    private static function formatHierarchyTitle(string $title, int $depth): string
+    {
+        if ($depth <= 0) {
+            return $title;
+        }
+
+        return str_repeat('|  ', $depth).'|- '.$title;
+    }
+
+    private static function getPageDepth(Page $record): int
+    {
+        $recordId = (int) $record->getKey();
+
+        if (array_key_exists($recordId, static::$pageDepthCache)) {
+            return static::$pageDepthCache[$recordId];
+        }
+
+        $parentMap = static::getPageParentMap();
+        $depth = 0;
+        $seen = [$recordId => true];
+        $currentParentId = $parentMap[$recordId] ?? null;
+
+        while ($currentParentId !== null) {
+            if (isset($seen[$currentParentId])) {
+                break;
+            }
+
+            $seen[$currentParentId] = true;
+            $depth++;
+            $currentParentId = $parentMap[$currentParentId] ?? null;
+        }
+
+        static::$pageDepthCache[$recordId] = $depth;
+
+        return $depth;
+    }
+
+    /**
+     * @return array<int, int|null>
+     */
+    private static function getPageParentMap(): array
+    {
+        if (static::$pageParentMap !== null) {
+            return static::$pageParentMap;
+        }
+
+        static::$pageParentMap = Page::query()
+            ->select(['id', 'parent_id'])
+            ->get()
+            ->mapWithKeys(fn (Page $page): array => [(int) $page->getKey() => $page->parent_id ? (int) $page->parent_id : null])
+            ->all();
+
+        return static::$pageParentMap;
     }
 }
