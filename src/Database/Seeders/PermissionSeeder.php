@@ -62,7 +62,6 @@ class PermissionSeeder extends Seeder
             'entry.update',
             'media.view',
             'media.upload',
-            'taxonomy.view',
         ],
     ];
 
