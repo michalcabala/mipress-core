@@ -73,7 +73,7 @@ class PagesTable
                     ->sortable()
                     ->toggleable(),
             ])
-            ->defaultSort('updated_at', 'desc')
+            ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->filters([
                 SelectFilter::make('author_id')
