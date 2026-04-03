@@ -10,6 +10,7 @@ use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Blueprint;
@@ -173,8 +174,37 @@ class CreatePage extends CreateRecord
 
         Notification::make()
             ->title('Nová stránka ke schválení')
-            ->body('Stránka "' . $record->title . '" čeká na schválení publikace.')
+            ->body('Stránka "'.$record->title.'" čeká na schválení publikace.')
             ->warning()
+            ->actions([
+                Action::make('approve')
+                    ->label('Schválit')
+                    ->button()
+                    ->color('success')
+                    ->url(
+                        PageResource::getUrl('edit', ['record' => $record]),
+                        shouldOpenInNewTab: true,
+                    )
+                    ->markAsRead(),
+                Action::make('view')
+                    ->label('Zobrazit')
+                    ->button()
+                    ->color('gray')
+                    ->url(
+                        URL::temporarySignedRoute('preview.page', now()->addHour(), ['page' => $record->getKey()]),
+                        shouldOpenInNewTab: true,
+                    )
+                    ->markAsRead(),
+                Action::make('edit')
+                    ->label('Upravit')
+                    ->button()
+                    ->color('primary')
+                    ->url(
+                        PageResource::getUrl('edit', ['record' => $record]),
+                        shouldOpenInNewTab: true,
+                    )
+                    ->markAsRead(),
+            ])
             ->sendToDatabase($approvers);
     }
 

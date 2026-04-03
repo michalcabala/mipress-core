@@ -591,6 +591,41 @@ class EditEntry extends EditRecord
             ->title('Nový obsah ke schválení')
             ->body('Položka "'.$record->title.'" čeká na schválení publikace.')
             ->warning()
+            ->actions([
+                Action::make('approve')
+                    ->label('Schválit')
+                    ->button()
+                    ->color('success')
+                    ->url(
+                        EntryResource::getUrl('edit', [
+                            'record' => $record,
+                            'collection' => $record->collection?->handle,
+                        ]),
+                        shouldOpenInNewTab: true,
+                    )
+                    ->markAsRead(),
+                Action::make('view')
+                    ->label('Zobrazit')
+                    ->button()
+                    ->color('gray')
+                    ->url(
+                        URL::temporarySignedRoute('preview.entry', now()->addHour(), ['entry' => $record->getKey()]),
+                        shouldOpenInNewTab: true,
+                    )
+                    ->markAsRead(),
+                Action::make('edit')
+                    ->label('Upravit')
+                    ->button()
+                    ->color('primary')
+                    ->url(
+                        EntryResource::getUrl('edit', [
+                            'record' => $record,
+                            'collection' => $record->collection?->handle,
+                        ]),
+                        shouldOpenInNewTab: true,
+                    )
+                    ->markAsRead(),
+            ])
             ->sendToDatabase($approvers);
     }
 }
