@@ -37,9 +37,11 @@ use Illuminate\Support\Str;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
+use CodeWithDennis\FilamentSelectTree\SelectTree;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Services\BlueprintFieldResolver;
 
@@ -511,16 +513,41 @@ class EntryForm
             return [];
         }
 
-        $fields = $taxonomies->map(function ($taxonomy) use ($record): Select {
+        $fields = $taxonomies->map(function (Taxonomy $taxonomy) use ($record): Select|SelectTree {
             $taxonomyId = $taxonomy->getKey();
+
+            if ($taxonomy->is_hierarchical) {
+                return SelectTree::make("taxonomy__{$taxonomyId}")
+                    ->label($taxonomy->title)
+                    ->query(
+                        fn () => Term::where('taxonomy_id', $taxonomyId)->ordered(),
+                        'title',
+                        'parent_id',
+                    )
+                    ->multiple()
+                    ->independent(false)
+                    ->expandSelected()
+                    ->enableBranchNode()
+                    ->searchable()
+                    ->parentNullValue(null)
+                    ->afterStateHydrated(function ($component) use ($record, $taxonomyId): void {
+                        if ($record instanceof Entry) {
+                            $ids = $record->terms()
+                                ->where('taxonomy_id', $taxonomyId)
+                                ->pluck('terms.id')
+                                ->all();
+                            $component->state($ids);
+                        }
+                    })
+                    ->dehydrated(false);
+            }
 
             return Select::make("taxonomy__{$taxonomyId}")
                 ->label($taxonomy->title)
                 ->multiple()
                 ->options(
                     Term::where('taxonomy_id', $taxonomyId)
-                        ->orderBy('sort_order')
-                        ->orderBy('title')
+                        ->ordered()
                         ->pluck('title', 'id')
                         ->toArray()
                 )

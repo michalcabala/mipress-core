@@ -19,6 +19,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -30,6 +31,8 @@ use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Setting;
+use MiPress\Core\Models\Taxonomy;
+use MiPress\Core\Models\Term;
 
 class EntriesTable
 {
@@ -120,6 +123,7 @@ class EntriesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
+                ...static::getTaxonomyFilters(),
                 TrashedFilter::make(),
             ])
             ->actions([
@@ -268,5 +272,108 @@ class EntriesTable
         }
 
         return $options;
+    }
+
+    /**
+     * @return array<int, Filter>
+     */
+    private static function getTaxonomyFilters(): array
+    {
+        $collection = EntryResource::getCurrentCollection();
+
+        if (! $collection) {
+            return [];
+        }
+
+        $taxonomies = $collection->taxonomies;
+
+        if ($taxonomies->isEmpty()) {
+            return [];
+        }
+
+        return $taxonomies->map(function (Taxonomy $taxonomy): Filter {
+            $taxonomyId = $taxonomy->getKey();
+
+            if ($taxonomy->is_hierarchical) {
+                return Filter::make("taxonomy_{$taxonomyId}")
+                    ->label($taxonomy->title)
+                    ->schema([
+                        SelectTree::make("term_ids_{$taxonomyId}")
+                            ->label($taxonomy->title)
+                            ->query(
+                                fn () => Term::where('taxonomy_id', $taxonomyId)->ordered(),
+                                'title',
+                                'parent_id',
+                            )
+                            ->multiple()
+                            ->enableBranchNode()
+                            ->independent(false)
+                            ->searchable()
+                            ->parentNullValue(null),
+                    ])
+                    ->query(function (Builder $query, array $data) use ($taxonomyId): Builder {
+                        $termIds = $data["term_ids_{$taxonomyId}"] ?? [];
+
+                        if (empty($termIds)) {
+                            return $query;
+                        }
+
+                        return $query->whereHas(
+                            'terms',
+                            fn (Builder $q): Builder => $q->whereIn('terms.id', $termIds)
+                                ->where('taxonomy_id', $taxonomyId),
+                        );
+                    })
+                    ->indicateUsing(function (array $data) use ($taxonomy, $taxonomyId): ?string {
+                        $termIds = $data["term_ids_{$taxonomyId}"] ?? [];
+
+                        if (empty($termIds)) {
+                            return null;
+                        }
+
+                        $names = Term::whereIn('id', $termIds)->pluck('title')->implode(', ');
+
+                        return $taxonomy->title.': '.$names;
+                    });
+            }
+
+            return Filter::make("taxonomy_{$taxonomyId}")
+                ->label($taxonomy->title)
+                ->schema([
+                    SelectFilter::make("term_ids_{$taxonomyId}")
+                        ->label($taxonomy->title)
+                        ->multiple()
+                        ->options(
+                            Term::where('taxonomy_id', $taxonomyId)
+                                ->ordered()
+                                ->pluck('title', 'id')
+                                ->toArray()
+                        ),
+                ])
+                ->query(function (Builder $query, array $data) use ($taxonomyId): Builder {
+                    $termIds = $data["term_ids_{$taxonomyId}"] ?? [];
+
+                    if (empty($termIds)) {
+                        return $query;
+                    }
+
+                    return $query->whereHas(
+                        'terms',
+                        fn (Builder $q): Builder => $q->whereIn('terms.id', $termIds)
+                            ->where('taxonomy_id', $taxonomyId),
+                    );
+                })
+                ->indicateUsing(function (array $data) use ($taxonomy, $taxonomyId): ?string {
+                    $termIds = $data["term_ids_{$taxonomyId}"] ?? [];
+
+                    if (empty($termIds)) {
+                        return null;
+                    }
+
+                    $names = Term::whereIn('id', $termIds)->pluck('title')->implode(', ');
+
+                    return $taxonomy->title.': '.$names;
+                });
+        })->toArray();
     }
 }
