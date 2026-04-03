@@ -16,11 +16,19 @@ class EditorialBrickCollection
      */
     public static function make(): array
     {
-        return [
+        $bricks = [
             NarrativeBrick::class,
             PullQuoteBrick::class,
             InsightGridBrick::class,
             CallToActionBrick::class,
         ];
+
+        $externalBricks = [];
+
+        if (app()->bound('mipress.forms.mason.bricks')) {
+            $externalBricks = (array) app('mipress.forms.mason.bricks');
+        }
+
+        return array_values(array_unique([...$bricks, ...$externalBricks]));
     }
 }
