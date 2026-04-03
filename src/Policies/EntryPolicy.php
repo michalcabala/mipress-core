@@ -33,7 +33,7 @@ class EntryPolicy
                 return false;
             }
 
-            return in_array($entry->status, [EntryStatus::Draft, EntryStatus::InReview, EntryStatus::Rejected], true);
+            return in_array($entry->status, [EntryStatus::Draft, EntryStatus::InReview, EntryStatus::Rejected, EntryStatus::Published], true);
         }
 
         return $user->hasPermissionTo('entry.update');

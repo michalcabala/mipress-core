@@ -9,6 +9,21 @@ use MiPress\Core\Enums\EntryStatus;
 
 trait HasWorkflow
 {
+    public function scopePubliclyVisible(Builder $query): Builder
+    {
+        return $query->where(function (Builder $outer): void {
+            $outer
+                ->where(function (Builder $published): void {
+                    $published->where('status', EntryStatus::Published)
+                        ->where(function (Builder $q): void {
+                            $q->whereNull('published_at')
+                                ->orWhere('published_at', '<=', now());
+                        });
+                })
+                ->orWhere('status', EntryStatus::InReview);
+        });
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('status', EntryStatus::Published)

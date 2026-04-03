@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
@@ -22,6 +23,8 @@ class EditEntry extends EditRecord
     protected static string $resource = EntryResource::class;
 
     protected Width|string|null $maxWidth = Width::Full;
+
+    private ?string $workflowIntent = null;
 
     protected function getFormActions(): array
     {
@@ -64,7 +67,24 @@ class EditEntry extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $record = $this->getRecord();
+        $user = auth()->user();
+
+        if (
+            $record instanceof Entry
+            && $user?->hasRole('contributor')
+            && (int) $record->author_id === (int) $user->getKey()
+            && in_array($record->status, [EntryStatus::Published, EntryStatus::InReview, EntryStatus::Scheduled], true)
+        ) {
+            $data['slug'] = $record->slug;
+        }
+
         $data['parent_id'] = $this->resolveParentId($data);
+
+        if ($this->workflowIntent === 'review') {
+            $data['status'] = EntryStatus::InReview;
+            $data['review_note'] = null;
+        }
 
         return $data;
     }
@@ -132,7 +152,9 @@ class EditEntry extends EditRecord
             EntryStatus::InReview => $canPublish
                 ? $this->makePublishAction('Schválit a publikovat')
                 : null,
-            EntryStatus::Published, EntryStatus::Scheduled => $this->makeUpdateAction(),
+            EntryStatus::Published, EntryStatus::Scheduled => $isContributor && $isOwner
+                ? $this->makeSubmitForReviewAction('Odeslat změny ke schválení')
+                : $this->makeUpdateAction(),
             EntryStatus::Rejected => $isContributor && $isOwner
                 ? $this->makeResubmitRejectedAction()
                 : ($canPublish ? $this->makePublishAction('Publikovat') : null),
@@ -296,19 +318,19 @@ class EditEntry extends EditRecord
             ->color('primary')
             ->requiresConfirmation()
             ->action(function (): void {
-                $this->save(false, false);
-
                 $record = $this->getRecord();
 
                 if (! $record instanceof Entry) {
                     return;
                 }
 
-                $record->refresh();
                 $oldStatus = $record->status;
-                $record->status = EntryStatus::InReview;
-                $record->review_note = null;
-                $record->save();
+
+                $this->workflowIntent = 'review';
+                $this->save(false, false);
+                $this->workflowIntent = null;
+
+                $record->refresh();
 
                 AuditLog::logStatusChange($record, EntryStatus::InReview, $oldStatus);
 
@@ -377,7 +399,7 @@ class EditEntry extends EditRecord
             ->icon('far-circle-xmark')
             ->color('danger')
             ->schema([
-                \Filament\Forms\Components\Textarea::make('reason')
+                Textarea::make('reason')
                     ->label('Důvod zamítnutí')
                     ->required()
                     ->rows(3),

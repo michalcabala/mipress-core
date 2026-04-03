@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Http\Controllers;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\View\View;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
@@ -34,14 +36,20 @@ class EntryController extends Controller
         }
 
         if (view()->exists('home')) {
+            $featuredEntries = Entry::query()
+                ->with(['collection', 'featuredImage'])
+                ->publiclyVisible()
+                ->orderByDesc('published_at')
+                ->limit(8)
+                ->get()
+                ->map(fn (Entry $entry): Entry => $entry->resolvePublicVersion())
+                ->filter(fn (Entry $entry): bool => $entry->isPublished())
+                ->take(4)
+                ->values();
+
             return view('home', [
                 'collections' => mipress_public_collections(),
-                'featuredEntries' => Entry::query()
-                    ->with(['collection', 'featuredImage'])
-                    ->published()
-                    ->orderByDesc('published_at')
-                    ->limit(4)
-                    ->get(),
+                'featuredEntries' => $featuredEntries,
             ]);
         }
 
@@ -95,7 +103,7 @@ class EntryController extends Controller
 
         return Page::query()
             ->with(['blueprint', 'featuredImage'])
-            ->published()
+            ->publiclyVisible()
             ->find($homepagePageId);
     }
 
@@ -109,7 +117,7 @@ class EntryController extends Controller
 
         return Entry::query()
             ->with(['collection', 'blueprint', 'featuredImage'])
-            ->published()
+            ->publiclyVisible()
             ->find($homepageEntryId);
     }
 
@@ -124,11 +132,21 @@ class EntryController extends Controller
                 continue;
             }
 
-            return $collection->entries()
+            $entry = $collection->entries()
                 ->with(['collection', 'blueprint', 'featuredImage'])
-                ->published()
+                ->publiclyVisible()
                 ->where('slug', $slug)
                 ->first();
+
+            if ($entry instanceof Entry) {
+                return $entry;
+            }
+
+            $entry = $this->resolveEntryByApprovedSlug($collection, $slug);
+
+            if ($entry instanceof Entry) {
+                return $entry;
+            }
         }
 
         return null;
@@ -149,15 +167,27 @@ class EntryController extends Controller
     {
         $slug = ltrim($path, '/');
 
-        return Page::query()
+        $page = Page::query()
             ->with(['blueprint', 'featuredImage'])
-            ->published()
+            ->publiclyVisible()
             ->where('slug', $slug)
             ->first();
+
+        if ($page instanceof Page) {
+            return $page;
+        }
+
+        return $this->resolvePageByApprovedSlug($slug);
     }
 
     private function renderEntry(Entry $entry): View
     {
+        $entry = $entry->resolvePublicVersion();
+
+        if (! $entry->isPublished()) {
+            abort(404);
+        }
+
         $entry->loadMissing(['collection', 'blueprint', 'featuredImage']);
         $collection = $entry->collection;
 
@@ -169,17 +199,27 @@ class EntryController extends Controller
         $viewName = view()->exists($viewHandle) ? $viewHandle : 'entries.page';
         $relatedEntries = $collection->entries()
             ->with(['collection', 'featuredImage'])
-            ->published()
+            ->publiclyVisible()
             ->whereKeyNot($entry->getKey())
             ->orderByDesc('published_at')
-            ->limit(3)
-            ->get();
+            ->limit(6)
+            ->get()
+            ->map(fn (Entry $relatedEntry): Entry => $relatedEntry->resolvePublicVersion())
+            ->filter(fn (Entry $relatedEntry): bool => $relatedEntry->isPublished())
+            ->take(3)
+            ->values();
 
         return view($viewName, compact('entry', 'collection', 'relatedEntries'));
     }
 
     private function renderPage(Page $page): View
     {
+        $page = $page->resolvePublicVersion();
+
+        if (! $page->isPublished()) {
+            abort(404);
+        }
+
         $page->loadMissing(['blueprint', 'featuredImage']);
 
         $viewName = view()->exists('entries.page') ? 'entries.page' : 'welcome';
@@ -224,12 +264,19 @@ class EntryController extends Controller
     {
         $query = $collection->entries()
             ->with(['collection', 'featuredImage'])
-            ->published();
+            ->publiclyVisible();
 
         $entries = $collection
             ->applyPublicOrdering($query)
             ->paginate(9)
             ->withQueryString();
+
+        $entries->setCollection(
+            $entries->getCollection()
+                ->map(fn (Entry $entry): Entry => $entry->resolvePublicVersion())
+                ->filter(fn (Entry $entry): bool => $entry->isPublished())
+                ->values(),
+        );
 
         $featuredEntry = $entries->getCollection()->first();
         $viewHandle = 'collections.'.$collection->handle;
@@ -250,5 +297,41 @@ class EntryController extends Controller
             'json' => 'application/json; charset=UTF-8',
             default => mime_content_type($filePath) ?: 'application/octet-stream',
         };
+    }
+
+    private function resolveEntryByApprovedSlug(Collection $collection, string $slug): ?Entry
+    {
+        return $collection->entries()
+            ->with(['collection', 'blueprint', 'featuredImage'])
+            ->where('status', EntryStatus::InReview)
+            ->where(function (Builder $query): void {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->latest('updated_at')
+            ->get()
+            ->first(function (Entry $entry) use ($slug): bool {
+                $publicVersion = $entry->resolvePublicVersion();
+
+                return $publicVersion->isPublished() && $publicVersion->slug === $slug;
+            });
+    }
+
+    private function resolvePageByApprovedSlug(string $slug): ?Page
+    {
+        return Page::query()
+            ->with(['blueprint', 'featuredImage'])
+            ->where('status', EntryStatus::InReview)
+            ->where(function (Builder $query): void {
+                $query->whereNull('published_at')
+                    ->orWhere('published_at', '<=', now());
+            })
+            ->latest('updated_at')
+            ->get()
+            ->first(function (Page $page) use ($slug): bool {
+                $publicVersion = $page->resolvePublicVersion();
+
+                return $publicVersion->isPublished() && $publicVersion->slug === $slug;
+            });
     }
 }

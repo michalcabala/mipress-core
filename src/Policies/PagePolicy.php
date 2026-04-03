@@ -33,7 +33,7 @@ class PagePolicy
                 return false;
             }
 
-            return in_array($page->status, [EntryStatus::Draft, EntryStatus::Rejected], true);
+            return in_array($page->status, [EntryStatus::Draft, EntryStatus::InReview, EntryStatus::Rejected, EntryStatus::Published], true);
         }
 
         return $user->hasPermissionTo('entry.update');

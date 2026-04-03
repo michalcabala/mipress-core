@@ -6,6 +6,7 @@ namespace MiPress\Core\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Revision;
 
 trait HasRevisions
@@ -19,7 +20,7 @@ trait HasRevisions
                 return;
             }
 
-            $model->createRevision();
+            $model->createRevision(snapshot: $model->getOriginal());
         });
     }
 
@@ -28,13 +29,13 @@ trait HasRevisions
         return $this->morphMany(Revision::class, 'revisionable')->latest('created_at');
     }
 
-    public function createRevision(?string $note = null): Revision
+    public function createRevision(?string $note = null, ?array $snapshot = null): Revision
     {
         return Revision::create([
             'revisionable_type' => $this->getMorphClass(),
             'revisionable_id' => $this->getKey(),
             'user_id' => auth()->id(),
-            'data' => $this->getRevisionSnapshot(),
+            'data' => $this->getRevisionSnapshot($snapshot),
             'note' => $note,
         ]);
     }
@@ -54,18 +55,78 @@ trait HasRevisions
         $this->save();
         $this->skipNextRevision = false;
 
-        $this->createRevision('Obnoveno z revize #' . $revisionId);
+        $this->createRevision('Obnoveno z revize #'.$revisionId);
 
         return $this;
     }
 
-    protected function getRevisionSnapshot(): array
+    protected function getRevisionSnapshot(?array $snapshot = null): array
     {
         $excluded = ['id', 'created_at', 'updated_at', 'deleted_at'];
+        $source = $snapshot ?? $this->getAttributes();
 
-        return collect($this->getAttributes())
+        return collect($source)
             ->except($excluded)
             ->toArray();
+    }
+
+    public function latestPublishedRevisionSnapshot(): ?array
+    {
+        $revision = $this->revisions()->get()->first(
+            fn (Revision $revision): bool => $this->normalizeRevisionStatus(data_get($revision->data, 'status')) === EntryStatus::Published->value,
+        );
+
+        if (! $revision instanceof Revision || ! is_array($revision->data)) {
+            return null;
+        }
+
+        return $revision->data;
+    }
+
+    public function resolvePublicVersion(): static
+    {
+        if (method_exists($this, 'isPublished') && $this->isPublished()) {
+            return $this;
+        }
+
+        $snapshot = $this->latestPublishedRevisionSnapshot();
+
+        if ($snapshot === null) {
+            return $this;
+        }
+
+        $publicVersion = clone $this;
+
+        $publicVersion->forceFill(
+            collect($snapshot)
+                ->only($this->getFillable())
+                ->toArray(),
+        );
+        $publicVersion->syncOriginal();
+
+        return $publicVersion;
+    }
+
+    private function normalizeRevisionStatus(mixed $status): ?string
+    {
+        if ($status instanceof EntryStatus) {
+            return $status->value;
+        }
+
+        if (! is_string($status)) {
+            return null;
+        }
+
+        $candidate = strtolower(trim($status));
+
+        return match (true) {
+            str_contains($candidate, EntryStatus::Published->value) => EntryStatus::Published->value,
+            str_contains($candidate, EntryStatus::Scheduled->value) => EntryStatus::Scheduled->value,
+            str_contains($candidate, EntryStatus::InReview->value) => EntryStatus::InReview->value,
+            str_contains($candidate, EntryStatus::Rejected->value) => EntryStatus::Rejected->value,
+            str_contains($candidate, EntryStatus::Draft->value) => EntryStatus::Draft->value,
+            default => null,
+        };
     }
 
     /**
