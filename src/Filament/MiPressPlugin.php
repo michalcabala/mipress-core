@@ -38,6 +38,7 @@ class MiPressPlugin implements Plugin
         $panel
             ->navigationGroups([
                 'Obsah',
+                'Formuláře',
                 'Nastavení',
                 'Uživatelé',
             ])
