@@ -12,9 +12,10 @@ class MediaPathGenerator implements PathGenerator
     public function getPath(?string $baseDir = null): string
     {
         $now = Carbon::now();
+        $rootDirectory = blank($baseDir) ? 'media' : trim($baseDir, '/');
 
         $datePath = sprintf('%s/%s/%s', $now->format('Y'), $now->format('m'), $now->format('d'));
 
-        return 'media/'.$datePath;
+        return $rootDirectory.'/'.$datePath;
     }
 }

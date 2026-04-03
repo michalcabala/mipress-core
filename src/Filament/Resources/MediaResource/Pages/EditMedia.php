@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\MediaResource\Pages;
 
-use Awcodes\Curator\Models\Media;
 use Awcodes\Curator\Resources\Media\Pages\EditMedia as BaseEditMedia;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
-use MiPress\Core\Services\CurationGenerator;
+use MiPress\Core\Services\MediaCurationOrchestrator;
 
 class EditMedia extends BaseEditMedia
 {
@@ -24,16 +23,15 @@ class EditMedia extends BaseEditMedia
                 ->label('Přegenerovat ořezy')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateSingleCuration', Media::class) ?? false)
+                ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateSingleCuration', $this->getRecord()) ?? false)
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat ořezy')
                 ->modalDescription('Přegeneruje všechny miniaturní ořezy pro tento soubor. Stávající ořezy budou přepsány.')
                 ->modalSubmitActionLabel('Přegenerovat')
                 ->action(function (): void {
-                    $generator = app(CurationGenerator::class);
                     $media = $this->getRecord();
 
-                    if (! $generator->isRasterImage($media)) {
+                    if (! app(MediaCurationOrchestrator::class)->regenerateSingle($media)) {
                         Notification::make()
                             ->title('Přegenerování nelze provést')
                             ->body('Soubor není rastrový obrázek.')

@@ -135,8 +135,9 @@ class CurationGenerator
         };
 
         $encodedImage = $image->encodeByExtension($media->ext, quality: 85);
+        $fileName = $media->name.'-'.$key.'.'.$media->ext;
 
-        $curationPath = $media->directory.'/'.$media->name.'-'.$key.'.'.$media->ext;
+        $curationPath = $this->buildPath($media->directory, $fileName);
 
         $storage->put($curationPath, $encodedImage->toString(), $media->visibility);
 
@@ -149,7 +150,7 @@ class CurationGenerator
                 'disk' => $media->disk,
                 'directory' => $media->directory,
                 'visibility' => $media->visibility,
-                'name' => $media->name.'-'.$key.'.'.$media->ext,
+                'name' => $fileName,
                 'path' => $curationPath,
                 'width' => $curationWidth,
                 'height' => $curationHeight,
@@ -162,5 +163,14 @@ class CurationGenerator
 
         $media->curations = $existing;
         $media->saveQuietly();
+    }
+
+    private function buildPath(?string $directory, string $fileName): string
+    {
+        $normalizedDirectory = trim((string) $directory, '/');
+
+        return blank($normalizedDirectory)
+            ? $fileName
+            : $normalizedDirectory.'/'.$fileName;
     }
 }

@@ -31,6 +31,7 @@ use MiPress\Core\Policies\TermPolicy;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSetManager;
+use MiPress\Core\Services\MediaCurationOrchestrator;
 use MiPress\Core\Services\MediaPathGenerator;
 use MiPress\Core\Theme\ThemeManager;
 
@@ -45,6 +46,7 @@ class MiPressServiceProvider extends ServiceProvider
         $this->app->singleton(GlobalSetManager::class);
         $this->app->singleton(BlueprintFieldResolver::class);
         $this->app->singleton(CurationGenerator::class);
+        $this->app->singleton(MediaCurationOrchestrator::class);
         $this->app->singleton(MediaPathGenerator::class);
     }
 

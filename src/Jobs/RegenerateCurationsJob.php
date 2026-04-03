@@ -22,10 +22,10 @@ class RegenerateCurationsJob implements ShouldQueue
     use SerializesModels;
 
     /**
-     * @param  array<int>  $mediaIds
+     * @param  array<int>|null  $mediaIds
      */
     public function __construct(
-        public readonly array $mediaIds,
+        public readonly ?array $mediaIds,
         public readonly int $userId,
     ) {}
 
@@ -34,15 +34,25 @@ class RegenerateCurationsJob implements ShouldQueue
         $processed = 0;
         $skipped = 0;
 
-        Media::whereIn('id', $this->mediaIds)
-            ->get()
-            ->each(function (Media $media) use ($generator, &$processed, &$skipped): void {
-                if ($generator->isRasterImage($media)) {
-                    $generator->regenerate($media);
-                    $processed++;
-                } else {
-                    $skipped++;
-                }
+        $query = Media::query();
+
+        if ($this->mediaIds !== null) {
+            $query->whereIn('id', $this->mediaIds);
+        } else {
+            $query->whereIn('type', $generator->rasterMimeTypes());
+        }
+
+        $query
+            ->orderBy('id')
+            ->chunkById(100, function ($mediaChunk) use ($generator, &$processed, &$skipped): void {
+                $mediaChunk->each(function (Media $media) use ($generator, &$processed, &$skipped): void {
+                    if ($generator->isRasterImage($media)) {
+                        $generator->regenerate($media);
+                        $processed++;
+                    } else {
+                        $skipped++;
+                    }
+                });
             });
 
         $recipient = User::find($this->userId);

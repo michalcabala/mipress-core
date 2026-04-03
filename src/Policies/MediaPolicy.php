@@ -39,24 +39,24 @@ class MediaPolicy
             && $user->hasPermissionTo('media.upload');
     }
 
-    public function regenerateCurations(User $user): bool
+    public function regenerateCurations(User $user, mixed $context = null): bool
     {
         return $user->hasPermissionTo('media.update');
     }
 
-    public function regenerateAllCurations(User $user): bool
+    public function regenerateAllCurations(User $user, mixed $context = null): bool
     {
-        return $this->regenerateCurations($user);
+        return $this->regenerateCurations($user, $context);
     }
 
-    public function regenerateSelectedCurations(User $user): bool
+    public function regenerateSelectedCurations(User $user, mixed $context = null): bool
     {
-        return $this->regenerateCurations($user);
+        return $this->regenerateCurations($user, $context);
     }
 
     public function regenerateSingleCuration(User $user, Media $media): bool
     {
-        return $this->regenerateCurations($user);
+        return $this->regenerateCurations($user, $media);
     }
 
     public function deleteAny(User $user): bool
