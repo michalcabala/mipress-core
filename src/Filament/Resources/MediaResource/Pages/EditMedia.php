@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\MediaResource\Pages;
 
-use Awcodes\Curator\Models\Media;
 use Awcodes\Curator\Resources\Media\Pages\EditMedia as BaseEditMedia;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -23,7 +22,7 @@ class EditMedia extends BaseEditMedia
                 ->label('Přegenerovat ořezy')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn () => auth()->user()->can('regenerateCurations', Media::class))
+                ->visible(fn () => auth()->user()?->hasPermissionTo('media.update'))
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat ořezy')
                 ->modalDescription('Přegeneruje všechny miniaturní ořezy pro tento soubor. Stávající ořezy budou přepsány.')
