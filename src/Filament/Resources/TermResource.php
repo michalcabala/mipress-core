@@ -23,29 +23,33 @@ class TermResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-tag';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
-
     protected static ?string $modelLabel = 'Štítek';
 
     protected static ?string $pluralModelLabel = 'Štítky';
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    protected static ?int $navigationSort = 20;
-
     public static function getNavigationItems(): array
     {
-        $taxonomies = Taxonomy::orderBy('title')->get();
+        $taxonomies = Taxonomy::with('collections')
+            ->orderBy('title')
+            ->get();
 
-        return $taxonomies
-            ->map(fn (Taxonomy $taxonomy) => NavigationItem::make($taxonomy->title)
-                ->icon('fal-tag')
-                ->group('Nastavení')
-                ->sort(20)
-                ->url(static::getUrl('index', ['taxonomy_id' => $taxonomy->getKey()]))
-                ->isActiveWhen(fn () => static::getCurrentTaxonomy()?->getKey() === $taxonomy->getKey())
-            )
-            ->toArray();
+        $items = [];
+
+        foreach ($taxonomies as $taxonomy) {
+            foreach ($taxonomy->collections as $collection) {
+                $items[] = NavigationItem::make($taxonomy->title)
+                    ->icon('fal-tag')
+                    ->group('Obsah')
+                    ->parentItem($collection->name)
+                    ->sort($collection->sort_order + 1)
+                    ->url(static::getUrl('index', ['taxonomy_id' => $taxonomy->getKey()]))
+                    ->isActiveWhen(fn () => static::getCurrentTaxonomy()?->getKey() === $taxonomy->getKey());
+            }
+        }
+
+        return $items;
     }
 
     public static function getCurrentTaxonomy(): ?Taxonomy
