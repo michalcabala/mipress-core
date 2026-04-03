@@ -529,13 +529,19 @@ class EntryForm
                     ->searchable()
                     ->parentNullValue(null)
                     ->afterStateHydrated(function ($component) use ($record, $taxonomyId): void {
-                        if ($record instanceof Entry) {
+                        if (! ($record instanceof Entry)) {
+                            return;
+                        }
+
+                        if (filled($component->getState())) {
+                            return;
+                        }
+
                             $ids = $record->terms()
                                 ->where('taxonomy_id', $taxonomyId)
                                 ->pluck('terms.id')
                                 ->all();
                             $component->state($ids);
-                        }
                     })
                     ->dehydrated(false);
             }
@@ -550,13 +556,19 @@ class EntryForm
                         ->toArray()
                 )
                 ->afterStateHydrated(function ($component) use ($record, $taxonomyId): void {
-                    if ($record instanceof Entry) {
+                    if (! ($record instanceof Entry)) {
+                        return;
+                    }
+
+                    if (filled($component->getState())) {
+                        return;
+                    }
+
                         $ids = $record->terms()
                             ->where('taxonomy_id', $taxonomyId)
                             ->pluck('terms.id')
                             ->all();
                         $component->state($ids);
-                    }
                 })
                 ->dehydrated(false)
                 ->searchable();
