@@ -17,7 +17,7 @@ class RevisionsRelationManager extends RelationManager
 
     protected static ?string $title = 'Revize';
 
-    protected static ?string $icon = 'far-code-compare';
+    protected static string|\BackedEnum|null $icon = 'far-code-compare';
 
     public function isReadOnly(): bool
     {
@@ -44,7 +44,7 @@ class RevisionsRelationManager extends RelationManager
                     ->state(function (Revision $record): string {
                         $keys = array_keys($record->data ?? []);
 
-                        return implode(', ', array_slice($keys, 0, 5)) . (count($keys) > 5 ? '…' : '');
+                        return implode(', ', array_slice($keys, 0, 5)).(count($keys) > 5 ? '…' : '');
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -102,10 +102,10 @@ class RevisionsRelationManager extends RelationManager
             $curDisplay = is_array($cur) ? json_encode($cur, JSON_UNESCAPED_UNICODE) : (string) ($cur ?? '—');
 
             $rows .= '<tr>'
-                . '<td style="padding:4px 8px;font-weight:600;vertical-align:top;white-space:nowrap;">' . e($key) . '</td>'
-                . '<td style="padding:4px 8px;background:#fef9c3;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;">' . e(mb_substr($oldDisplay, 0, 300)) . '</td>'
-                . '<td style="padding:4px 8px;background:#dcfce7;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;">' . e(mb_substr($curDisplay, 0, 300)) . '</td>'
-                . '</tr>';
+                .'<td style="padding:4px 8px;font-weight:600;vertical-align:top;white-space:nowrap;">'.e($key).'</td>'
+                .'<td style="padding:4px 8px;background:#fef9c3;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;">'.e(mb_substr($oldDisplay, 0, 300)).'</td>'
+                .'<td style="padding:4px 8px;background:#dcfce7;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;">'.e(mb_substr($curDisplay, 0, 300)).'</td>'
+                .'</tr>';
         }
 
         if ($rows === '') {
@@ -113,13 +113,13 @@ class RevisionsRelationManager extends RelationManager
         }
 
         $html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-            . '<thead><tr>'
-            . '<th style="padding:4px 8px;text-align:left;">Pole</th>'
-            . '<th style="padding:4px 8px;text-align:left;background:#fef9c3;">Revize</th>'
-            . '<th style="padding:4px 8px;text-align:left;background:#dcfce7;">Aktuální</th>'
-            . '</tr></thead>'
-            . '<tbody>' . $rows . '</tbody>'
-            . '</table>';
+            .'<thead><tr>'
+            .'<th style="padding:4px 8px;text-align:left;">Pole</th>'
+            .'<th style="padding:4px 8px;text-align:left;background:#fef9c3;">Revize</th>'
+            .'<th style="padding:4px 8px;text-align:left;background:#dcfce7;">Aktuální</th>'
+            .'</tr></thead>'
+            .'<tbody>'.$rows.'</tbody>'
+            .'</table>';
 
         return new HtmlString($html);
     }

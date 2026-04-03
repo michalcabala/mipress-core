@@ -41,7 +41,7 @@ class TaxonomyResource extends Resource
         return TaxonomiesTable::table($table);
     }
 
-    public static function getRelationManagers(): array
+    public static function getRelations(): array
     {
         return [
             TermsRelationManager::class,

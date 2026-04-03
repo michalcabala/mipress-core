@@ -136,7 +136,7 @@ class EntryResource extends Resource
         return EntriesTable::table($table);
     }
 
-    public static function getRelationManagers(): array
+    public static function getRelations(): array
     {
         return [
             RevisionsRelationManager::class,

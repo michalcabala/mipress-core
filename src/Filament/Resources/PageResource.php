@@ -56,7 +56,7 @@ class PageResource extends Resource
         return PagesTable::table($table);
     }
 
-    public static function getRelationManagers(): array
+    public static function getRelations(): array
     {
         return [
             RevisionsRelationManager::class,
