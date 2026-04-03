@@ -50,7 +50,7 @@ class TermResource extends Resource
                 ->group('Obsah')
                 ->parentItem($collection->name)
                 ->sort($collection->sort_order + 1)
-                ->url(static::getUrl('index', ['taxonomy_id' => $taxonomy->getKey()]))
+                ->url(static::getUrl('index', ['taxonomy' => $taxonomy->handle]))
                 ->isActiveWhen(fn () => static::getCurrentTaxonomy()?->getKey() === $taxonomy->getKey());
         }
 
@@ -60,14 +60,19 @@ class TermResource extends Resource
     public static function getCurrentTaxonomy(): ?Taxonomy
     {
         $request = request();
-        $taxonomyId = $request->query('taxonomy_id')
-            ?? $request->route('taxonomy_id');
+        $taxonomy = $request->route('taxonomy')
+            ?? $request->query('taxonomy')
+            ?? $request->query('taxonomy_id');
 
-        if (! $taxonomyId) {
+        if (! filled($taxonomy)) {
             return null;
         }
 
-        return Taxonomy::find($taxonomyId);
+        if (is_numeric($taxonomy)) {
+            return Taxonomy::find((int) $taxonomy);
+        }
+
+        return Taxonomy::where('handle', (string) $taxonomy)->first();
     }
 
     public static function getEloquentQuery(): Builder
@@ -95,8 +100,8 @@ class TermResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => ListTerms::route('/'),
-            'create' => CreateTerm::route('/create'),
+            'index' => ListTerms::route('/{taxonomy?}'),
+            'create' => CreateTerm::route('/{taxonomy?}/create'),
             'edit' => EditTerm::route('/{record}/edit'),
         ];
     }

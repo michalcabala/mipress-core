@@ -47,13 +47,21 @@ class TermForm
 
     private static function getTaxonomy(Schema $schema): ?Taxonomy
     {
-        $taxonomyId = request()->query('taxonomy_id')
-            ?? $schema->getLivewire()?->record?->taxonomy_id;
+        $livewire = method_exists($schema, 'getLivewire') ? $schema->getLivewire() : null;
+        $taxonomyIdentifier = request()->route('taxonomy')
+            ?? request()->query('taxonomy')
+            ?? request()->query('taxonomy_id')
+            ?? ($livewire && property_exists($livewire, 'taxonomyHandle') ? $livewire->taxonomyHandle : null)
+            ?? $livewire?->record?->taxonomy_id;
 
-        if (! $taxonomyId) {
+        if (! filled($taxonomyIdentifier)) {
             return null;
         }
 
-        return Taxonomy::find($taxonomyId);
+        if (is_numeric($taxonomyIdentifier)) {
+            return Taxonomy::find((int) $taxonomyIdentifier);
+        }
+
+        return Taxonomy::where('handle', (string) $taxonomyIdentifier)->first();
     }
 }
