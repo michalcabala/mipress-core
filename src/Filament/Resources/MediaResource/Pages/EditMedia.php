@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources\MediaResource\Pages;
 use Awcodes\Curator\Resources\Media\Pages\EditMedia as BaseEditMedia;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use MiPress\Core\Services\CurationGenerator;
 
@@ -22,7 +23,7 @@ class EditMedia extends BaseEditMedia
                 ->label('Přegenerovat ořezy')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn () => auth()->user()?->hasPermissionTo('media.update'))
+                ->visible(fn (): bool => Filament::auth()->user()?->hasPermissionTo('media.update') ?? false)
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat ořezy')
                 ->modalDescription('Přegeneruje všechny miniaturní ořezy pro tento soubor. Stávající ořezy budou přepsány.')

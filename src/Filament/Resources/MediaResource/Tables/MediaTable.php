@@ -6,6 +6,7 @@ namespace MiPress\Core\Filament\Resources\MediaResource\Tables;
 
 use Awcodes\Curator\Resources\Media\Tables\MediaTable as BaseMediaTable;
 use Filament\Actions\BulkAction;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
@@ -23,7 +24,7 @@ class MediaTable extends BaseMediaTable
                 ->label('Přegenerovat ořezy')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
-                ->visible(fn () => auth()->user()?->hasPermissionTo('media.update'))
+                ->visible(fn (): bool => Filament::auth()->user()?->hasPermissionTo('media.update') ?? false)
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat ořezy')
                 ->modalDescription('Přegeneruje miniaturní ořezy pro vybrané soubory. Rastrové obrázky budou přepsány novými ořezy.')
