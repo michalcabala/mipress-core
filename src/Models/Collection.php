@@ -8,7 +8,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use MiPress\Core\Database\Factories\CollectionFactory;
 
@@ -54,9 +53,9 @@ class Collection extends Model
         return $this->hasMany(Entry::class);
     }
 
-    public function taxonomies(): BelongsToMany
+    public function taxonomies(): HasMany
     {
-        return $this->belongsToMany(Taxonomy::class, 'collection_taxonomy');
+        return $this->hasMany(Taxonomy::class);
     }
 
     public function scopeOrdered(Builder $query): Builder

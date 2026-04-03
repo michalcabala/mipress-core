@@ -26,9 +26,9 @@ class TermForm
                     ->live(onBlur: true),
                 TextInput::make('slug')
                     ->label('Slug')
-                    ->required()
                     ->unique(table: 'terms', column: 'slug', ignoreRecord: true)
-                    ->maxLength(255),
+                    ->maxLength(255)
+                    ->helperText('Automaticky z názvu. Lze upravit.'),
                 Select::make('parent_id')
                     ->label('Nadřazený term')
                     ->options(fn ($record): array => Term::query()

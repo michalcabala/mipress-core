@@ -26,10 +26,9 @@ class TaxonomyForm
                         ->maxLength(255),
                     TextInput::make('handle')
                         ->label('Handle')
-                        ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(255)
-                        ->helperText('Unikátní identifikátor (např. categories, tags)')
+                        ->helperText('Automaticky z názvu. Lze upravit.')
                         ->disabled(fn ($record) => $record !== null),
                 ]),
                 Textarea::make('description')
@@ -53,14 +52,14 @@ class TaxonomyForm
                 ]),
             ]),
 
-            Section::make('Přiřazení ke kolekcím')->schema([
-                Select::make('collections')
+            Section::make('Přiřazení ke kolekci')->schema([
+                Select::make('collection_id')
                     ->label('Kolekce')
-                    ->relationship('collections', 'name')
-                    ->multiple()
+                    ->relationship('collection', 'name')
                     ->searchable()
                     ->preload()
-                    ->helperText('Vyberte kolekce, ve kterých se tato taxonomie zobrazí'),
+                    ->nullable()
+                    ->helperText('Vyberte kolekci, ve které se tato taxonomie zobrazí'),
             ]),
         ]);
     }

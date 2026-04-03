@@ -31,22 +31,27 @@ class TermResource extends Resource
 
     public static function getNavigationItems(): array
     {
-        $taxonomies = Taxonomy::with('collections')
+        $taxonomies = Taxonomy::with('collection')
+            ->whereNotNull('collection_id')
             ->orderBy('title')
             ->get();
 
         $items = [];
 
         foreach ($taxonomies as $taxonomy) {
-            foreach ($taxonomy->collections as $collection) {
-                $items[] = NavigationItem::make($taxonomy->title)
-                    ->icon('fal-tag')
-                    ->group('Obsah')
-                    ->parentItem($collection->name)
-                    ->sort($collection->sort_order + 1)
-                    ->url(static::getUrl('index', ['taxonomy_id' => $taxonomy->getKey()]))
-                    ->isActiveWhen(fn () => static::getCurrentTaxonomy()?->getKey() === $taxonomy->getKey());
+            $collection = $taxonomy->collection;
+
+            if (! $collection) {
+                continue;
             }
+
+            $items[] = NavigationItem::make($taxonomy->title)
+                ->icon('fal-tag')
+                ->group('Obsah')
+                ->parentItem($collection->name)
+                ->sort($collection->sort_order + 1)
+                ->url(static::getUrl('index', ['taxonomy_id' => $taxonomy->getKey()]))
+                ->isActiveWhen(fn () => static::getCurrentTaxonomy()?->getKey() === $taxonomy->getKey());
         }
 
         return $items;

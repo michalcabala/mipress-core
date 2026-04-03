@@ -21,7 +21,7 @@ class TermsRelationManager extends RelationManager
 
     protected static ?string $title = 'Termy';
 
-    protected static ?string $icon = 'fal-tags';
+    protected static \BackedEnum|string|null $icon = 'fal-tags';
 
     public function form(Schema $schema): Schema
     {
@@ -32,8 +32,8 @@ class TermsRelationManager extends RelationManager
                 ->maxLength(255),
             TextInput::make('slug')
                 ->label('Slug')
-                ->required()
-                ->maxLength(255),
+                ->maxLength(255)
+                ->helperText('Automaticky z názvu. Lze upravit.'),
             Select::make('parent_id')
                 ->label('Nadřazený term')
                 ->options(fn (): array => Term::query()
