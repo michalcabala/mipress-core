@@ -73,6 +73,7 @@ class EntriesTable
                 TextColumn::make('author.name')
                     ->label('Autor')
                     ->sortable(),
+                ...static::getTaxonomyColumns(),
                 TextColumn::make('published_at')
                     ->label('Publikováno')
                     ->dateTime('j. n. Y H:i')
@@ -273,6 +274,35 @@ class EntriesTable
         }
 
         return $options;
+    }
+
+    /**
+     * @return array<int, TextColumn>
+     */
+    private static function getTaxonomyColumns(): array
+    {
+        $collection = EntryResource::getCurrentCollection();
+
+        if (! $collection) {
+            return [];
+        }
+
+        $taxonomies = $collection->taxonomies;
+
+        if ($taxonomies->isEmpty()) {
+            return [];
+        }
+
+        return $taxonomies->map(fn (Taxonomy $taxonomy): TextColumn => TextColumn::make("taxonomy_{$taxonomy->getKey()}")
+            ->label($taxonomy->title)
+            ->state(fn (Entry $record): string => $record->terms
+                ->where('taxonomy_id', $taxonomy->getKey())
+                ->pluck('title')
+                ->implode(', '))
+            ->toggleable()
+            ->searchable(false)
+            ->sortable(false)
+        )->toArray();
     }
 
     /**

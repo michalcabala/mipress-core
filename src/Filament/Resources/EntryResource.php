@@ -96,6 +96,7 @@ class EntryResource extends Resource
             ->with([
                 'featuredImage',
                 'author' => fn ($q) => $q->without('roles'),
+                'terms',
             ]);
 
         $collection = static::getCurrentCollection();
