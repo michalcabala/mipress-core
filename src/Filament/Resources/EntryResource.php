@@ -28,6 +28,8 @@ class EntryResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-file-lines';
 
+    public static ?string $collectionHandleOverride = null;
+
     protected static string|\UnitEnum|null $navigationGroup = 'Obsah';
 
     protected static ?string $modelLabel = 'Položka';
@@ -81,6 +83,10 @@ class EntryResource extends Resource
         $handle = is_string($routeHandle) && filled($routeHandle)
             ? $routeHandle
             : (is_string($queryHandle) ? $queryHandle : null);
+
+        if (! $handle && filled(static::$collectionHandleOverride)) {
+            $handle = static::$collectionHandleOverride;
+        }
 
         if (! $handle) {
             return null;

@@ -32,6 +32,8 @@ class ListEntries extends ListRecords
 
     public function table(Table $table): Table
     {
+        EntryResource::$collectionHandleOverride = $this->collectionHandle ?: null;
+
         return parent::table($table)
             ->modifyQueryUsing(function (Builder $query): void {
                 $collection = $this->resolveCollection();
