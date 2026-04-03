@@ -15,6 +15,7 @@ use MiPress\Core\Filament\Resources\PageResource\Pages\CreatePage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\EditPage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\ListPages;
 use MiPress\Core\Filament\Resources\PageResource\Pages\PageHistory;
+use MiPress\Core\Filament\Resources\PageResource\Pages\PageRevisions;
 use MiPress\Core\Filament\Resources\PageResource\Schemas\PageForm;
 use MiPress\Core\Filament\Resources\PageResource\Tables\PagesTable;
 use MiPress\Core\Models\Page;
@@ -72,6 +73,7 @@ class PageResource extends Resource
             'create' => CreatePage::route('/create'),
             'edit' => EditPage::route('/{record}/edit'),
             'history' => PageHistory::route('/{record}/history'),
+            'revisions' => PageRevisions::route('/{record}/revisions'),
         ];
     }
 }

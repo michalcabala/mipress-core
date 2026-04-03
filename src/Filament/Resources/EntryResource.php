@@ -12,12 +12,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\RelationManagers\AuditLogsRelationManager;
+use MiPress\Core\Filament\RelationManagers\RevisionsRelationManager;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryHistory;
+use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryRevisions;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\ListEntries;
-use MiPress\Core\Filament\RelationManagers\AuditLogsRelationManager;
-use MiPress\Core\Filament\RelationManagers\RevisionsRelationManager;
 use MiPress\Core\Filament\Resources\EntryResource\Schemas\EntryForm;
 use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
 use MiPress\Core\Models\Collection;
@@ -152,6 +153,7 @@ class EntryResource extends Resource
             'index' => ListEntries::route('/{collection?}'),
             'edit' => EditEntry::route('/{record}/edit'),
             'history' => EntryHistory::route('/{record}/history'),
+            'revisions' => EntryRevisions::route('/{record}/revisions'),
         ];
     }
 }
