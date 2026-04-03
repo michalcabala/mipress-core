@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\RelationManagers;
 
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -50,6 +51,28 @@ class RevisionsRelationManager extends RelationManager
             ])
             ->defaultSort('created_at', 'desc')
             ->paginated([10, 25, 50])
+            ->emptyStateHeading('Zatím nejsou dostupné žádné revize')
+            ->emptyStateDescription('Revize se vytváří při změně obsahu. Můžete také vytvořit první revizi ručně.')
+            ->headerActions([
+                Action::make('createSnapshot')
+                    ->label('Vytvořit revizi')
+                    ->icon('far-floppy-disk')
+                    ->color('gray')
+                    ->action(function (): void {
+                        $owner = $this->getOwnerRecord();
+
+                        if (! method_exists($owner, 'createRevision')) {
+                            return;
+                        }
+
+                        $owner->createRevision('Ruční revize');
+
+                        Notification::make()
+                            ->title('Revize vytvořena')
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->recordActions([
                 Action::make('restore')
                     ->label('Obnovit')
