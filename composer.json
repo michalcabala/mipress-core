@@ -10,8 +10,7 @@
         "spatie/laravel-permission": "^7.0",
         "spatie/laravel-sluggable": "^3.0",
         "awcodes/mason": "^3.0",
-        "codewithdennis/filament-select-tree": "4.x",
-        "openplain/filament-tree-view": "^0.5.4"
+        "codewithdennis/filament-select-tree": "4.x"
     },
     "autoload": {
         "psr-4": {

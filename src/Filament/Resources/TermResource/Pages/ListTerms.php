@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\TermResource\Pages;
 
 use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Filament\Resources\TermResource;
 use MiPress\Core\Models\Taxonomy;
-use Openplain\FilamentTreeView\Resources\Pages\TreePage;
-use Openplain\FilamentTreeView\Tree;
 
-class ListTerms extends TreePage
+class ListTerms extends ListRecords
 {
     protected static string $resource = TermResource::class;
 
@@ -30,20 +30,16 @@ class ListTerms extends TreePage
         parent::mount();
     }
 
-    public function tree(Tree $tree): Tree
+    public function table(Table $table): Table
     {
-        return parent::tree($tree)
-            ->query(function (): Builder {
-                $query = static::getResource()::getEloquentQuery();
+        return parent::table($table)
+            ->modifyQueryUsing(function (Builder $query): void {
                 $taxonomy = $this->resolveTaxonomy();
 
                 if ($taxonomy) {
                     $query->where('taxonomy_id', $taxonomy->getKey());
                 }
-
-                return $query;
-            })
-            ->maxDepth(fn (): ?int => $this->resolveTaxonomy()?->is_hierarchical ? null : 1);
+            });
     }
 
     protected function getHeaderActions(): array

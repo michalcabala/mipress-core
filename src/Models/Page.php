@@ -20,13 +20,12 @@ use MiPress\Core\Traits\Auditable;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
 use MiPress\Core\Traits\HasWorkflow;
-use Openplain\FilamentTreeView\Concerns\HasTreeStructure;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Page extends Model
 {
-    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasTreeStructure, HasWorkflow, SoftDeletes;
+    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
 
     protected $table = 'pages';
 
@@ -139,11 +138,6 @@ class Page extends Model
         }
 
         return '/'.$this->slug;
-    }
-
-    public function getOrderKeyName(): string
-    {
-        return 'sort_order';
     }
 
     /**

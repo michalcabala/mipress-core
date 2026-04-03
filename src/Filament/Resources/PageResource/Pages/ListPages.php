@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Filament\Actions\CreateAction;
+use Filament\Resources\Pages\ListRecords;
 use MiPress\Core\Filament\Resources\PageResource;
-use Openplain\FilamentTreeView\Resources\Pages\TreePage;
 
-class ListPages extends TreePage
+class ListPages extends ListRecords
 {
     protected static string $resource = PageResource::class;
 

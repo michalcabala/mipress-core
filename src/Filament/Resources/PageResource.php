@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources;
 
-use Filament\Actions\DeleteAction;
-use Filament\Actions\EditAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
@@ -19,8 +17,6 @@ use MiPress\Core\Filament\Resources\PageResource\Pages\PageHistory;
 use MiPress\Core\Filament\Resources\PageResource\Schemas\PageForm;
 use MiPress\Core\Filament\Resources\PageResource\Tables\PagesTable;
 use MiPress\Core\Models\Page;
-use Openplain\FilamentTreeView\Fields\TextField;
-use Openplain\FilamentTreeView\Tree;
 
 class PageResource extends Resource
 {
@@ -58,21 +54,6 @@ class PageResource extends Resource
     public static function table(Table $table): Table
     {
         return PagesTable::table($table);
-    }
-
-    public static function tree(Tree $tree): Tree
-    {
-        return $tree
-            ->fields([
-                TextField::make('title'),
-                TextField::make('slug')
-                    ->color('gray'),
-            ])
-            ->recordActions([
-                EditAction::make()
-                    ->url(fn (Page $record): string => static::getUrl('edit', ['record' => $record])),
-                DeleteAction::make(),
-            ]);
     }
 
     public static function getRelations(): array
