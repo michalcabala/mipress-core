@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\MediaResource\Tables;
 
+use Awcodes\Curator\Models\Media;
 use Awcodes\Curator\Resources\Media\Tables\MediaTable as BaseMediaTable;
 use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
@@ -23,6 +24,7 @@ class MediaTable extends BaseMediaTable
                 ->label('Přegenerovat ořezy')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
+                ->visible(fn () => auth()->user()?->can('regenerateCurations', Media::class))
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat ořezy')
                 ->modalDescription('Přegeneruje miniaturní ořezy pro vybrané soubory. Rastrové obrázky budou přepsány novými ořezy.')

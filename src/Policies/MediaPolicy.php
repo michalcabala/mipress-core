@@ -39,9 +39,14 @@ class MediaPolicy
             && $user->hasPermissionTo('media.upload');
     }
 
-    public function regenerateCurations(User $user, Media $media): bool
+    public function regenerateCurations(User $user): bool
     {
-        return $user->hasPermissionTo('media.upload');
+        return $user->hasPermissionTo('media.update');
+    }
+
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasPermissionTo('media.delete');
     }
 
     public function delete(User $user, Media $media): bool
