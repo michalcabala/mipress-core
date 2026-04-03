@@ -303,13 +303,9 @@ class EntryForm
                                             }),
 
                                         Action::make('history')
-                                            ->label('Historie')
-                                            ->icon('far-clock-rotate-left')
-                                            ->url(fn (Entry $record): string => EntryResource::getUrl('history', ['record' => $record])),
-                                        Action::make('revisions')
                                             ->label('Revize')
                                             ->icon('far-code-compare')
-                                            ->url(fn (Entry $record): string => EntryResource::getUrl('revisions', ['record' => $record])),
+                                            ->url(fn (Entry $record): string => EntryResource::getUrl('history', ['record' => $record])),
                                     ])->fullWidth(),
                                 ]),
 

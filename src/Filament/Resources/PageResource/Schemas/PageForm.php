@@ -187,13 +187,9 @@ class PageForm
                                             }),
 
                                         Action::make('history')
-                                            ->label('Historie')
-                                            ->icon('far-clock-rotate-left')
-                                            ->url(fn (Page $record): string => PageResource::getUrl('history', ['record' => $record])),
-                                        Action::make('revisions')
                                             ->label('Revize')
                                             ->icon('far-code-compare')
-                                            ->url(fn (Page $record): string => PageResource::getUrl('revisions', ['record' => $record])),
+                                            ->url(fn (Page $record): string => PageResource::getUrl('history', ['record' => $record])),
                                     ])->fullWidth(),
                                 ]),
 
