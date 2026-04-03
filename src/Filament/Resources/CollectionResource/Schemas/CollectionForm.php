@@ -45,6 +45,17 @@ class CollectionForm
                 ]),
             ]),
 
+            Section::make('Třídění')->schema([
+                Select::make('taxonomies')
+                    ->label('Přiřazená třídění')
+                    ->relationship('taxonomies', 'title')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                    ->nullable()
+                    ->helperText('Vyberte třídění (taxonomie), která lze přiřadit k záznamům v této sekci.'),
+            ]),
+
             Section::make('Nastavení obsahu')->schema([
                 Grid::make(2)->schema([
                     Toggle::make('dated')

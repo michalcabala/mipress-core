@@ -30,7 +30,7 @@ class BlueprintFieldResolver
     /**
      * Resolve a single Blueprint field definition into a Filament form component.
      */
-    public function resolve(array $fieldDefinition): mixed
+    public static function resolve(array $fieldDefinition): mixed
     {
         $handle = $fieldDefinition['handle'] ?? null;
         $label = $fieldDefinition['label'] ?? $handle;
@@ -106,7 +106,7 @@ class BlueprintFieldResolver
      * @param  array<int, array<string, mixed>>  $fields
      * @return array<int, Section>
      */
-    public function resolveAll(array $fields): array
+    public static function resolveAll(array $fields): array
     {
         if (empty($fields)) {
             return [];
@@ -116,17 +116,17 @@ class BlueprintFieldResolver
         $firstItem = $fields[0] ?? [];
 
         if (isset($firstItem['section'])) {
-            return $this->resolveNestedSections($fields);
+            return static::resolveNestedSections($fields);
         }
 
-        return $this->resolveFlatFields($fields);
+        return static::resolveFlatFields($fields);
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $sections
      * @return array<int, Section>
      */
-    protected function resolveNestedSections(array $sections): array
+    protected static function resolveNestedSections(array $sections): array
     {
         $result = [];
 
@@ -134,7 +134,7 @@ class BlueprintFieldResolver
             $sectionFields = [];
 
             foreach ($sectionDef['fields'] ?? [] as $fieldDef) {
-                $component = $this->resolve($fieldDef);
+                $component = static::resolve($fieldDef);
 
                 if ($component !== null) {
                     $sectionFields[] = $component;
@@ -155,7 +155,7 @@ class BlueprintFieldResolver
      * @param  array<int, array<string, mixed>>  $fields
      * @return array<int, Section>
      */
-    protected function resolveFlatFields(array $fields): array
+    protected static function resolveFlatFields(array $fields): array
     {
         $sorted = collect($fields)
             ->sortBy(fn (array $f): int => (int) ($f['order'] ?? 0))
@@ -165,7 +165,7 @@ class BlueprintFieldResolver
         $components = [];
 
         foreach ($sorted as $fieldDef) {
-            $component = $this->resolve($fieldDef);
+            $component = static::resolve($fieldDef);
 
             if ($component !== null) {
                 $components[] = $component;
