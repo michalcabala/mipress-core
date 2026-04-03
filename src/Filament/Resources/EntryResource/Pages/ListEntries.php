@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
 use MiPress\Core\Models\Collection;
 
 class ListEntries extends ListRecords
@@ -25,6 +26,13 @@ class ListEntries extends ListRecords
     {
         if (blank($this->collectionHandle)) {
             $this->collectionHandle = $collection ?: (string) request()->query('collection', '');
+
+            if (blank($this->collectionHandle)) {
+                $this->collectionHandle = (string) Collection::query()
+                    ->where('handle', '!=', 'pages')
+                    ->ordered()
+                    ->value('handle');
+            }
         }
 
         parent::mount();
@@ -32,17 +40,17 @@ class ListEntries extends ListRecords
 
     public function table(Table $table): Table
     {
-        EntryResource::$collectionHandleOverride = $this->collectionHandle ?: null;
+        $collection = $this->resolveCollection();
 
-        return parent::table($table)
+        return EntriesTable::table($table, $collection)
             ->modifyQueryUsing(function (Builder $query): void {
-                $collection = $this->resolveCollection();
+                $resolvedCollection = $this->resolveCollection();
 
-                if (! $collection) {
+                if (! $resolvedCollection) {
                     return;
                 }
 
-                $query->where('collection_id', $collection->id);
+                $query->where('collection_id', $resolvedCollection->id);
             });
     }
 

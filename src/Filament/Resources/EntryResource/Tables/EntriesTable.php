@@ -30,6 +30,7 @@ use Illuminate\Support\Carbon;
 use Livewire\Component;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Setting;
 use MiPress\Core\Models\Taxonomy;
@@ -41,9 +42,10 @@ class EntriesTable
 
     private const LEGACY_HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
 
-    public static function table(Table $table): Table
+    public static function table(Table $table, ?Collection $collection = null): Table
     {
         $homepageId = self::resolveHomepageId();
+        $currentCollection = $collection ?? EntryResource::getCurrentCollection();
 
         return $table
             ->columns([
@@ -73,7 +75,7 @@ class EntriesTable
                 TextColumn::make('author.name')
                     ->label('Autor')
                     ->sortable(),
-                ...static::getTaxonomyColumns(),
+                ...static::getTaxonomyColumns($currentCollection),
                 TextColumn::make('published_at')
                     ->label('Publikováno')
                     ->dateTime('j. n. Y H:i')
@@ -90,7 +92,7 @@ class EntriesTable
             ->filters([
                 SelectFilter::make('author_id')
                     ->label('Autor')
-                    ->options(fn (): array => static::getAuthorFilterOptions())
+                    ->options(fn (): array => static::getAuthorFilterOptions($currentCollection))
                     ->searchable(),
                 Filter::make('created_at_range')
                     ->label('Datum vytvoření')
@@ -111,7 +113,7 @@ class EntriesTable
                     }),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')
-                    ->options(fn (): array => static::getCreatedMonthOptions())
+                    ->options(fn (): array => static::getCreatedMonthOptions($currentCollection))
                     ->query(function (Builder $query, array $data): Builder {
                         $value = $data['value'] ?? null;
 
@@ -125,7 +127,7 @@ class EntriesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
-                ...static::getTaxonomyFilters(),
+                ...static::getTaxonomyFilters($currentCollection),
                 TrashedFilter::make(),
             ])
             ->actions([
@@ -214,9 +216,9 @@ class EntriesTable
     /**
      * @return array<int, string>
      */
-    private static function getAuthorFilterOptions(): array
+    private static function getAuthorFilterOptions(?Collection $collection = null): array
     {
-        $collection = EntryResource::getCurrentCollection();
+        $collection ??= EntryResource::getCurrentCollection();
 
         $authorIds = Entry::query()
             ->when(
@@ -242,9 +244,9 @@ class EntriesTable
     /**
      * @return array<string, string>
      */
-    private static function getCreatedMonthOptions(): array
+    private static function getCreatedMonthOptions(?Collection $collection = null): array
     {
-        $collection = EntryResource::getCurrentCollection();
+        $collection ??= EntryResource::getCurrentCollection();
 
         $entries = Entry::query()
             ->when(
@@ -279,9 +281,9 @@ class EntriesTable
     /**
      * @return array<int, TextColumn>
      */
-    private static function getTaxonomyColumns(): array
+    private static function getTaxonomyColumns(?Collection $collection = null): array
     {
-        $collection = EntryResource::getCurrentCollection();
+        $collection ??= EntryResource::getCurrentCollection();
 
         if (! $collection) {
             return [];
@@ -308,9 +310,9 @@ class EntriesTable
     /**
      * @return array<int, Filter>
      */
-    private static function getTaxonomyFilters(): array
+    private static function getTaxonomyFilters(?Collection $collection = null): array
     {
-        $collection = EntryResource::getCurrentCollection();
+        $collection ??= EntryResource::getCurrentCollection();
 
         if (! $collection) {
             return [];
