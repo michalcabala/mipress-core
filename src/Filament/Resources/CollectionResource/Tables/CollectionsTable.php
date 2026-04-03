@@ -52,6 +52,7 @@ class CollectionsTable
                     ->sortable(),
             ])
             ->defaultSort('sort_order')
+            ->reorderable('sort_order')
             ->actions([
                 ActionGroup::make([
                     EditAction::make(),
