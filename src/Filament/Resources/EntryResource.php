@@ -16,7 +16,8 @@ use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryHistory;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\ListEntries;
-use MiPress\Core\Filament\Resources\EntryResource\RelationManagers\AuditLogsRelationManager;
+use MiPress\Core\Filament\RelationManagers\AuditLogsRelationManager;
+use MiPress\Core\Filament\RelationManagers\RevisionsRelationManager;
 use MiPress\Core\Filament\Resources\EntryResource\Schemas\EntryForm;
 use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
 use MiPress\Core\Models\Collection;
@@ -140,6 +141,7 @@ class EntryResource extends Resource
     {
         return [
             AuditLogsRelationManager::class,
+            RevisionsRelationManager::class,
         ];
     }
 

@@ -179,6 +179,8 @@ class CreateEntry extends CreateRecord
 
     protected function afterCreate(): void
     {
+        $this->syncTaxonomyTerms();
+
         $record = $this->record;
 
         if (! $record instanceof Entry || $record->status !== EntryStatus::InReview) {
@@ -203,6 +205,29 @@ class CreateEntry extends CreateRecord
             ->body('Položka "'.$record->title.'" čeká na schválení publikace.')
             ->warning()
             ->sendToDatabase($approvers);
+    }
+
+    private function syncTaxonomyTerms(): void
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Entry) {
+            return;
+        }
+
+        $formState = $this->form->getRawState();
+
+        $incomingTermIds = collect($formState)
+            ->filter(fn ($value, string $key): bool => str_starts_with($key, 'taxonomy__'))
+            ->flatten()
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        if (! empty($incomingTermIds)) {
+            $record->terms()->sync($incomingTermIds);
+        }
     }
 
     private function makeCreateDraftAction(): Action

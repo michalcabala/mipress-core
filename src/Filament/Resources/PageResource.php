@@ -9,7 +9,8 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use MiPress\Core\Filament\Resources\EntryResource\RelationManagers\AuditLogsRelationManager;
+use MiPress\Core\Filament\RelationManagers\AuditLogsRelationManager;
+use MiPress\Core\Filament\RelationManagers\RevisionsRelationManager;
 use MiPress\Core\Filament\Resources\PageResource\Pages\CreatePage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\EditPage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\ListPages;
@@ -60,6 +61,7 @@ class PageResource extends Resource
     {
         return [
             AuditLogsRelationManager::class,
+            RevisionsRelationManager::class,
         ];
     }
 

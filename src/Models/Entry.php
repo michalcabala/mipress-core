@@ -10,18 +10,23 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Traits\Auditable;
+use MiPress\Core\Traits\HasRevisions;
+use MiPress\Core\Traits\HasSeo;
+use MiPress\Core\Traits\HasWorkflow;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Entry extends Model
 {
-    use Auditable, HasFactory, HasSlug, SoftDeletes;
+    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
 
     protected $table = 'entries';
 
@@ -33,6 +38,10 @@ class Entry extends Model
         'data',
         'status',
         'published_at',
+        'scheduled_at',
+        'meta_title',
+        'meta_description',
+        'og_image_id',
         'author_id',
         'sort_order',
         'parent_id',
@@ -55,6 +64,7 @@ class Entry extends Model
         'data' => 'array',
         'status' => EntryStatus::class,
         'published_at' => 'datetime',
+        'scheduled_at' => 'datetime',
         'sort_order' => 'integer',
         'parent_id' => 'integer',
     ];
@@ -107,23 +117,34 @@ class Entry extends Model
         return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'featured_image_id');
     }
 
-    public function scopePublished(Builder $query): Builder
+    public function ogImage(): BelongsTo
     {
-        return $query->where('status', EntryStatus::Published)
-            ->where(function (Builder $q) {
-                $q->whereNull('published_at')
-                    ->orWhere('published_at', '<=', now());
-            });
+        return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'og_image_id');
     }
 
-    public function scopeDraft(Builder $query): Builder
+    public function terms(): BelongsToMany
     {
-        return $query->where('status', EntryStatus::Draft);
+        return $this->belongsToMany(Term::class, 'entry_term');
+    }
+
+    public function translations(): HasMany
+    {
+        return $this->hasMany(self::class, 'origin_id');
     }
 
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order');
+    }
+
+    public function scopeForLocale(Builder $query, string $locale): Builder
+    {
+        return $query->where('locale', $locale);
+    }
+
+    public function scopeOriginals(Builder $query): Builder
+    {
+        return $query->whereNull('origin_id');
     }
 
     public function getPublicUrl(): ?string

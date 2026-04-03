@@ -47,7 +47,6 @@ class PageForm
     {
         $record = $schema->getRecord();
         $isEdit = $record instanceof Page;
-        $blueprint = $isEdit ? $record->blueprint : self::resolveDefaultBlueprint();
 
         $components = [];
 
@@ -94,14 +93,24 @@ class PageForm
                                         ->maxLength(200)
                                         ->rules(['alpha_dash']),
                                 ]),
-                                ...self::buildBlueprintSections($blueprint),
+                                Mason::make('content')
+                                    ->label('Obsah')
+                                    ->bricks(EditorialBrickCollection::make())
+                                    ->previewLayout('layouts.mason-preview')
+                                    ->colorModeToggle()
+                                    ->defaultColorMode('light')
+                                    ->doubleClickToEdit()
+                                    ->displayActionsAsGrid()
+                                    ->sortBricks()
+                                    ->sidebarPosition(SidebarPosition::End)
+                                    ->extraInputAttributes(['style' => 'min-height: 42rem;'])
+                                    ->columnSpanFull(),
                             ]),
 
                         Section::make('SEO')
                             ->icon('heroicon-o-magnifying-glass')
                             ->collapsible()
                             ->collapsed()
-                            ->statePath('data')
                             ->schema([
                                 TextInput::make('meta_title')
                                     ->label('SEO titulek')
@@ -227,6 +236,11 @@ class PageForm
                                     ->nullable()
                                     ->disabled(fn (): bool => ! ((bool) auth()->user()?->can('entry.publish')))
                                     ->helperText('Prázdné = publikovat ihned, budoucnost = naplánovat publikaci.'),
+                                DateTimePicker::make('scheduled_at')
+                                    ->label('Naplánovat na')
+                                    ->nullable()
+                                    ->helperText('Datum a čas automatického zveřejnění.')
+                                    ->visible(fn (): bool => (bool) auth()->user()?->can('entry.publish')),
                                 Select::make('author_id')
                                     ->label('Autor')
                                     ->relationship('author', 'name')

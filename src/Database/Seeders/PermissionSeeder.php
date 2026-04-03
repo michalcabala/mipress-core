@@ -34,6 +34,10 @@ class PermissionSeeder extends Seeder
         'global_set.create',
         'global_set.update',
         'global_set.delete',
+        'taxonomy.view',
+        'taxonomy.create',
+        'taxonomy.update',
+        'taxonomy.delete',
     ];
 
     private const ROLE_PERMISSIONS = [
@@ -48,6 +52,9 @@ class PermissionSeeder extends Seeder
             'media.view',
             'media.upload',
             'media.update',
+            'taxonomy.view',
+            'taxonomy.create',
+            'taxonomy.update',
         ],
         UserRole::Contributor->value => [
             'entry.view',
@@ -55,6 +62,7 @@ class PermissionSeeder extends Seeder
             'entry.update',
             'media.view',
             'media.upload',
+            'taxonomy.view',
         ],
     ];
 

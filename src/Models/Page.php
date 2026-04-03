@@ -11,17 +11,21 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\PageFactory;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Traits\Auditable;
+use MiPress\Core\Traits\HasRevisions;
+use MiPress\Core\Traits\HasSeo;
+use MiPress\Core\Traits\HasWorkflow;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Page extends Model
 {
-    use Auditable, HasFactory, HasSlug, SoftDeletes;
+    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
 
     protected $table = 'pages';
 
@@ -29,12 +33,17 @@ class Page extends Model
         'blueprint_id',
         'title',
         'slug',
+        'content',
         'data',
         'status',
         'published_at',
+        'scheduled_at',
+        'meta_title',
+        'meta_description',
         'author_id',
         'sort_order',
         'parent_id',
+        'origin_id',
         'featured_image_id',
         'locale',
         'review_note',
@@ -50,9 +59,11 @@ class Page extends Model
     ];
 
     protected $casts = [
+        'content' => 'array',
         'data' => 'array',
         'status' => EntryStatus::class,
         'published_at' => 'datetime',
+        'scheduled_at' => 'datetime',
         'sort_order' => 'integer',
         'parent_id' => 'integer',
     ];
@@ -95,23 +106,29 @@ class Page extends Model
         return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'featured_image_id');
     }
 
-    public function scopePublished(Builder $query): Builder
+    public function origin(): BelongsTo
     {
-        return $query->where('status', EntryStatus::Published)
-            ->where(function (Builder $q) {
-                $q->whereNull('published_at')
-                    ->orWhere('published_at', '<=', now());
-            });
+        return $this->belongsTo(self::class, 'origin_id');
     }
 
-    public function scopeDraft(Builder $query): Builder
+    public function translations(): HasMany
     {
-        return $query->where('status', EntryStatus::Draft);
+        return $this->hasMany(self::class, 'origin_id');
     }
 
     public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('sort_order');
+    }
+
+    public function scopeForLocale(Builder $query, string $locale): Builder
+    {
+        return $query->where('locale', $locale);
+    }
+
+    public function scopeOriginals(Builder $query): Builder
+    {
+        return $query->whereNull('origin_id');
     }
 
     public function getPublicUrl(): ?string
@@ -128,7 +145,8 @@ class Page extends Model
      */
     public function getMasonContent(): array
     {
-        $content = $this->data['content'] ?? null;
+        // Prefer new `content` column, fall back to legacy `data['content']`
+        $content = $this->content ?? ($this->data['content'] ?? null);
 
         if (! is_array($content)) {
             return [];

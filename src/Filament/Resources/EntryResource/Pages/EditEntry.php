@@ -69,6 +69,49 @@ class EditEntry extends EditRecord
         return $data;
     }
 
+    protected function afterSave(): void
+    {
+        $this->syncTaxonomyTerms();
+    }
+
+    private function syncTaxonomyTerms(): void
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Entry) {
+            return;
+        }
+
+        $formState = $this->form->getRawState();
+
+        $incomingTermIds = collect($formState)
+            ->filter(fn ($value, string $key): bool => str_starts_with($key, 'taxonomy__'))
+            ->flatten()
+            ->filter()
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+
+        // Obtain taxonomy IDs from the form keys to scope the sync
+        $taxonomyIds = collect($formState)
+            ->keys()
+            ->filter(fn (string $key): bool => str_starts_with($key, 'taxonomy__'))
+            ->map(fn (string $key): int => (int) str_replace('taxonomy__', '', $key))
+            ->values()
+            ->all();
+
+        // Remove old terms that belong to the collection's taxonomies
+        if (! empty($taxonomyIds)) {
+            $record->terms()->wherePivot('term_id', '!=', 0)
+                ->whereIn('taxonomy_id', $taxonomyIds)
+                ->detach();
+        }
+
+        if (! empty($incomingTermIds)) {
+            $record->terms()->attach($incomingTermIds);
+        }
+    }
+
     private function getPrimaryWorkflowAction(): ?Action
     {
         $record = $this->getRecord();

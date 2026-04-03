@@ -40,6 +40,8 @@ use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Term;
+use MiPress\Core\Services\BlueprintFieldResolver;
 
 class EntryForm
 {
@@ -107,14 +109,13 @@ class EntryForm
                                         ->maxLength(200)
                                         ->rules(['alpha_dash']),
                                 ]),
-                                ...self::buildBlueprintSections($blueprint),
+                                ...BlueprintFieldResolver::resolveAll($blueprint->fields ?? []),
                             ]),
 
                         Section::make('SEO')
                             ->icon('heroicon-o-magnifying-glass')
                             ->collapsible()
                             ->collapsed()
-                            ->statePath('data')
                             ->schema([
                                 TextInput::make('meta_title')
                                     ->label('SEO titulek')
@@ -123,6 +124,11 @@ class EntryForm
                                     ->label('SEO popis')
                                     ->maxLength(160)
                                     ->rows(3),
+                                CuratorPicker::make('og_image_id')
+                                    ->relationship('ogImage', 'id')
+                                    ->label('OG obrázek')
+                                    ->nullable()
+                                    ->helperText('Obrázek pro sdílení na sociálních sítích.'),
                             ]),
                     ]),
 
@@ -330,6 +336,8 @@ class EntryForm
                                     ->nullable(),
                             ]),
 
+                        ...self::buildTaxonomySections($collection, $record),
+
                         Section::make('Nastavení')
                             ->icon('heroicon-o-cog-6-tooth')
                             ->schema([
@@ -348,6 +356,11 @@ class EntryForm
                                     ->visible(fn (): bool => true)
                                     ->disabled(fn (): bool => ! ((bool) auth()->user()?->can('entry.publish')))
                                     ->helperText('Prázdné = publikovat ihned, budoucnost = naplánovat publikaci.'),
+                                DateTimePicker::make('scheduled_at')
+                                    ->label('Naplánovat na')
+                                    ->nullable()
+                                    ->helperText('Datum a čas automatického zveřejnění.')
+                                    ->visible(fn (): bool => (bool) auth()->user()?->can('entry.publish')),
                                 Select::make('author_id')
                                     ->label('Autor')
                                     ->relationship('author', 'name')
@@ -486,6 +499,53 @@ class EntryForm
         return $user->hasRole('contributor')
             && (int) $record->author_id === (int) $user->getKey()
             && $record->status === EntryStatus::InReview;
+    }
+
+    /**
+     * @param  Collection|null  $collection
+     * @param  Entry|null  $record
+     * @return array<int, Section>
+     */
+    private static function buildTaxonomySections(?Collection $collection, ?Entry $record): array
+    {
+        $taxonomies = $collection?->taxonomies ?? collect();
+
+        if ($taxonomies->isEmpty()) {
+            return [];
+        }
+
+        $fields = $taxonomies->map(function ($taxonomy) use ($record): Select {
+            $taxonomyId = $taxonomy->getKey();
+
+            return Select::make("taxonomy__{$taxonomyId}")
+                ->label($taxonomy->title)
+                ->multiple()
+                ->options(
+                    Term::where('taxonomy_id', $taxonomyId)
+                        ->orderBy('sort_order')
+                        ->orderBy('title')
+                        ->pluck('title', 'id')
+                        ->toArray()
+                )
+                ->afterStateHydrated(function ($component) use ($record, $taxonomyId): void {
+                    if ($record instanceof Entry) {
+                        $ids = $record->terms()
+                            ->where('taxonomy_id', $taxonomyId)
+                            ->pluck('terms.id')
+                            ->all();
+                        $component->state($ids);
+                    }
+                })
+                ->dehydrated(false)
+                ->searchable();
+        })->toArray();
+
+        return [
+            Section::make('Taxonomie')
+                ->icon('fal-sitemap')
+                ->collapsible()
+                ->schema($fields),
+        ];
     }
 
     /**

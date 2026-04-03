@@ -14,11 +14,16 @@ use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\GlobalSet;
 use MiPress\Core\Models\Page;
+use MiPress\Core\Models\Taxonomy;
+use MiPress\Core\Models\Term;
 use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
 use MiPress\Core\Policies\EntryPolicy;
 use MiPress\Core\Policies\GlobalSetPolicy;
 use MiPress\Core\Policies\PagePolicy;
+use MiPress\Core\Policies\TaxonomyPolicy;
+use MiPress\Core\Policies\TermPolicy;
+use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Theme\ThemeManager;
 
@@ -31,6 +36,7 @@ class MiPressServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(GlobalSetManager::class);
+        $this->app->singleton(BlueprintFieldResolver::class);
     }
 
     public function boot(): void
@@ -55,6 +61,8 @@ class MiPressServiceProvider extends ServiceProvider
         Gate::policy(Collection::class, CollectionPolicy::class);
         Gate::policy(Blueprint::class, BlueprintPolicy::class);
         Gate::policy(GlobalSet::class, GlobalSetPolicy::class);
+        Gate::policy(Taxonomy::class, TaxonomyPolicy::class);
+        Gate::policy(Term::class, TermPolicy::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([
