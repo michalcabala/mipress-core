@@ -35,6 +35,10 @@ class EditPage extends EditRecord
     {
         $actions = [];
 
+        if ($revisionsAction = $this->getRevisionsAction()) {
+            $actions[] = $revisionsAction;
+        }
+
         if ($previewAction = $this->getPreviewOrLiveAction()) {
             $actions[] = $previewAction;
         }
@@ -54,6 +58,25 @@ class EditPage extends EditRecord
         }
 
         return $actions;
+    }
+
+    private function getRevisionsAction(): ?Action
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Page) {
+            return null;
+        }
+
+        if (auth()->user()?->can('view', $record) !== true) {
+            return null;
+        }
+
+        return Action::make('revisions')
+            ->label('Revize')
+            ->icon('far-code-compare')
+            ->color('gray')
+            ->url(PageResource::getUrl('revisions', ['record' => $record]));
     }
 
     protected function getRedirectUrl(): string
