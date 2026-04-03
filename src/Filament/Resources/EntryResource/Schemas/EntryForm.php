@@ -525,8 +525,6 @@ class EntryForm
                         'parent_id',
                     )
                     ->multiple()
-                    ->independent(false)
-                    ->expandSelected()
                     ->enableBranchNode()
                     ->searchable()
                     ->parentNullValue(null)

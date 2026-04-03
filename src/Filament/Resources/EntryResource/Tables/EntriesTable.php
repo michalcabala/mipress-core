@@ -16,6 +16,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -307,7 +308,6 @@ class EntriesTable
                             )
                             ->multiple()
                             ->enableBranchNode()
-                            ->independent(false)
                             ->searchable()
                             ->parentNullValue(null),
                     ])
@@ -340,9 +340,10 @@ class EntriesTable
             return Filter::make("taxonomy_{$taxonomyId}")
                 ->label($taxonomy->title)
                 ->schema([
-                    SelectFilter::make("term_ids_{$taxonomyId}")
+                    Select::make("term_ids_{$taxonomyId}")
                         ->label($taxonomy->title)
                         ->multiple()
+                        ->searchable()
                         ->options(
                             Term::where('taxonomy_id', $taxonomyId)
                                 ->ordered()
