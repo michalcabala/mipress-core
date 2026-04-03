@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Tables;
 
 use App\Models\User;
-use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -18,6 +17,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -43,9 +43,13 @@ class EntriesTable
 
         return $table
             ->columns([
-                CuratorColumn::make('featuredImage')
+                ImageColumn::make('featuredImage')
                     ->label('Obrázek')
-                    ->size(40),
+                    ->height(40)
+                    ->width(40)
+                    ->state(fn (Entry $record): ?string => $record->featuredImage?->hasCuration('thumbnail')
+                        ? $record->featuredImage->getCuration('thumbnail')['url']
+                        : $record->featuredImage?->url),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -144,7 +148,7 @@ class EntriesTable
 
                                 Notification::make()
                                     ->title('Homepage zrušena')
-                                    ->body('Položka "' . $record->title . '" již není domovskou stránkou.')
+                                    ->body('Položka "'.$record->title.'" již není domovskou stránkou.')
                                     ->success()
                                     ->send();
 
@@ -165,7 +169,7 @@ class EntriesTable
 
                             Notification::make()
                                 ->title('Homepage nastavena')
-                                ->body('Položka "' . $record->title . '" je nyní domovskou stránkou.')
+                                ->body('Položka "'.$record->title.'" je nyní domovskou stránkou.')
                                 ->success()
                                 ->send();
                         })
