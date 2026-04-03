@@ -31,8 +31,17 @@ class MediaPolicy
             return true;
         }
 
+        if ($user->hasRole(UserRole::Editor->value) && $user->hasPermissionTo('media.update')) {
+            return true;
+        }
+
         return $media->uploaded_by === $user->id
-            && $user->hasPermissionTo('media.update');
+            && $user->hasPermissionTo('media.upload');
+    }
+
+    public function regenerateCurations(User $user, Media $media): bool
+    {
+        return $user->hasPermissionTo('media.upload');
     }
 
     public function delete(User $user, Media $media): bool

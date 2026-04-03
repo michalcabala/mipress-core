@@ -22,6 +22,7 @@ class EditMedia extends BaseEditMedia
                 ->label('Přegenerovat ořezy')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
+                ->authorize(fn () => auth()->user()->can('regenerateCurations', $this->getRecord()))
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat ořezy')
                 ->modalDescription('Přegeneruje všechny miniaturní ořezy pro tento soubor. Stávající ořezy budou přepsány.')
