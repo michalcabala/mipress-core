@@ -18,7 +18,7 @@ class CurationGenerator
     ];
 
     private const UPLOAD_CURATIONS = [
-        'thumbnail' => ['width' => 150, 'height' => 150, 'mode' => 'cover'],
+        'thumbnail' => ['width' => 200, 'height' => 200, 'mode' => 'cover'],
         'medium' => ['width' => 600, 'height' => null, 'mode' => 'scale'],
         'large' => ['width' => 1200, 'height' => null, 'mode' => 'scale'],
     ];

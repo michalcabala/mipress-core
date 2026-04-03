@@ -68,7 +68,7 @@ class MiPressServiceProvider extends ServiceProvider
         Media::observe(MediaObserver::class);
 
         app(CurationManager::class)->presets([
-            new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 150, height: 150, format: 'jpeg', quality: 85),
+            new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 200, height: 200, format: 'jpeg', quality: 85),
             new CurationPreset(key: 'medium', label: 'Střední', width: 600, height: null, format: 'jpeg', quality: 85),
             new CurationPreset(key: 'large', label: 'Velký', width: 1200, height: null, format: 'jpeg', quality: 85),
             new CurationPreset(key: 'og', label: 'OG Image', width: 1200, height: 630, format: 'jpeg', quality: 85),
