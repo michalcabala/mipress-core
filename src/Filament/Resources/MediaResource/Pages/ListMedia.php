@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources\MediaResource\Pages;
 use Awcodes\Curator\Models\Media;
 use Awcodes\Curator\Resources\Media\Pages\ListMedia as BaseListMedia;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use MiPress\Core\Jobs\RegenerateCurationsJob;
 use MiPress\Core\Services\CurationGenerator;
@@ -22,6 +23,8 @@ class ListMedia extends BaseListMedia
                 ->label('Přegenerovat vše')
                 ->icon('heroicon-o-arrow-path')
                 ->color('gray')
+                ->visible(fn (): bool => Filament::auth()->user()?->hasPermissionTo('media.update') ?? false)
+                ->authorize(fn (): bool => Filament::auth()->user()?->hasPermissionTo('media.update') ?? false)
                 ->requiresConfirmation()
                 ->modalHeading('Přegenerovat všechny ořezy')
                 ->modalDescription('Přegeneruje miniaturní ořezy pro všechny rastrové obrázky v knihovně médií. Pro velký počet souborů bude zpracování probíhat na pozadí.')
