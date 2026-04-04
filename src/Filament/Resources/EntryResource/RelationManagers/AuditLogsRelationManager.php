@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\RelationManagers;
 
+use BackedEnum;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -14,7 +15,7 @@ class AuditLogsRelationManager extends RelationManager
 
     protected static ?string $title = 'Historie změn';
 
-    protected static ?string $icon = 'far-clock-rotate-left';
+    protected static string|BackedEnum|null $icon = 'far-clock-rotate-left';
 
     public function isReadOnly(): bool
     {
