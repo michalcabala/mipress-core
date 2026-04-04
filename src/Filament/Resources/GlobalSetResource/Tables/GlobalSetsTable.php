@@ -24,9 +24,9 @@ class GlobalSetsTable
                     ->label('Handle')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('data')
+                TextColumn::make('data_count')
                     ->label('Počet položek')
-                    ->formatStateUsing(fn (array $state): string => (string) count($state))
+                    ->state(fn ($record): int => is_array($record->data) ? count($record->data) : 0)
                     ->sortable(false),
                 TextColumn::make('updated_at')
                     ->label('Aktualizováno')
