@@ -45,6 +45,8 @@ class PermissionSeeder extends Seeder
         'form_submission.view',
         'form_submission.update',
         'form_submission.delete',
+        'seo_robots.manage',
+        'seo_sitemap.manage',
     ];
 
     private const ROLE_PERMISSIONS = [
