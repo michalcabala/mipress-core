@@ -39,6 +39,8 @@ class MiPressServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->mergeConfigFrom(__DIR__.'/../config/mipress.php', 'mipress');
+
         $this->app->singleton(ThemeManager::class, function (): ThemeManager {
             return new ThemeManager(resource_path('themes'));
         });
@@ -86,6 +88,10 @@ class MiPressServiceProvider extends ServiceProvider
         Gate::policy(Term::class, TermPolicy::class);
 
         if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/mipress.php' => config_path('mipress.php'),
+            ], 'mipress-config');
+
             $this->commands([
                 PublishScheduledEntries::class,
                 PublishThemeAssets::class,

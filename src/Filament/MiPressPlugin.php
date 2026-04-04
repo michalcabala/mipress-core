@@ -11,6 +11,7 @@ use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Table;
 use Filament\View\PanelsIconAlias;
 use Filament\View\PanelsRenderHook;
+use MiPress\Core\Filament\Pages\SiteSettings;
 use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
@@ -53,6 +54,7 @@ class MiPressPlugin implements Plugin
                 TermResource::class,
             ])
             ->pages([
+                SiteSettings::class,
                 ThemeSettings::class,
             ]);
     }

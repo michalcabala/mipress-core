@@ -30,6 +30,11 @@ class GlobalSetManager
         return $this->find($handle)?->get($key, $default) ?? $default;
     }
 
+    public function flush(): void
+    {
+        $this->sets = null;
+    }
+
     /**
      * @return Collection<int, GlobalSet>
      */
