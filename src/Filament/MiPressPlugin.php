@@ -69,7 +69,7 @@ class MiPressPlugin implements Plugin
         ]);
 
         FilamentView::registerRenderHook(
-            PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+            PanelsRenderHook::SIDEBAR_NAV_START,
             fn (): string => view('mipress::filament.components.topbar-frontend-link', [
                 'siteName' => app(GlobalSetManager::class)->get('general', 'site_name'),
             ])->render(),
