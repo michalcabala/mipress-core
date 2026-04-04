@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use MiPress\Core\Filament\Clusters\ContentCluster;
 use MiPress\Core\Filament\Resources\CollectionResource\Pages\CreateCollection;
 use MiPress\Core\Filament\Resources\CollectionResource\Pages\EditCollection;
 use MiPress\Core\Filament\Resources\CollectionResource\Pages\ListCollections;
@@ -20,11 +21,11 @@ class CollectionResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-layer-group';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
+    protected static ?string $cluster = ContentCluster::class;
 
-    protected static ?string $modelLabel = 'Sekce';
+    protected static ?string $modelLabel = 'Typ obsahu';
 
-    protected static ?string $pluralModelLabel = 'Sekce';
+    protected static ?string $pluralModelLabel = 'Typy obsahu';
 
     protected static ?int $navigationSort = 10;
 

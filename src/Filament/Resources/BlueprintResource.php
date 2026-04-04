@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use MiPress\Core\Filament\Clusters\ContentCluster;
 use MiPress\Core\Filament\Resources\BlueprintResource\Pages\CreateBlueprint;
 use MiPress\Core\Filament\Resources\BlueprintResource\Pages\EditBlueprint;
 use MiPress\Core\Filament\Resources\BlueprintResource\Pages\ListBlueprints;
@@ -20,11 +21,11 @@ class BlueprintResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-pen-ruler';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
+    protected static ?string $cluster = ContentCluster::class;
 
-    protected static ?string $modelLabel = 'Šablona';
+    protected static ?string $modelLabel = 'Struktura';
 
-    protected static ?string $pluralModelLabel = 'Šablony';
+    protected static ?string $pluralModelLabel = 'Struktury';
 
     protected static ?int $navigationSort = 20;
 

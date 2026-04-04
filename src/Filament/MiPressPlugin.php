@@ -34,6 +34,7 @@ class MiPressPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel
+            ->discoverClusters(in: __DIR__, for: 'MiPress\\Core\\Filament')
             ->navigationGroups([
                 'Obsah',
                 'Formuláře',

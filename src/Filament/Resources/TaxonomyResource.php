@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
+use MiPress\Core\Filament\Clusters\ContentCluster;
 use MiPress\Core\Filament\Resources\TaxonomyResource\Pages\CreateTaxonomy;
 use MiPress\Core\Filament\Resources\TaxonomyResource\Pages\EditTaxonomy;
 use MiPress\Core\Filament\Resources\TaxonomyResource\Pages\ListTaxonomies;
@@ -19,17 +20,17 @@ class TaxonomyResource extends Resource
 {
     protected static ?string $model = Taxonomy::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'fal-sitemap';
+    protected static string|\BackedEnum|null $navigationIcon = 'fal-list-tree';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
+    protected static ?string $cluster = ContentCluster::class;
 
-    protected static ?string $modelLabel = 'Třídění';
+    protected static ?string $modelLabel = 'Taxonomie';
 
-    protected static ?string $pluralModelLabel = 'Třídění';
+    protected static ?string $pluralModelLabel = 'Taxonomie';
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    protected static ?int $navigationSort = 15;
+    protected static ?int $navigationSort = 30;
 
     public static function form(Schema $schema): Schema
     {
