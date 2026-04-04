@@ -7,10 +7,8 @@ namespace MiPress\Core\Filament;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentIcon;
-use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Table;
 use Filament\View\PanelsIconAlias;
-use Filament\View\PanelsRenderHook;
 use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
@@ -20,7 +18,6 @@ use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Resources\TaxonomyResource;
 use MiPress\Core\Filament\Resources\TermResource;
 use MiPress\Core\Filament\Resources\UserResource;
-use MiPress\Core\Services\GlobalSetManager;
 
 class MiPressPlugin implements Plugin
 {
@@ -67,12 +64,5 @@ class MiPressPlugin implements Plugin
         FilamentIcon::register([
             PanelsIconAlias::PAGES_DASHBOARD_NAVIGATION_ITEM => 'fal-gauge-high',
         ]);
-
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::SIDEBAR_NAV_START,
-            fn (): string => view('mipress::filament.components.topbar-frontend-link', [
-                'siteName' => app(GlobalSetManager::class)->get('general', 'site_name'),
-            ])->render(),
-        );
     }
 }
