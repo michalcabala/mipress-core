@@ -1,17 +1,9 @@
-<div class="flex items-center gap-3 px-3">
-    @if($siteName)
-        <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 whitespace-nowrap">{{ $siteName }}</span>
-    @endif
-
-    <x-filament::button
-        icon="fal-arrow-up-right-from-square"
-        icon-position="after"
-        href="{{ url('/') }}"
-        target="_blank"
-        rel="noopener noreferrer"
-        tag="a"
-        size="sm"
-    >
-        Zobrazit web
-    </x-filament::button>
-</div>
+<a
+    href="{{ url('/') }}"
+    target="_blank"
+    rel="noopener noreferrer"
+    class="flex items-center gap-1.5 text-sm font-semibold text-gray-700 hover:text-primary-600 dark:text-gray-300 dark:hover:text-primary-400 whitespace-nowrap transition"
+>
+    {{ $siteName ?: config('app.name') }}
+    <x-filament::icon icon="fal-arrow-up-right-from-square" class="h-3.5 w-3.5" />
+</a>
