@@ -40,7 +40,7 @@ class TaxonomiesTable
                     ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Upraveno')
-                    ->dateTime('j. n. Y')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
             ])

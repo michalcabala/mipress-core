@@ -29,7 +29,7 @@ trait ConfiguresRevisionTable
             ->columns([
                 TextColumn::make('created_at')
                     ->label('Datum')
-                    ->dateTime('j. n. Y H:i:s')
+                    ->isoDateTime('LLL')
                     ->sortable(),
                 TextColumn::make('user.name')
                     ->label('Uložil')

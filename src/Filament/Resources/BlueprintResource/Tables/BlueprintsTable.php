@@ -32,7 +32,7 @@ class BlueprintsTable
                     ->sortable(),
                 TextColumn::make('updated_at')
                     ->label('Upraveno')
-                    ->dateTime('j. n. Y H:i')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
             ])

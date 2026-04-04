@@ -72,13 +72,13 @@ class UsersTable
 
                 TextColumn::make('created_at')
                     ->label('Vytvořen')
-                    ->dateTime('d.m.Y H:i')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('deleted_at')
                     ->label('Smazán')
-                    ->dateTime('d.m.Y H:i')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

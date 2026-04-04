@@ -30,7 +30,7 @@ class GlobalSetsTable
                     ->sortable(false),
                 TextColumn::make('updated_at')
                     ->label('Aktualizováno')
-                    ->dateTime('d.m.Y H:i')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
             ])

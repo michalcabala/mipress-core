@@ -78,12 +78,12 @@ class EntriesTable
                 ...static::getTaxonomyColumns($currentCollection),
                 TextColumn::make('published_at')
                     ->label('Publikováno')
-                    ->dateTime('j. n. Y H:i')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('updated_at')
                     ->label('Upraveno')
-                    ->dateTime('j. n. Y H:i')
+                    ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
             ])
