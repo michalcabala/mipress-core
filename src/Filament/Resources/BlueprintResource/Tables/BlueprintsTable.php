@@ -31,8 +31,11 @@ class BlueprintsTable
                     ->counts('collections')
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->label('Upraveno')
+                    ->label('Datum')
                     ->isoDateTime('LLL')
+                    ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
+                        ? 'Vytvořeno ' . $record->created_at->isoFormat('LLL')
+                        : null)
                     ->sortable()
                     ->toggleable(),
             ])

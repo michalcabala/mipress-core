@@ -29,8 +29,11 @@ class GlobalSetsTable
                     ->state(fn ($record): int => is_array($record->data) ? count($record->data) : 0)
                     ->sortable(false),
                 TextColumn::make('updated_at')
-                    ->label('Aktualizováno')
+                    ->label('Datum')
                     ->isoDateTime('LLL')
+                    ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
+                        ? 'Vytvořeno ' . $record->created_at->isoFormat('LLL')
+                        : null)
                     ->sortable()
                     ->toggleable(),
             ])
