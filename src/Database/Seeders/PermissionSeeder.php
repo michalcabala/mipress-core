@@ -38,6 +38,13 @@ class PermissionSeeder extends Seeder
         'taxonomy.create',
         'taxonomy.update',
         'taxonomy.delete',
+        'form.view',
+        'form.create',
+        'form.update',
+        'form.delete',
+        'form_submission.view',
+        'form_submission.update',
+        'form_submission.delete',
     ];
 
     private const ROLE_PERMISSIONS = [
@@ -55,6 +62,11 @@ class PermissionSeeder extends Seeder
             'taxonomy.view',
             'taxonomy.create',
             'taxonomy.update',
+            'form.view',
+            'form.create',
+            'form.update',
+            'form_submission.view',
+            'form_submission.update',
         ],
         UserRole::Contributor->value => [
             'entry.view',
