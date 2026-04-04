@@ -20,6 +20,7 @@ use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Resources\TaxonomyResource;
 use MiPress\Core\Filament\Resources\TermResource;
 use MiPress\Core\Filament\Resources\UserResource;
+use MiPress\Core\Services\GlobalSetManager;
 
 class MiPressPlugin implements Plugin
 {
@@ -68,8 +69,10 @@ class MiPressPlugin implements Plugin
         ]);
 
         FilamentView::registerRenderHook(
-            PanelsRenderHook::TOPBAR_LOGO_AFTER,
-            fn (): string => view('mipress::filament.components.topbar-frontend-link')->render(),
+            PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+            fn (): string => view('mipress::filament.components.topbar-frontend-link', [
+                'siteName' => app(GlobalSetManager::class)->get('general', 'site_name'),
+            ])->render(),
         );
     }
 }
