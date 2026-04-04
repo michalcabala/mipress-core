@@ -73,11 +73,6 @@ class PagesTable
                 TextColumn::make('author.name')
                     ->label('Autor')
                     ->sortable(),
-                TextColumn::make('published_at')
-                    ->label('Publikováno')
-                    ->isoDateTime('LLL')
-                    ->sortable()
-                    ->toggleable(),
                 TextColumn::make('updated_at')
                     ->label('Datum')
                     ->isoDateTime('LLL')

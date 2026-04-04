@@ -76,11 +76,6 @@ class EntriesTable
                     ->label('Autor')
                     ->sortable(),
                 ...static::getTaxonomyColumns($currentCollection),
-                TextColumn::make('published_at')
-                    ->label('Publikováno')
-                    ->isoDateTime('LLL')
-                    ->sortable()
-                    ->toggleable(),
                 TextColumn::make('updated_at')
                     ->label('Datum')
                     ->isoDateTime('LLL')
