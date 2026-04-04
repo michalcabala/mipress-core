@@ -72,9 +72,6 @@ class EntriesTable
                     ->badge()
                     ->color(fn (EntryStatus $state) => $state->getColor())
                     ->sortable(),
-                TextColumn::make('author.name')
-                    ->label('Autor')
-                    ->sortable(),
                 ...static::getTaxonomyColumns($currentCollection),
                 TextColumn::make('updated_at')
                     ->label('Datum')
@@ -84,6 +81,9 @@ class EntriesTable
                         : null)
                     ->sortable()
                     ->toggleable(),
+                TextColumn::make('author.name')
+                    ->label('Autor')
+                    ->sortable(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
@@ -295,14 +295,29 @@ class EntriesTable
 
         return $taxonomies->map(fn (Taxonomy $taxonomy): TextColumn => TextColumn::make("taxonomy_{$taxonomy->getKey()}")
             ->label($taxonomy->title)
-            ->state(fn (Entry $record): string => $record->terms
-                ->where('taxonomy_id', $taxonomy->getKey())
-                ->pluck('title')
-                ->implode(', '))
+            ->state(fn (Entry $record): string => static::formatTaxonomyBadges($record, $taxonomy))
+            ->html()
             ->toggleable()
             ->searchable(false)
             ->sortable(false)
         )->toArray();
+    }
+
+    private static function formatTaxonomyBadges(Entry $record, Taxonomy $taxonomy): string
+    {
+        $terms = $record->terms
+            ->where('taxonomy_id', $taxonomy->getKey())
+            ->pluck('title')
+            ->filter()
+            ->values();
+
+        if ($terms->isEmpty()) {
+            return '<span class="text-gray-500">-</span>';
+        }
+
+        return $terms
+            ->map(fn (string $term): string => '<span class="fi-badge fi-color-custom bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">' . e($term) . '</span>')
+            ->implode(' ');
     }
 
     /**
