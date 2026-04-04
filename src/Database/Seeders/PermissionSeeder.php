@@ -67,6 +67,7 @@ class PermissionSeeder extends Seeder
             'form.view',
             'form.create',
             'form.update',
+            'form.delete',
             'form_submission.view',
             'form_submission.update',
         ],
