@@ -10,6 +10,7 @@ use Awcodes\Curator\Models\Media;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
+use MiPress\Core\Console\Commands\GenerateSitemap;
 use MiPress\Core\Console\Commands\PublishScheduledEntries;
 use MiPress\Core\Console\Commands\PublishThemeAssets;
 use MiPress\Core\Models\Blueprint;
@@ -19,6 +20,7 @@ use MiPress\Core\Models\GlobalSet;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
+use MiPress\Core\Observers\ContentObserver;
 use MiPress\Core\Observers\MediaObserver;
 use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
@@ -33,6 +35,7 @@ use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Services\MediaCurationOrchestrator;
 use MiPress\Core\Services\MediaPathGenerator;
+use MiPress\Core\Services\SitemapGenerator;
 use MiPress\Core\Theme\ThemeManager;
 
 class MiPressServiceProvider extends ServiceProvider
@@ -50,6 +53,7 @@ class MiPressServiceProvider extends ServiceProvider
         $this->app->singleton(CurationGenerator::class);
         $this->app->singleton(MediaCurationOrchestrator::class);
         $this->app->singleton(MediaPathGenerator::class);
+        $this->app->singleton(SitemapGenerator::class);
     }
 
     public function boot(): void
@@ -70,6 +74,8 @@ class MiPressServiceProvider extends ServiceProvider
         });
 
         Media::observe(MediaObserver::class);
+        Entry::observe(ContentObserver::class);
+        Page::observe(ContentObserver::class);
 
         app(CurationManager::class)->presets([
             new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 200, height: 200, format: 'jpeg', quality: 85),
@@ -93,6 +99,7 @@ class MiPressServiceProvider extends ServiceProvider
             ], 'mipress-config');
 
             $this->commands([
+                GenerateSitemap::class,
                 PublishScheduledEntries::class,
                 PublishThemeAssets::class,
             ]);

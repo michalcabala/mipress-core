@@ -38,4 +38,29 @@ return [
 
     'admin_path' => env('MIPRESS_ADMIN_PATH', 'mpcp'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Sitemap
+    |--------------------------------------------------------------------------
+    |
+    | Configure which Eloquent models are included in the generated sitemap.
+    | Each entry maps a model class to its default priority and change
+    | frequency. Models must have a getPublicUrl() method and a
+    | scopePublished() query scope.
+    |
+    */
+
+    'sitemap' => [
+        'models' => [
+            \MiPress\Core\Models\Entry::class => [
+                'priority' => 0.8,
+                'changefreq' => 'weekly',
+            ],
+            \MiPress\Core\Models\Page::class => [
+                'priority' => 0.6,
+                'changefreq' => 'monthly',
+            ],
+        ],
+    ],
+
 ];
