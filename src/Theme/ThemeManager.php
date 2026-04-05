@@ -56,14 +56,19 @@ class ThemeManager
 
     public function getActive(): string
     {
-        return Cache::remember(self::CACHE_KEY, 3600, function (): string {
-            try {
-                return Setting::getValue(self::SETTING_KEY, self::DEFAULT_THEME) ?? self::DEFAULT_THEME;
-            } catch (\Exception) {
-                // settings table may not exist yet during initial install
-                return self::DEFAULT_THEME;
-            }
-        });
+        try {
+            return Cache::remember(self::CACHE_KEY, 3600, function (): string {
+                try {
+                    return Setting::getValue(self::SETTING_KEY, self::DEFAULT_THEME) ?? self::DEFAULT_THEME;
+                } catch (\Exception) {
+                    // settings table may not exist yet during initial install
+                    return self::DEFAULT_THEME;
+                }
+            });
+        } catch (\Exception) {
+            // cache table may not exist yet during initial install
+            return self::DEFAULT_THEME;
+        }
     }
 
     public function activate(string $slug): void
