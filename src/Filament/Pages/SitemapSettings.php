@@ -9,10 +9,10 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Filament\Clusters\SeoCluster;
@@ -20,7 +20,7 @@ use MiPress\Core\Jobs\GenerateSitemapJob;
 use MiPress\Core\Models\Setting;
 
 /**
- * @property Form $form
+ * @property Schema $form
  */
 class SitemapSettings extends Page
 {
@@ -61,7 +61,7 @@ class SitemapSettings extends Page
         ]);
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([
