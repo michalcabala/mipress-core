@@ -36,6 +36,11 @@ use MiPress\Core\Models\Term;
 
 class EntriesTable
 {
+    /**
+     * @var array<int, array<int, string>>
+     */
+    private static array $taxonomyTermOptionsCache = [];
+
     public static function table(Table $table, ?Collection $collection = null): Table
     {
         $currentCollection = $collection ?? EntryResource::getCurrentCollection();
@@ -313,12 +318,7 @@ class EntriesTable
                         ->label($taxonomy->title)
                         ->multiple()
                         ->searchable()
-                        ->options(
-                            Term::where('taxonomy_id', $taxonomyId)
-                                ->ordered()
-                                ->pluck('title', 'id')
-                                ->toArray()
-                        ),
+                        ->options(fn (): array => static::getTaxonomyTermOptions($taxonomyId)),
                 ])
                 ->query(function (Builder $query, array $data) use ($taxonomyId): Builder {
                     $termIds = $data["term_ids_{$taxonomyId}"] ?? [];
@@ -345,5 +345,22 @@ class EntriesTable
                     return $taxonomy->title.': '.$names;
                 });
         })->toArray();
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function getTaxonomyTermOptions(int $taxonomyId): array
+    {
+        if (array_key_exists($taxonomyId, static::$taxonomyTermOptionsCache)) {
+            return static::$taxonomyTermOptionsCache[$taxonomyId];
+        }
+
+        static::$taxonomyTermOptionsCache[$taxonomyId] = Term::where('taxonomy_id', $taxonomyId)
+            ->ordered()
+            ->pluck('title', 'id')
+            ->toArray();
+
+        return static::$taxonomyTermOptionsCache[$taxonomyId];
     }
 }
