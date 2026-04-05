@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Tables;
 
 use App\Models\User;
-use Filament\Actions\Action;
+use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -15,18 +15,15 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
-use Filament\Notifications\Notification;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use CodeWithDennis\FilamentSelectTree\SelectTree;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
@@ -68,7 +65,7 @@ class EntriesTable
                     ->label('Datum')
                     ->isoDateTime('LLL')
                     ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                        ? 'Vytvořeno ' . $record->created_at->isoFormat('LLL')
+                        ? 'Vytvořeno '.$record->created_at->isoFormat('LLL')
                         : null)
                     ->sortable()
                     ->toggleable(),
@@ -83,22 +80,19 @@ class EntriesTable
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions($currentCollection))
                     ->searchable(),
-                Filter::make('created_at_range')
+                DateRangeFilter::make('created_at')
                     ->label('Datum vytvoření')
-                    ->schema([
-                        DatePicker::make('from')->label('Od'),
-                        DatePicker::make('until')->label('Do'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                filled($data['from'] ?? null),
-                                fn (Builder $q): Builder => $q->whereDate('created_at', '>=', $data['from']),
-                            )
-                            ->when(
-                                filled($data['until'] ?? null),
-                                fn (Builder $q): Builder => $q->whereDate('created_at', '<=', $data['until']),
-                            );
+                    ->format('d.m.Y')
+                    ->withIndicator()
+                    ->modifyQueryUsing(function (Builder $query, ?Carbon $startDate, ?Carbon $endDate, mixed $dateString): Builder {
+                        if (blank($dateString) || ! $startDate || ! $endDate) {
+                            return $query;
+                        }
+
+                        return $query->whereBetween('created_at', [
+                            $startDate->copy()->startOfDay(),
+                            $endDate->copy()->endOfDay(),
+                        ]);
                     }),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')
@@ -245,7 +239,7 @@ class EntriesTable
         }
 
         return $terms
-            ->map(fn (string $term): string => '<span class="fi-badge fi-color-custom bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">' . e($term) . '</span>')
+            ->map(fn (string $term): string => '<span class="fi-badge fi-color-custom bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">'.e($term).'</span>')
             ->implode(' ');
     }
 

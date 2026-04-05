@@ -15,15 +15,14 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
-use Filament\Forms\Components\DatePicker;
 use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
@@ -85,22 +84,19 @@ class PagesTable
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions())
                     ->searchable(),
-                Filter::make('created_at_range')
+                DateRangeFilter::make('created_at')
                     ->label('Datum vytvoření')
-                    ->schema([
-                        DatePicker::make('from')->label('Od'),
-                        DatePicker::make('until')->label('Do'),
-                    ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                filled($data['from'] ?? null),
-                                fn (Builder $q): Builder => $q->whereDate('created_at', '>=', $data['from']),
-                            )
-                            ->when(
-                                filled($data['until'] ?? null),
-                                fn (Builder $q): Builder => $q->whereDate('created_at', '<=', $data['until']),
-                            );
+                    ->format('d.m.Y')
+                    ->withIndicator()
+                    ->modifyQueryUsing(function (Builder $query, ?Carbon $startDate, ?Carbon $endDate, mixed $dateString): Builder {
+                        if (blank($dateString) || ! $startDate || ! $endDate) {
+                            return $query;
+                        }
+
+                        return $query->whereBetween('created_at', [
+                            $startDate->copy()->startOfDay(),
+                            $endDate->copy()->endOfDay(),
+                        ]);
                     }),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')
