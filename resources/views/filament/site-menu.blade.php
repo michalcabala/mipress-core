@@ -4,7 +4,7 @@
             type="button"
             class="inline-flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-gray-500 transition hover:bg-gray-50 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200"
         >
-            <x-filament::icon icon="fal-globe" class="h-5 w-5 shrink-0" />
+            <x-filament::icon icon="fal-globe-pointer" class="h-5 w-5 shrink-0" />
             <span class="hidden sm:inline text-sm">{{ $siteName }}</span>
         </button>
     </x-slot>
