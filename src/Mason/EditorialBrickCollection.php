@@ -29,6 +29,10 @@ class EditorialBrickCollection
             $externalBricks = (array) app('mipress.forms.mason.bricks');
         }
 
+        if (app()->bound('mipress.social-feeds.mason.bricks')) {
+            $externalBricks = [...$externalBricks, ...(array) app('mipress.social-feeds.mason.bricks')];
+        }
+
         return array_values(array_unique([...$bricks, ...$externalBricks]));
     }
 }
