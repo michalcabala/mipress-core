@@ -40,6 +40,7 @@ class MiPressPlugin implements Plugin
             ->navigationGroups([
                 'Obsah',
                 'Formuláře',
+                'Sociální sítě',
                 'Nastavení',
                 'Uživatelé',
             ])
