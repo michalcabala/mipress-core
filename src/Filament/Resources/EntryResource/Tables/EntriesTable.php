@@ -27,24 +27,17 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Livewire\Component;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
-use MiPress\Core\Models\Setting;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 
 class EntriesTable
 {
-    private const HOMEPAGE_PAGE_SETTING_KEY = 'site.homepage_page_id';
-
-    private const LEGACY_HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
-
     public static function table(Table $table, ?Collection $collection = null): Table
     {
-        $homepageId = self::resolveHomepageId();
         $currentCollection = $collection ?? EntryResource::getCurrentCollection();
 
         return $table
@@ -59,14 +52,7 @@ class EntriesTable
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
-                    ->sortable()
-                    ->description(function (Entry $record, Component $livewire) use ($homepageId): ?string {
-                        if (! static::isInPagesCollection($livewire)) {
-                            return null;
-                        }
-
-                        return ((string) $record->getKey()) === $homepageId ? 'Domovská stránka' : null;
-                    }),
+                    ->sortable(),
                 TextColumn::make('status')
                     ->label('Stav')
                     ->badge()
@@ -130,57 +116,6 @@ class EntriesTable
             ])
             ->actions([
                 ActionGroup::make([
-                    Action::make('toggleHomepage')
-                        ->label(function (Entry $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId
-                                ? 'Zrušit homepage'
-                                : 'Nastavit jako homepage';
-                        })
-                        ->icon(function (Entry $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId
-                                ? 'fal-house-circle-xmark'
-                                : 'fal-house';
-                        })
-                        ->color(function (Entry $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId ? 'danger' : 'gray';
-                        })
-                        ->requiresConfirmation()
-                        ->action(function (Entry $record): void {
-                            $homepageId = self::resolveHomepageId();
-                            $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;
-
-                            if ($isCurrentHomepage) {
-                                Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, null);
-                                Setting::putValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY, null);
-
-                                Notification::make()
-                                    ->title('Homepage zrušena')
-                                    ->body('Položka "'.$record->title.'" již není domovskou stránkou.')
-                                    ->success()
-                                    ->send();
-
-                                return;
-                            }
-
-                            if ($record->status !== EntryStatus::Published) {
-                                Notification::make()
-                                    ->title('Nelze nastavit jako homepage')
-                                    ->body('Domovskou stránku lze nastavit pouze na publikovaný obsah.')
-                                    ->danger()
-                                    ->send();
-
-                                return;
-                            }
-
-                            Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, (string) $record->getKey());
-
-                            Notification::make()
-                                ->title('Homepage nastavena')
-                                ->body('Položka "'.$record->title.'" je nyní domovskou stránkou.')
-                                ->success()
-                                ->send();
-                        })
-                        ->visible(fn (Entry $record, Component $livewire): bool => static::isInPagesCollection($livewire) && auth()->user()?->can('publish', $record) === true),
                     EditAction::make()
                         ->visible(fn (Entry $record): bool => auth()->user()?->can('update', $record) === true && ! $record->trashed()),
                     RestoreAction::make()
@@ -198,17 +133,6 @@ class EntriesTable
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    private static function isInPagesCollection(Component $livewire): bool
-    {
-        return property_exists($livewire, 'collectionHandle') && $livewire->collectionHandle === 'pages';
-    }
-
-    private static function resolveHomepageId(): ?string
-    {
-        return Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY)
-            ?? Setting::getValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY);
     }
 
     /**
