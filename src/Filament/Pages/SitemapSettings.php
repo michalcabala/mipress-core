@@ -24,7 +24,7 @@ use MiPress\Core\Models\Setting;
  */
 class SitemapSettings extends Page
 {
-    protected static string $view = 'mipress::filament.pages.sitemap-settings';
+    protected string $view = 'mipress::filament.pages.sitemap-settings';
 
     protected static ?string $cluster = SeoCluster::class;
 
