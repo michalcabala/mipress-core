@@ -24,7 +24,7 @@ class PullQuoteBrick extends Brick
 
     public static function getIcon(): string
     {
-        return 'heroicon-o-chat-bubble-left-right';
+        return 'fal-comments';
     }
 
     public static function toHtml(array $config, ?array $data = null): ?string

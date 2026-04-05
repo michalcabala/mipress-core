@@ -24,7 +24,7 @@ class NarrativeBrick extends Brick
 
     public static function getIcon(): string
     {
-        return 'heroicon-o-document-text';
+        return 'fal-file-lines';
     }
 
     public static function toHtml(array $config, ?array $data = null): ?string

@@ -23,7 +23,7 @@ trait HasSeo
     public static function seoFormSchema(): Section
     {
         return Section::make('SEO')
-            ->icon('heroicon-o-magnifying-glass')
+            ->icon('fal-magnifying-glass')
             ->collapsible()
             ->collapsed()
             ->schema([

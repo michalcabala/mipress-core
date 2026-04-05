@@ -56,7 +56,7 @@ class EntryResource extends Resource
 
         return $collections
             ->map(fn (Collection $collection) => NavigationItem::make($collection->name)
-                ->icon($collection->icon ?? 'heroicon-o-document')
+                ->icon($collection->icon ?? 'fal-file-lines')
                 ->group('Obsah')
                 ->sort($collection->sort_order)
                 ->url(static::getUrl('index', ['collection' => $collection->handle]))

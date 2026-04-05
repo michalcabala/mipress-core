@@ -25,7 +25,7 @@ class InsightGridBrick extends Brick
 
     public static function getIcon(): string
     {
-        return 'heroicon-o-squares-2x2';
+        return 'fal-table-cells-large';
     }
 
     public static function toHtml(array $config, ?array $data = null): ?string

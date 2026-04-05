@@ -21,7 +21,7 @@ class MediaTable extends BaseMediaTable
         return $table->pushToolbarActions([
             BulkAction::make('regenerate_curations')
                 ->label('Přegenerovat ořezy')
-                ->icon('heroicon-o-arrow-path')
+                ->icon('fal-arrows-rotate')
                 ->color('gray')
                 ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateSelectedCurations', Media::class) ?? false)
                 ->requiresConfirmation()

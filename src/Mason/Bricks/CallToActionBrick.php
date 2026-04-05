@@ -23,7 +23,7 @@ class CallToActionBrick extends Brick
 
     public static function getIcon(): string
     {
-        return 'heroicon-o-bolt';
+        return 'fal-bolt';
     }
 
     public static function toHtml(array $config, ?array $data = null): ?string

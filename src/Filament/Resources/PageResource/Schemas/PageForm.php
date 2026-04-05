@@ -70,7 +70,7 @@ class PageForm
                         ->columnSpan(['default' => 1, 'lg' => 3])
                         ->schema([
                             Section::make('Obsah')
-                                ->icon('heroicon-o-document-text')
+                                ->icon('fal-file-lines')
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('title')
@@ -107,7 +107,7 @@ class PageForm
                                 ]),
 
                             Section::make('SEO')
-                                ->icon('heroicon-o-magnifying-glass')
+                                ->icon('fal-magnifying-glass')
                                 ->collapsible()
                                 ->schema([
                                     TextInput::make('meta_title')
@@ -210,7 +210,7 @@ class PageForm
                                 ]),
 
                             Section::make('Nastavení')
-                                ->icon('heroicon-o-cog-6-tooth')
+                                ->icon('fal-gear')
                                 ->schema([
                                     Select::make('parent_id')
                                         ->label('Nadřazená stránka')

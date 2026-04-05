@@ -19,7 +19,7 @@ class ListMedia extends BaseListMedia
         return [
             Action::make('regenerate_all_curations')
                 ->label('Přegenerovat vše')
-                ->icon('heroicon-o-arrow-path')
+                ->icon('fal-arrows-rotate')
                 ->color('gray')
                 ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateAllCurations', Media::class) ?? false)
                 ->authorize(fn (): bool => Filament::auth()->user()?->can('regenerateAllCurations', Media::class) ?? false)

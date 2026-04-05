@@ -21,7 +21,7 @@ class EditMedia extends BaseEditMedia
                 ->label(trans('curator::views.panel.edit_save')),
             Action::make('regenerate_curations')
                 ->label('Přegenerovat ořezy')
-                ->icon('heroicon-o-arrow-path')
+                ->icon('fal-arrows-rotate')
                 ->color('gray')
                 ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateSingleCuration', $this->getRecord()) ?? false)
                 ->requiresConfirmation()
