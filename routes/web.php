@@ -22,5 +22,5 @@ Route::get('preview/page/{page}', PagePreviewController::class)
 // CMS catch-all resolves collection routes dynamically from DB.
 // Must be registered last so it does not shadow admin/api routes.
 Route::get('{path}', EntryController::class)
-    ->where('path', '.+')
+    ->where('path', '^(?!mpcp(/|$)).+')
     ->name('mipress.entry.show');
