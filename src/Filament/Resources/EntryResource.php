@@ -86,7 +86,23 @@ class EntryResource extends Resource
             return null;
         }
 
-        return Collection::where('handle', $handle)->with('blueprint')->first();
+        $request = request();
+        $cacheKey = 'mipress.current_collection.' . $handle;
+
+        if ($request->attributes->has($cacheKey)) {
+            /** @var Collection|null $cachedCollection */
+            $cachedCollection = $request->attributes->get($cacheKey);
+
+            return $cachedCollection;
+        }
+
+        $collection = Collection::where('handle', $handle)
+            ->with('blueprint')
+            ->first();
+
+        $request->attributes->set($cacheKey, $collection);
+
+        return $collection;
     }
 
     public static function getEloquentQuery(): Builder
