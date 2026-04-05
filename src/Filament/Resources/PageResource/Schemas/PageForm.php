@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\PageResource\Schemas;
 
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Mason\Enums\SidebarPosition;
 use Awcodes\Mason\Mason;
 use Filament\Actions\Action;
@@ -208,15 +207,6 @@ class PageForm
                                     Placeholder::make('published_info')
                                         ->label('Publikováno')
                                         ->content(fn (Page $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
-                                ]),
-
-                            Section::make('Hlavní obrázek')
-                                ->icon('heroicon-o-photo')
-                                ->schema([
-                                    CuratorPicker::make('featured_image_id')
-                                        ->relationship('featuredImage', 'id')
-                                        ->label('')
-                                        ->nullable(),
                                 ]),
 
                             Section::make('Nastavení')

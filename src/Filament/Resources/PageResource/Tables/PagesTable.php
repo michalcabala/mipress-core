@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Tables;
 
 use App\Models\User;
-use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -49,9 +48,6 @@ class PagesTable
 
         return $table
             ->columns([
-                CuratorColumn::make('featuredImage')
-                    ->label('Obrázek')
-                    ->size(40),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -77,7 +73,7 @@ class PagesTable
                     ->label('Datum')
                     ->isoDateTime('LLL')
                     ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                        ? 'Vytvořeno ' . $record->created_at->isoFormat('LLL')
+                        ? 'Vytvořeno '.$record->created_at->isoFormat('LLL')
                         : null)
                     ->sortable()
                     ->toggleable(),
@@ -150,7 +146,7 @@ class PagesTable
 
                                 Notification::make()
                                     ->title('Homepage zrušena')
-                                    ->body('Stránka "' . $record->title . '" již není domovskou stránkou.')
+                                    ->body('Stránka "'.$record->title.'" již není domovskou stránkou.')
                                     ->success()
                                     ->send();
 
@@ -171,7 +167,7 @@ class PagesTable
 
                             Notification::make()
                                 ->title('Homepage nastavena')
-                                ->body('Stránka "' . $record->title . '" je nyní domovskou stránkou.')
+                                ->body('Stránka "'.$record->title.'" je nyní domovskou stránkou.')
                                 ->success()
                                 ->send();
                         })

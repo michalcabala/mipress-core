@@ -41,7 +41,6 @@ class PageResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([SoftDeletingScope::class])
             ->with([
-                'featuredImage',
                 'author' => fn ($query) => $query->without('roles'),
             ]);
     }
