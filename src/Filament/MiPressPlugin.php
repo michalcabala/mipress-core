@@ -10,6 +10,8 @@ use Filament\Support\Facades\FilamentIcon;
 use Filament\Tables\Table;
 use Filament\View\PanelsIconAlias;
 use MiPress\Core\Filament\Pages\ThemeSettings;
+use MiPress\Core\Filament\Plugins\BotlyPlugin;
+use MiPress\Core\Filament\Plugins\FilamentSitemapGeneratorPlugin;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
 use MiPress\Core\Filament\Resources\EntryResource;
@@ -53,7 +55,13 @@ class MiPressPlugin implements Plugin
             ])
             ->pages([
                 ThemeSettings::class,
-            ]);
+            ])
+            ->plugin(
+                BotlyPlugin::make()
+                    ->navigationIcon('fal-user-robot')
+                    ->title('Správa robots.txt')
+            )
+            ->plugin(FilamentSitemapGeneratorPlugin::make());
     }
 
     public function boot(Panel $panel): void
