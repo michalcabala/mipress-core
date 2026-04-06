@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace MiPress\Core\Services;
 
 use Closure;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use MiPress\Core\Models\Setting;
 
 class SettingsManager
@@ -21,10 +23,7 @@ class SettingsManager
     public function all(): Collection
     {
         if ($this->settings === null) {
-            $this->settings = Setting::query()
-                ->with('blueprint')
-                ->orderBy('sort_order')
-                ->get();
+            $this->settings = $this->loadSettings();
         }
 
         return $this->settings;
@@ -62,5 +61,37 @@ class SettingsManager
     public function registerStaticCacheInvalidator(Closure $callback): void
     {
         $this->staticCacheInvalidator = $callback;
+    }
+
+    /**
+     * @return Collection<int, Setting>
+     */
+    private function loadSettings(): Collection
+    {
+        if (! Schema::hasTable('settings')) {
+            return collect();
+        }
+
+        if (! Schema::hasColumn('settings', 'handle')) {
+            return collect();
+        }
+
+        try {
+            $query = Setting::query();
+
+            if (Schema::hasColumn('settings', 'blueprint_id')) {
+                $query->with('blueprint');
+            }
+
+            if (Schema::hasColumn('settings', 'sort_order')) {
+                $query->orderBy('sort_order');
+            } else {
+                $query->orderBy('handle');
+            }
+
+            return $query->get();
+        } catch (QueryException) {
+            return collect();
+        }
     }
 }
