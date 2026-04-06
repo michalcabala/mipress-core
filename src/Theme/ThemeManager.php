@@ -77,10 +77,7 @@ class ThemeManager
             throw new InvalidArgumentException("Theme '{$slug}' does not exist.");
         }
 
-        Setting::updateOrCreate(
-            ['key' => self::SETTING_KEY],
-            ['value' => $slug],
-        );
+        Setting::putValue(self::SETTING_KEY, $slug);
 
         Cache::forget(self::CACHE_KEY);
         $this->registerViews();
