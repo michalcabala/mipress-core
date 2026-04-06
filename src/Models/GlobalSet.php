@@ -6,7 +6,9 @@ namespace MiPress\Core\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 use MiPress\Core\Database\Factories\GlobalSetFactory;
+use MiPress\Core\Services\GlobalSetManager;
 
 class GlobalSet extends Model
 {
@@ -27,6 +29,12 @@ class GlobalSet extends Model
     protected $attributes = [
         'data' => '{}',
     ];
+
+    protected static function booted(): void
+    {
+        static::saved(fn () => Cache::forget(GlobalSetManager::CACHE_KEY));
+        static::deleted(fn () => Cache::forget(GlobalSetManager::CACHE_KEY));
+    }
 
     protected static function newFactory(): GlobalSetFactory
     {

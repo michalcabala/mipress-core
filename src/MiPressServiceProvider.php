@@ -66,6 +66,12 @@ class MiPressServiceProvider extends ServiceProvider
 
         $this->app->booted(function (): void {
             view()->composer('*', function (View $view): void {
+                $name = $view->name();
+
+                if (str_starts_with($name, 'filament') || str_starts_with($name, 'livewire')) {
+                    return;
+                }
+
                 if (! $view->offsetExists('globals')) {
                     $manager = $this->app->make(GlobalSetManager::class);
                     $view->with('globals', $manager->all()->keyBy('handle'));

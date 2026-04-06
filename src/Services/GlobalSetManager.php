@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace MiPress\Core\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use MiPress\Core\Models\GlobalSet;
 
 class GlobalSetManager
 {
+    public const CACHE_KEY = 'mipress.global_sets';
+
+    private const CACHE_TTL = 3600;
+
     /** @var Collection<int, GlobalSet>|null */
     private ?Collection $sets = null;
 
@@ -33,6 +38,7 @@ class GlobalSetManager
     public function flush(): void
     {
         $this->sets = null;
+        Cache::forget(self::CACHE_KEY);
     }
 
     /**
@@ -42,7 +48,7 @@ class GlobalSetManager
     {
         if ($this->sets === null) {
             try {
-                $this->sets = GlobalSet::all();
+                $this->sets = Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn () => GlobalSet::all());
             } catch (\Throwable) {
                 $this->sets = collect();
             }
