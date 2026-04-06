@@ -32,7 +32,6 @@ use MiPress\Core\Policies\TaxonomyPolicy;
 use MiPress\Core\Policies\TermPolicy;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\CurationGenerator;
-use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Services\MediaCurationOrchestrator;
 use MiPress\Core\Services\MediaPathGenerator;
 use MiPress\Core\Services\SettingsManager;
@@ -49,7 +48,6 @@ class MiPressServiceProvider extends ServiceProvider
             return new ThemeManager(resource_path('themes'));
         });
 
-        $this->app->singleton(GlobalSetManager::class);
         $this->app->singleton(SettingsManager::class);
         $this->app->singleton(BlueprintFieldResolver::class);
         $this->app->singleton(CurationGenerator::class);
