@@ -9,13 +9,13 @@ use Filament\Panel;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Tables\Table;
 use Filament\View\PanelsIconAlias;
+use MiPress\Core\Filament\Pages\EditSettings;
 use MiPress\Core\Filament\Pages\SitemapSettings;
 use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Plugins\BotlyPlugin;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
 use MiPress\Core\Filament\Resources\EntryResource;
-use MiPress\Core\Filament\Resources\GlobalSetResource;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Resources\TaxonomyResource;
 use MiPress\Core\Filament\Resources\TermResource;
@@ -50,11 +50,11 @@ class MiPressPlugin implements Plugin
                 CollectionResource::class,
                 PageResource::class,
                 EntryResource::class,
-                GlobalSetResource::class,
                 TaxonomyResource::class,
                 TermResource::class,
             ])
             ->pages([
+                EditSettings::class,
                 ThemeSettings::class,
                 SitemapSettings::class,
             ])

@@ -35,6 +35,7 @@ use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSetManager;
 use MiPress\Core\Services\MediaCurationOrchestrator;
 use MiPress\Core\Services\MediaPathGenerator;
+use MiPress\Core\Services\SettingsManager;
 use MiPress\Core\Services\SitemapGenerator;
 use MiPress\Core\Theme\ThemeManager;
 
@@ -49,6 +50,7 @@ class MiPressServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(GlobalSetManager::class);
+        $this->app->singleton(SettingsManager::class);
         $this->app->singleton(BlueprintFieldResolver::class);
         $this->app->singleton(CurationGenerator::class);
         $this->app->singleton(MediaCurationOrchestrator::class);
@@ -65,16 +67,9 @@ class MiPressServiceProvider extends ServiceProvider
         $this->app->make(ThemeManager::class)->registerViews();
 
         $this->app->booted(function (): void {
-            view()->composer('*', function (View $view): void {
-                $name = $view->name();
-
-                if (str_starts_with($name, 'filament') || str_starts_with($name, 'livewire')) {
-                    return;
-                }
-
-                if (! $view->offsetExists('globals')) {
-                    $manager = $this->app->make(GlobalSetManager::class);
-                    $view->with('globals', $manager->all()->keyBy('handle'));
+            view()->composer('mipress::*', function (View $view): void {
+                if (! $view->offsetExists('settings')) {
+                    $view->with('settings', $this->app->make(SettingsManager::class));
                 }
             });
         });

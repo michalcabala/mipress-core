@@ -34,6 +34,7 @@ class PermissionSeeder extends Seeder
         'global_set.create',
         'global_set.update',
         'global_set.delete',
+        'settings.manage',
         'taxonomy.view',
         'taxonomy.create',
         'taxonomy.update',

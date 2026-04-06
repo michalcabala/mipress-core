@@ -43,4 +43,9 @@ class Blueprint extends Model
     {
         return $this->hasMany(Entry::class);
     }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(Setting::class);
+    }
 }

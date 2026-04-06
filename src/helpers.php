@@ -6,7 +6,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
-use MiPress\Core\Services\GlobalSetManager;
+use MiPress\Core\Services\SettingsManager;
 use MiPress\Core\Theme\ThemeManager;
 
 if (! function_exists('theme_asset')) {
@@ -82,13 +82,20 @@ if (! function_exists('mipress_entry_url')) {
 if (! function_exists('global_set')) {
     function global_set(string $expression, mixed $default = null): mixed
     {
-        $manager = app(GlobalSetManager::class);
-
         if (! str_contains($expression, '.')) {
-            return $manager->find($expression);
+            return settings($expression, default: $default);
         }
 
         [$handle, $key] = explode('.', $expression, 2);
+
+        return settings($handle, $key, $default);
+    }
+}
+
+if (! function_exists('settings')) {
+    function settings(string $handle, ?string $key = null, mixed $default = null): mixed
+    {
+        $manager = app(SettingsManager::class);
 
         return $manager->get($handle, $key, $default);
     }

@@ -66,9 +66,7 @@ class BlueprintFieldResolver
             'tags' => TagsInput::make($handle)->label($label),
             'repeater' => Repeater::make($handle)
                 ->label($label)
-                ->schema([
-                    TextInput::make('value')->label('Hodnota'),
-                ])
+                ->schema(static::resolveRepeaterSchema($config))
                 ->addActionLabel('Přidat záznam'),
             'keyvalue' => KeyValue::make($handle)->label($label),
             'richtext' => RichEditor::make($handle)->label($label)->columnSpanFull(),
@@ -181,5 +179,38 @@ class BlueprintFieldResolver
                 ->statePath('data')
                 ->schema($components),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $config
+     * @return array<int, mixed>
+     */
+    protected static function resolveRepeaterSchema(array $config): array
+    {
+        $fieldDefinitions = $config['fields'] ?? null;
+
+        if (! is_array($fieldDefinitions) || $fieldDefinitions === []) {
+            return [
+                TextInput::make('value')->label('Hodnota'),
+            ];
+        }
+
+        $components = [];
+
+        foreach ($fieldDefinitions as $fieldDefinition) {
+            if (! is_array($fieldDefinition)) {
+                continue;
+            }
+
+            $component = static::resolve($fieldDefinition);
+
+            if ($component !== null) {
+                $components[] = $component;
+            }
+        }
+
+        return $components !== []
+            ? $components
+            : [TextInput::make('value')->label('Hodnota')];
     }
 }
