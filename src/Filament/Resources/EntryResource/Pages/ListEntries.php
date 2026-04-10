@@ -28,6 +28,11 @@ class ListEntries extends ListRecords
 
     protected static string $resource = EntryResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     public string $collectionHandle = '';
 
     private bool $hasResolvedCollection = false;

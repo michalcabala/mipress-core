@@ -12,6 +12,11 @@ use MiPress\Core\Services\MediaCurationOrchestrator;
 
 class ListMedia extends BaseListMedia
 {
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     public function getHeaderActions(): array
     {
         $parentActions = parent::getHeaderActions();

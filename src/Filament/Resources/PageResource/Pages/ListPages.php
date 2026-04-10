@@ -25,6 +25,11 @@ class ListPages extends ListRecords
 
     protected static string $resource = PageResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     public function content(Schema $schema): Schema
     {
         return $schema

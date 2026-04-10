@@ -12,6 +12,11 @@ class ListTaxonomies extends ListRecords
 {
     protected static string $resource = TaxonomyResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     protected function getHeaderActions(): array
     {
         return [

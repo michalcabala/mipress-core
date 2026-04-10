@@ -15,6 +15,11 @@ class ListTerms extends ListRecords
 {
     protected static string $resource = TermResource::class;
 
+    public function getBreadcrumbs(): array
+    {
+        return [];
+    }
+
     public string $taxonomyHandle = '';
 
     private bool $hasResolvedTaxonomy = false;
