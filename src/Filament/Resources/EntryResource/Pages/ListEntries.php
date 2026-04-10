@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
-use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\WithResourceLockIndicator;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\EmbeddedTable;
@@ -24,13 +23,17 @@ use MiPress\Core\Models\Entry;
 class ListEntries extends ListRecords
 {
     use HasRecordStateLinks;
-    use WithResourceLockIndicator;
 
     protected static string $resource = EntryResource::class;
 
     public function getBreadcrumbs(): array
     {
         return [];
+    }
+
+    protected function getTableQuery(): Builder
+    {
+        return parent::getTableQuery()->with('resourceLock');
     }
 
     public string $collectionHandle = '';

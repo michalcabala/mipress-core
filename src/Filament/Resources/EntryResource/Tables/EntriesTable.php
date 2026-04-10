@@ -153,11 +153,24 @@ class EntriesTable
     {
         return match ($state) {
             'mine' => 'Právě upravujete vy',
-            'other' => filled($record->resourceLock?->user?->name)
-                ? 'Právě upravuje '.$record->resourceLock->user->name
-                : 'Právě upravuje jiný uživatel',
+            'other' => static::getOtherResourceLockTooltip($record),
             default => null,
         };
+    }
+
+    private static function getOtherResourceLockTooltip(Entry $record): string
+    {
+        if (
+            filled($record->resourceLock?->user_id)
+            && filled($record->author_id)
+            && (int) $record->resourceLock->user_id === (int) $record->author_id
+            && $record->relationLoaded('author')
+            && filled($record->author?->name)
+        ) {
+            return 'Právě upravuje '.$record->author->name;
+        }
+
+        return 'Právě upravuje jiný uživatel';
     }
 
     /**

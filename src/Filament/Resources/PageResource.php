@@ -39,10 +39,7 @@ class PageResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withoutGlobalScopes([SoftDeletingScope::class])
-            ->with([
-                'author' => fn ($query) => $query->without('roles'),
-            ]);
+            ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
     public static function form(Schema $schema): Schema

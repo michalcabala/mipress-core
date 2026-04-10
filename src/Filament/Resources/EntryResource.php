@@ -111,7 +111,6 @@ class EntryResource extends Resource
             ->withoutGlobalScopes([SoftDeletingScope::class])
             ->with([
                 'featuredImage',
-                'author' => fn ($q) => $q->without('roles'),
                 'terms',
             ]);
 
