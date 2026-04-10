@@ -10,12 +10,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
 class Term extends Model
 {
-    use HasFactory, HasSlug;
+    use HasFactory, HasSlug, SoftDeletes;
 
     protected $table = 'terms';
 
@@ -38,8 +39,10 @@ class Term extends Model
 
     protected $casts = [
         'data' => 'array',
+        'taxonomy_id' => 'integer',
         'sort_order' => 'integer',
         'parent_id' => 'integer',
+        'origin_id' => 'integer',
     ];
 
     public function getSlugOptions(): SlugOptions

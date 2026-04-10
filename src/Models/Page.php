@@ -60,13 +60,17 @@ class Page extends Model
     ];
 
     protected $casts = [
+        'blueprint_id' => 'integer',
         'content' => 'array',
         'data' => 'array',
         'status' => EntryStatus::class,
         'published_at' => 'datetime',
         'scheduled_at' => 'datetime',
+        'author_id' => 'integer',
         'sort_order' => 'integer',
         'parent_id' => 'integer',
+        'featured_image_id' => 'integer',
+        'origin_id' => 'integer',
     ];
 
     protected static function newFactory(): PageFactory

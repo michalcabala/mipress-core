@@ -61,12 +61,13 @@ class GlobalSeoSettingsManager
     {
         $settings = $data === null ? $this->all() : $this->all($data);
         $warnings = [];
+        $canonicalBaseUrl = $settings['canonical']['base_url'] ?? null;
 
         if (! filled($settings['metadata']['default_description'] ?? null)) {
             $warnings[] = 'Chybí výchozí meta popis pro stránky bez vlastního SEO popisu.';
         }
 
-        if (filled($settings['canonical']['base_url'] ?? null) && ! filter_var($settings['canonical']['base_url'], FILTER_VALIDATE_URL)) {
+        if (filled($canonicalBaseUrl) && ! $this->isAbsoluteUrl($canonicalBaseUrl)) {
             $warnings[] = 'Preferovaná canonical URL není validní absolutní adresa.';
         }
 
@@ -218,6 +219,21 @@ class GlobalSeoSettingsManager
                 'google_tag_manager_id' => null,
             ],
         ];
+    }
+
+    private function isAbsoluteUrl(mixed $url): bool
+    {
+        if (! is_string($url) || filter_var($url, FILTER_VALIDATE_URL) === false) {
+            return false;
+        }
+
+        $scheme = parse_url($url, PHP_URL_SCHEME);
+        $host = parse_url($url, PHP_URL_HOST);
+
+        return is_string($scheme)
+            && in_array(strtolower($scheme), ['http', 'https'], true)
+            && is_string($host)
+            && $host !== '';
     }
 
     private function normalizeString(mixed $value): ?string

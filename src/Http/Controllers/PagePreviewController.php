@@ -7,6 +7,7 @@ namespace MiPress\Core\Http\Controllers;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Page;
 
 class PagePreviewController extends Controller
@@ -15,7 +16,7 @@ class PagePreviewController extends Controller
     {
         $page = Page::query()->findOrFail($page);
 
-        if ($page->status->value === 'published' && filled($page->getPublicUrl())) {
+        if ($page->status === EntryStatus::Published && filled($page->getPublicUrl())) {
             return redirect($page->getPublicUrl());
         }
 

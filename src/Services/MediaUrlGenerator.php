@@ -7,6 +7,7 @@ namespace MiPress\Core\Services;
 use Awcodes\Curator\Config\GlideManager;
 use Awcodes\Curator\Facades\Curator;
 use Awcodes\Curator\Models\Media;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 
 class MediaUrlGenerator
@@ -101,7 +102,10 @@ class MediaUrlGenerator
         }
 
         if ($disk !== 'public') {
-            return $this->absolutizeUrl(Storage::disk($disk)->url($path));
+            /** @var FilesystemAdapter $storage */
+            $storage = Storage::disk($disk);
+
+            return $this->absolutizeUrl($storage->url($path));
         }
 
         return $this->absolutizeUrl(app(GlideManager::class)->getUrl($path, $this->getVariantConfig($variant)['glide']));
@@ -123,7 +127,10 @@ class MediaUrlGenerator
         $path = $curation['path'] ?? null;
 
         if ($path !== null && $path !== '') {
-            return $this->absolutizeUrl(Storage::disk($disk)->url(ltrim($path, '/')));
+            /** @var FilesystemAdapter $storage */
+            $storage = Storage::disk($disk);
+
+            return $this->absolutizeUrl($storage->url(ltrim($path, '/')));
         }
 
         // Fallback: serve original via Glide without curation

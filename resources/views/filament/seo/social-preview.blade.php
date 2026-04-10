@@ -8,7 +8,7 @@
             <img src="{{ $seo['image_url'] }}" alt="{{ $seo['image_alt'] ?? ($seo['title'] ?? 'Náhled sdílení') }}" class="h-full w-full object-cover" />
         </div>
     @else
-        <div class="flex aspect-[1.91/1] items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 text-sm font-medium text-slate-500 dark:from-slate-900 dark:to-slate-800 dark:text-slate-400">
+        <div class="flex aspect-[1.91/1] items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 text-sm font-medium text-slate-500 dark:from-slate-900 dark:to-slate-800 dark:text-slate-400">
             Chybí výchozí OG obrázek
         </div>
     @endif

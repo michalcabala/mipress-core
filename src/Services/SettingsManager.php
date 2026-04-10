@@ -7,6 +7,7 @@ namespace MiPress\Core\Services;
 use Closure;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use MiPress\Core\Models\Setting;
 
@@ -90,7 +91,11 @@ class SettingsManager
             }
 
             return $query->get();
-        } catch (QueryException) {
+        } catch (QueryException $exception) {
+            Log::warning('Unable to load miPress settings.', [
+                'message' => $exception->getMessage(),
+            ]);
+
             return collect();
         }
     }

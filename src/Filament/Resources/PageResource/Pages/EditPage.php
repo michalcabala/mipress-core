@@ -16,13 +16,17 @@ use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
+use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Page;
 
 class EditPage extends EditRecord
 {
-    use UsesResourceLock;
+    use UsesResourceLock, HandlesResourceLockRenewal, HandlesWorkflowValidationErrors {
+        HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
+    }
 
     protected static string $resource = PageResource::class;
 
@@ -346,6 +350,8 @@ class EditPage extends EditRecord
                         ->success()
                         ->send();
 
+                    $this->releaseLockAndRedirect();
+
                     return;
                 }
 
@@ -360,7 +366,22 @@ class EditPage extends EditRecord
                     ->title('Stránka publikována')
                     ->success()
                     ->send();
+
+                $this->releaseLockAndRedirect();
             });
+    }
+
+    private function releaseLockAndRedirect(): void
+    {
+        $record = $this->getRecord();
+
+        if ($record instanceof Page) {
+            $record->unlock();
+        }
+
+        $redirectUrl = $this->getRedirectUrl();
+
+        $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
     }
 
     private function makeRejectAction(): Action

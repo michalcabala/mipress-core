@@ -23,6 +23,12 @@ class MediaObserver
 
     public function deleted(Media $media): void
     {
-        app(CurationGenerator::class)->deleteCurationFiles($media);
+        $curationGenerator = app(CurationGenerator::class);
+
+        if (! $curationGenerator->isRasterImage($media)) {
+            return;
+        }
+
+        $curationGenerator->deleteCurationFiles($media);
     }
 }

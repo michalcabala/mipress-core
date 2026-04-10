@@ -6,7 +6,10 @@ namespace MiPress\Core\Services;
 
 use Awcodes\Curator\Facades\Glide;
 use Awcodes\Curator\Models\Media;
+use Illuminate\Filesystem\FilesystemAdapter;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use League\Glide\Api\Api;
 
 class CurationGenerator
 {
@@ -123,10 +126,13 @@ class CurationGenerator
 
     private function generate(Media $media, string $key, int $width, ?int $height, string $mode): void
     {
+        /** @var FilesystemAdapter $storage */
         $storage = Storage::disk($media->disk);
         $filePath = $storage->path($media->path);
 
-        $manager = Glide::getServer()->getApi()->getImageManager();
+        /** @var Api $api */
+        $api = Glide::getServer()->getApi();
+        $manager = $api->getImageManager();
         $image = $manager->read($filePath);
 
         $image->orient();
@@ -137,13 +143,27 @@ class CurationGenerator
         };
 
         $encodedImage = $image->encodeByExtension(self::CURATION_EXTENSION, quality: 85);
+        $encodedContents = $encodedImage->toString();
         $fileName = $media->name.'-'.$key.'.'.self::CURATION_EXTENSION;
 
         $curationPath = $this->buildPath($media->directory, $fileName);
 
-        $storage->put($curationPath, $encodedImage->toString(), $media->visibility);
+        $storage->put($curationPath, $encodedContents, $media->visibility);
 
-        [$curationWidth, $curationHeight] = getimagesizefromstring($encodedImage->toString());
+        $dimensions = getimagesizefromstring($encodedContents);
+
+        if ($dimensions === false) {
+            $storage->delete($curationPath);
+
+            Log::warning('Unable to determine generated curation dimensions.', [
+                'media_id' => $media->getKey(),
+                'curation_key' => $key,
+            ]);
+
+            return;
+        }
+
+        [$curationWidth, $curationHeight] = $dimensions;
 
         $existing = $media->curations ?? [];
         $existing[] = [

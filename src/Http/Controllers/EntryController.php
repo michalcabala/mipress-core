@@ -39,7 +39,7 @@ class EntryController extends Controller
 
         if (view()->exists('home')) {
             $featuredEntries = Entry::query()
-                ->with(['collection', 'featuredImage'])
+                ->with(['collection', 'featuredImage', 'revisions'])
                 ->publiclyVisible()
                 ->orderByDesc('published_at')
                 ->limit(8)
@@ -201,7 +201,7 @@ class EntryController extends Controller
         $viewHandle = 'entries.'.$collection->handle;
         $viewName = view()->exists($viewHandle) ? $viewHandle : 'entries.page';
         $relatedEntries = $collection->entries()
-            ->with(['collection', 'featuredImage'])
+            ->with(['collection', 'featuredImage', 'revisions'])
             ->publiclyVisible()
             ->whereKeyNot($entry->getKey())
             ->orderByDesc('published_at')
@@ -266,7 +266,7 @@ class EntryController extends Controller
     private function renderArchive(Collection $collection): View
     {
         $query = $collection->entries()
-            ->with(['collection', 'featuredImage'])
+            ->with(['collection', 'featuredImage', 'revisions'])
             ->publiclyVisible();
 
         $entries = $collection
@@ -298,21 +298,27 @@ class EntryController extends Controller
             'css' => 'text/css; charset=UTF-8',
             'js' => 'application/javascript; charset=UTF-8',
             'json' => 'application/json; charset=UTF-8',
-            default => mime_content_type($filePath) ?: 'application/octet-stream',
+            default => (function () use ($filePath): string {
+                $mimeType = (new \finfo(FILEINFO_MIME_TYPE))->file($filePath);
+
+                return is_string($mimeType) && $mimeType !== ''
+                    ? $mimeType
+                    : 'application/octet-stream';
+            })(),
         };
     }
 
     private function resolveEntryByApprovedSlug(Collection $collection, string $slug): ?Entry
     {
         return $collection->entries()
-            ->with(['collection', 'blueprint', 'featuredImage'])
+            ->with(['collection', 'blueprint', 'featuredImage', 'revisions'])
             ->where('status', EntryStatus::InReview)
             ->where(function (Builder $query): void {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
             })
             ->latest('updated_at')
-            ->get()
+            ->lazy()
             ->first(function (Entry $entry) use ($slug): bool {
                 $publicVersion = $entry->resolvePublicVersion();
 
@@ -323,14 +329,14 @@ class EntryController extends Controller
     private function resolvePageByApprovedSlug(string $slug): ?Page
     {
         return Page::query()
-            ->with(['blueprint', 'featuredImage'])
+            ->with(['blueprint', 'featuredImage', 'revisions'])
             ->where('status', EntryStatus::InReview)
             ->where(function (Builder $query): void {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
             })
             ->latest('updated_at')
-            ->get()
+            ->lazy()
             ->first(function (Page $page) use ($slug): bool {
                 $publicVersion = $page->resolvePublicVersion();
 

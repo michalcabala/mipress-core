@@ -63,12 +63,18 @@ class Entry extends Model
     ];
 
     protected $casts = [
+        'collection_id' => 'integer',
+        'blueprint_id' => 'integer',
         'data' => 'array',
         'status' => EntryStatus::class,
         'published_at' => 'datetime',
         'scheduled_at' => 'datetime',
+        'author_id' => 'integer',
+        'featured_image_id' => 'integer',
+        'og_image_id' => 'integer',
         'sort_order' => 'integer',
         'parent_id' => 'integer',
+        'origin_id' => 'integer',
     ];
 
     protected static function newFactory(): EntryFactory

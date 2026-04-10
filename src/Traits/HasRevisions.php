@@ -34,7 +34,7 @@ trait HasRevisions
         return Revision::create([
             'revisionable_type' => $this->getMorphClass(),
             'revisionable_id' => $this->getKey(),
-            'user_id' => auth()->id(),
+            'user_id' => auth()->id() ?: null,
             'data' => $this->getRevisionSnapshot($snapshot),
             'note' => $note,
         ]);
@@ -72,7 +72,11 @@ trait HasRevisions
 
     public function latestPublishedRevisionSnapshot(): ?array
     {
-        $revision = $this->revisions()->get()->first(
+        $revisions = $this->relationLoaded('revisions')
+            ? $this->getRelation('revisions')
+            : $this->revisions()->get();
+
+        $revision = $revisions->first(
             fn (Revision $revision): bool => $this->normalizeRevisionStatus(data_get($revision->data, 'status')) === EntryStatus::Published->value,
         );
 

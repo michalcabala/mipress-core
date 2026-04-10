@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Awcodes\Curator\Models\Media;
 use Illuminate\Support\Collection as SupportCollection;
+use Illuminate\Support\Facades\Log;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
@@ -50,7 +51,11 @@ if (! function_exists('mipress_routable_collections')) {
                 ->whereNotNull('route')
                 ->get()
                 ->values();
-        } catch (Throwable) {
+        } catch (Throwable $exception) {
+            Log::warning('Unable to resolve routable miPress collections.', [
+                'message' => $exception->getMessage(),
+            ]);
+
             return collect();
         }
     }

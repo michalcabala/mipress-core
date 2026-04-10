@@ -41,8 +41,6 @@ class EditMedia extends BaseEditMedia
                         return;
                     }
 
-                    $generator->regenerate($media);
-
                     Notification::make()
                         ->title('Ořezy přegenerovány')
                         ->success()

@@ -10,6 +10,7 @@ use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
+use RuntimeException;
 use XMLWriter;
 
 class SitemapGenerator
@@ -21,7 +22,7 @@ class SitemapGenerator
      */
     public function generate(): array
     {
-        $baseUrl = rtrim(config('app.url', ''), '/');
+        $baseUrl = $this->resolveBaseUrl();
         $staticUrls = $this->getStaticUrls();
         $modelUrls = $this->collectModelUrls($baseUrl);
 
@@ -60,7 +61,7 @@ class SitemapGenerator
      */
     private function getStaticUrls(): array
     {
-        $baseUrl = rtrim(config('app.url', ''), '/');
+        $baseUrl = $this->resolveBaseUrl();
         $raw = Setting::getValue('sitemap.static_urls');
 
         if ($raw === null) {
@@ -201,7 +202,7 @@ class SitemapGenerator
         $writer->endElement();
         $writer->endDocument();
 
-        file_put_contents(public_path($filename), $writer->outputMemory());
+        $this->writePublicFile($filename, $writer->outputMemory());
     }
 
     private function writeSitemapIndex(string $baseUrl, int $fileCount): void
@@ -227,12 +228,42 @@ class SitemapGenerator
         $writer->endElement();
         $writer->endDocument();
 
-        file_put_contents(public_path('sitemap.xml'), $writer->outputMemory());
+        $this->writePublicFile('sitemap.xml', $writer->outputMemory());
     }
 
     private function updateLastGenerated(int $urlCount): void
     {
         Setting::putValue('sitemap.last_generated_at', now()->toIso8601String());
         Setting::putValue('sitemap.last_url_count', (string) $urlCount);
+    }
+
+    private function resolveBaseUrl(): string
+    {
+        $baseUrl = rtrim((string) config('app.url', ''), '/');
+
+        if ($baseUrl !== '') {
+            return $baseUrl;
+        }
+
+        $fallbackUrl = rtrim(url('/'), '/');
+
+        if ($fallbackUrl !== '') {
+            return $fallbackUrl;
+        }
+
+        throw new RuntimeException('Unable to resolve sitemap base URL.');
+    }
+
+    private function writePublicFile(string $filename, string $contents): void
+    {
+        if (file_put_contents(public_path($filename), $contents) !== false) {
+            return;
+        }
+
+        Log::error('Unable to write sitemap file.', [
+            'filename' => $filename,
+        ]);
+
+        throw new RuntimeException(sprintf('Unable to write sitemap file [%s].', $filename));
     }
 }
