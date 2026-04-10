@@ -23,6 +23,9 @@ use MiPress\Core\Services\SettingsManager;
 use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
+/**
+ * @property Schema $form
+ */
 class EditSettings extends Page
 {
     protected string $view = 'mipress::filament.pages.edit-settings';
@@ -104,6 +107,17 @@ class EditSettings extends Page
         $this->form->fill([
             'data' => $setting->data ?? [],
         ]);
+    }
+
+    public function form(Schema $form): Schema
+    {
+        $setting = $this->resolveSetting()->loadMissing('blueprint');
+
+        return $form
+            ->schema(BlueprintFieldResolver::resolveAll(
+                static::filterHiddenFields($setting->blueprint?->fields ?? [], $setting->handle),
+            ))
+            ->statePath('data');
     }
 
     public function save(): void
