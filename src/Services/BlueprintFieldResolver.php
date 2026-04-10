@@ -4,26 +4,8 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Services;
 
-use Awcodes\Curator\Components\Forms\CuratorPicker;
-use Awcodes\Mason\Enums\SidebarPosition;
-use Awcodes\Mason\Mason;
-use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\ColorPicker;
-use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\Radio;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
-use Filament\Forms\Components\Textarea;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
-use MiPress\Core\Mason\EditorialBrickCollection;
+use MiPress\Core\FieldTypes\FieldTypeRegistry;
 
 class BlueprintFieldResolver
 {
@@ -41,60 +23,11 @@ class BlueprintFieldResolver
             return null;
         }
 
-        $component = match ($fieldDefinition['type'] ?? 'text') {
-            'textarea' => Textarea::make($handle)
-                ->label($label)
-                ->rows($config['rows'] ?? 4),
-            'number' => TextInput::make($handle)
-                ->label($label)
-                ->numeric()
-                ->minValue($config['min'] ?? null)
-                ->maxValue($config['max'] ?? null),
-            'select' => Select::make($handle)
-                ->label($label)
-                ->options($config['options'] ?? [])
-                ->multiple($config['multiple'] ?? false),
-            'checkbox' => Checkbox::make($handle)->label($label),
-            'toggle' => Toggle::make($handle)->label($label),
-            'radio' => Radio::make($handle)
-                ->label($label)
-                ->options($config['options'] ?? []),
-            'datetime' => DateTimePicker::make($handle)->label($label),
-            'date' => DatePicker::make($handle)->label($label),
-            'image', 'file' => CuratorPicker::make($handle)->label($label),
-            'color' => ColorPicker::make($handle)->label($label),
-            'tags' => TagsInput::make($handle)->label($label),
-            'repeater' => Repeater::make($handle)
-                ->label($label)
-                ->schema(static::resolveRepeaterSchema($config))
-                ->addActionLabel('Přidat záznam'),
-            'keyvalue' => KeyValue::make($handle)->label($label),
-            'richtext' => RichEditor::make($handle)->label($label)->columnSpanFull(),
-            'markdown' => MarkdownEditor::make($handle)->label($label)->columnSpanFull(),
-            'mason' => Mason::make($handle)
-                ->label($label)
-                ->bricks(EditorialBrickCollection::make())
-                ->previewLayout('layouts.mason-preview')
-                ->colorModeToggle()
-                ->defaultColorMode('light')
-                ->doubleClickToEdit()
-                ->displayActionsAsGrid()
-                ->sortBricks()
-                ->sidebarPosition(SidebarPosition::End)
-                ->extraInputAttributes(['style' => 'min-height: 42rem;'])
-                ->columnSpanFull(),
-            'hidden' => Hidden::make($handle),
-            default => TextInput::make($handle)
-                ->label($label)
-                ->maxLength($config['maxLength'] ?? 255)
-                ->placeholder($config['placeholder'] ?? null),
-        };
+        $typeKey = $fieldDefinition['type'] ?? 'text';
+        $registry = app(FieldTypeRegistry::class);
+        $type = $registry->get($typeKey);
 
-        if ($required && method_exists($component, 'required')) {
-            $component->required();
-        }
-
-        return $component;
+        return $type->toFormComponent($handle, $label, $required, $config);
     }
 
     /**
@@ -179,38 +112,5 @@ class BlueprintFieldResolver
                 ->statePath('data')
                 ->schema($components),
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $config
-     * @return array<int, mixed>
-     */
-    protected static function resolveRepeaterSchema(array $config): array
-    {
-        $fieldDefinitions = $config['fields'] ?? null;
-
-        if (! is_array($fieldDefinitions) || $fieldDefinitions === []) {
-            return [
-                TextInput::make('value')->label('Hodnota'),
-            ];
-        }
-
-        $components = [];
-
-        foreach ($fieldDefinitions as $fieldDefinition) {
-            if (! is_array($fieldDefinition)) {
-                continue;
-            }
-
-            $component = static::resolve($fieldDefinition);
-
-            if ($component !== null) {
-                $components[] = $component;
-            }
-        }
-
-        return $components !== []
-            ? $components
-            : [TextInput::make('value')->label('Hodnota')];
     }
 }

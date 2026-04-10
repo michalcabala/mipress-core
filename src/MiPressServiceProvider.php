@@ -32,6 +32,8 @@ use MiPress\Core\Policies\MediaPolicy;
 use MiPress\Core\Policies\PagePolicy;
 use MiPress\Core\Policies\TaxonomyPolicy;
 use MiPress\Core\Policies\TermPolicy;
+use MiPress\Core\FieldTypes\FieldTypeRegistry;
+use MiPress\Core\FieldTypes\Types;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
@@ -58,6 +60,37 @@ class MiPressServiceProvider extends ServiceProvider
         $this->app->singleton(SettingsManager::class);
         $this->app->singleton(BlueprintFieldResolver::class);
         $this->app->singleton(CurationGenerator::class);
+
+        $this->app->singleton(FieldTypeRegistry::class, function (): FieldTypeRegistry {
+            $registry = new FieldTypeRegistry;
+
+            $builtInTypes = [
+                Types\TextFieldType::class,
+                Types\TextareaFieldType::class,
+                Types\RichTextFieldType::class,
+                Types\MarkdownFieldType::class,
+                Types\NumberFieldType::class,
+                Types\SelectFieldType::class,
+                Types\CheckboxFieldType::class,
+                Types\ToggleFieldType::class,
+                Types\RadioFieldType::class,
+                Types\DateFieldType::class,
+                Types\DateTimeFieldType::class,
+                Types\ImageFieldType::class,
+                Types\FileFieldType::class,
+                Types\ColorFieldType::class,
+                Types\TagsFieldType::class,
+                Types\RepeaterFieldType::class,
+                Types\KeyValueFieldType::class,
+                Types\HiddenFieldType::class,
+            ];
+
+            foreach ($builtInTypes as $type) {
+                $registry->register($type);
+            }
+
+            return $registry;
+        });
         $this->app->singleton(MediaCurationOrchestrator::class);
         $this->app->singleton(MediaPathGenerator::class);
         $this->app->singleton(MediaUrlGenerator::class);

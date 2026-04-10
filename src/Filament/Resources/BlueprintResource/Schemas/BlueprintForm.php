@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use MiPress\Core\FieldTypes\FieldTypeRegistry;
 
 class BlueprintForm
 {
@@ -56,26 +57,8 @@ class BlueprintForm
                                     Select::make('type')
                                         ->label('Typ pole')
                                         ->required()
-                                        ->options([
-                                            'text' => 'Text',
-                                            'textarea' => 'Textarea',
-                                            'richtext' => 'Rich Text',
-                                            'mason' => 'Mason',
-                                            'number' => 'Číslo',
-                                            'select' => 'Výběr',
-                                            'checkbox' => 'Checkbox',
-                                            'toggle' => 'Přepínač',
-                                            'radio' => 'Radio',
-                                            'datetime' => 'Datum a čas',
-                                            'date' => 'Datum',
-                                            'media' => 'Média',
-                                            'color' => 'Barva',
-                                            'tags' => 'Štítky',
-                                            'repeater' => 'Opakovač',
-                                            'keyvalue' => 'Klíč–hodnota',
-                                            'markdown' => 'Markdown',
-                                            'hidden' => 'Skryté',
-                                        ]),
+                                        ->options(fn (): array => app(FieldTypeRegistry::class)->groupedOptions())
+                                        ->searchable(),
                                     Select::make('required')
                                         ->label('Povinné')
                                         ->options([
