@@ -45,8 +45,7 @@ class NumberFieldType extends AbstractFieldType
     {
         return TextColumn::make($handle)
             ->label($label)
-            ->numeric()
-            ->sortable();
+            ->numeric();
     }
 
     public function settingsSchema(): array

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\BlueprintResource\Schemas;
 
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -69,11 +70,29 @@ class BlueprintForm
                                         ])
                                         ->default('0'),
                                 ]),
+                                Section::make('Zobrazení v tabulce')
+                                    ->schema([
+                                        Grid::make(3)->schema([
+                                            Checkbox::make('show_in_table')
+                                                ->label('Zobrazit v tabulce')
+                                                ->default(false),
+                                            Checkbox::make('searchable')
+                                                ->label('Prohledávatelné')
+                                                ->default(false),
+                                            Checkbox::make('sortable')
+                                                ->label('Řaditelné')
+                                                ->default(false),
+                                        ]),
+                                    ])
+                                    ->compact()
+                                    ->collapsible()
+                                    ->collapsed(),
                                 Section::make('Nastavení pole')
                                     ->schema(fn (Get $get): array => static::getFieldTypeSettings($get('type')))
                                     ->visible(fn (Get $get): bool => static::hasFieldTypeSettings($get('type')))
                                     ->compact()
-                                    ->collapsible(),
+                                    ->collapsible()
+                                    ->collapsed(),
                             ])
                             ->reorderable()
                             ->collapsible()

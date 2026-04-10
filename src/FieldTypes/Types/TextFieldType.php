@@ -44,8 +44,6 @@ class TextFieldType extends AbstractFieldType
     {
         return TextColumn::make($handle)
             ->label($label)
-            ->searchable()
-            ->sortable()
             ->limit(50);
     }
 

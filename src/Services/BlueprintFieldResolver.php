@@ -126,11 +126,14 @@ class BlueprintFieldResolver
         $registry = app(FieldTypeRegistry::class);
 
         return collect(static::flattenFields($fields))
+            ->filter(fn (array $fieldDef): bool => (bool) ($fieldDef['show_in_table'] ?? false))
             ->map(function (array $fieldDef) use ($registry): mixed {
                 $handle = $fieldDef['handle'] ?? null;
                 $label = $fieldDef['label'] ?? $handle;
                 $config = $fieldDef['config'] ?? [];
                 $typeKey = $fieldDef['type'] ?? 'text';
+                $isSearchable = (bool) ($fieldDef['searchable'] ?? false);
+                $isSortable = (bool) ($fieldDef['sortable'] ?? false);
 
                 if (! $handle) {
                     return null;
@@ -139,7 +142,14 @@ class BlueprintFieldResolver
                 $type = $registry->get($typeKey);
                 $column = $type->toTableColumn("data.{$handle}", $label, $config);
 
-                return $column?->toggleable();
+                if ($column === null) {
+                    return null;
+                }
+
+                return $column
+                    ->searchable($isSearchable)
+                    ->sortable($isSortable)
+                    ->toggleable();
             })
             ->filter()
             ->values()

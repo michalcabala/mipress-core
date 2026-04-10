@@ -115,6 +115,18 @@ class EntryForm
                                             ->maxLength(200)
                                             ->rules(['alpha_dash']),
                                     ]),
+                                    Mason::make('data.content')
+                                        ->label('Obsah')
+                                        ->bricks(EditorialBrickCollection::make())
+                                        ->previewLayout('layouts.mason-preview')
+                                        ->colorModeToggle()
+                                        ->defaultColorMode('light')
+                                        ->doubleClickToEdit()
+                                        ->displayActionsAsGrid()
+                                        ->sortBricks()
+                                        ->sidebarPosition(SidebarPosition::End)
+                                        ->extraInputAttributes(['style' => 'min-height: 42rem;'])
+                                        ->columnSpanFull(),
                                     ...BlueprintFieldResolver::resolveAll($blueprint->fields ?? []),
                                 ]),
 

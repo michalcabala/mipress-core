@@ -42,7 +42,6 @@ class DateFieldType extends AbstractFieldType
     {
         return TextColumn::make($handle)
             ->label($label)
-            ->date('j. n. Y')
-            ->sortable();
+            ->date('j. n. Y');
     }
 }
