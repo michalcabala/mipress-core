@@ -17,13 +17,13 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Section;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Filament\Support\Enums\IconPosition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use MiPress\Core\Enums\EntryStatus;
@@ -53,22 +53,16 @@ class EntriesTable
                     ->width(40)
                     ->checkFileExistence(false)
                     ->state(fn (Entry $record): ?string => mipress_media_url($record->featuredImage, 'thumbnail')),
-                IconColumn::make('resource_lock_state')
-                    ->label('Zámek')
-                    ->alignCenter()
-                    ->state(fn (Entry $record): ?string => static::getResourceLockState($record))
-                    ->icon(fn (?string $state): ?string => match ($state) {
-                        'mine', 'other' => 'fal-lock',
-                        default => null,
-                    })
-                    ->color(fn (?string $state): ?string => match ($state) {
+                TextColumn::make('title')
+                    ->label('Titulek')
+                    ->icon(fn (Entry $record): ?string => static::getResourceLockState($record) !== null ? 'fal-lock' : null)
+                    ->iconPosition(IconPosition::Before)
+                    ->iconColor(fn (Entry $record): ?string => match (static::getResourceLockState($record)) {
                         'mine' => 'primary',
                         'other' => 'danger',
                         default => null,
                     })
-                    ->tooltip(fn (Entry $record, ?string $state): ?string => static::getResourceLockTooltip($record, $state)),
-                TextColumn::make('title')
-                    ->label('Titulek')
+                    ->tooltip(fn (Entry $record): ?string => static::getResourceLockTooltip($record, static::getResourceLockState($record)))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('status')
