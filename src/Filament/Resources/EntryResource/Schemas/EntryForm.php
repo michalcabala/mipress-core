@@ -26,6 +26,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\IconSize;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -34,6 +35,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
@@ -44,6 +46,8 @@ use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Services\BlueprintFieldResolver;
+
+use function Filament\Support\generate_icon_html;
 
 class EntryForm
 {
@@ -142,8 +146,8 @@ class EntryForm
                                     Actions::make([
                                         Action::make('saveAndPublish')
                                             ->label('Uložit a publikovat')
-                                            ->icon('far-circle-check')
-                                            ->color('success')
+                                            ->icon(EntryStatus::Published->getIcon())
+                                            ->color(EntryStatus::Published->getColor())
                                             ->visible(fn (): bool => (bool) auth()->user()?->can('entry.publish'))
                                             ->requiresConfirmation()
                                             ->action(function (EditRecord $livewire, Entry $record): void {
@@ -162,8 +166,8 @@ class EntryForm
 
                                         Action::make('saveDraft')
                                             ->label('Uložit koncept')
-                                            ->icon('far-floppy-disk')
-                                            ->color('gray')
+                                            ->icon(EntryStatus::Draft->getIcon())
+                                            ->color(EntryStatus::Draft->getColor())
                                             ->visible(fn (): bool => ! auth()->user()?->can('entry.publish'))
                                             ->action(function (EditRecord $livewire, Entry $record): void {
                                                 $livewire->save(false, false);
@@ -179,8 +183,8 @@ class EntryForm
 
                                         Action::make('submitForReview')
                                             ->label('Odeslat ke schválení')
-                                            ->icon('far-paper-plane')
-                                            ->color('info')
+                                            ->icon(EntryStatus::InReview->getIcon())
+                                            ->color(EntryStatus::InReview->getColor())
                                             ->visible(fn (Entry $record): bool => in_array($record->status, [EntryStatus::Draft, EntryStatus::Rejected], true)
                                                 && ! auth()->user()?->can('entry.publish'))
                                             ->requiresConfirmation()
@@ -203,7 +207,7 @@ class EntryForm
                                 ->schema([
                                     Placeholder::make('status_badge')
                                         ->label('Aktuální stav')
-                                        ->content(fn (Entry $record): HtmlString => new HtmlString('<span class="fi-badge fi-color-gray fi-size-sm">'.e($record->status->getLabel()).'</span>')),
+                                        ->content(fn (Entry $record): HtmlString => self::renderStatusBadge($record->status)),
 
                                     Placeholder::make('published_status_at')
                                         ->label('Datum publikování')
@@ -218,8 +222,8 @@ class EntryForm
                                     Actions::make([
                                         Action::make('unpublish')
                                             ->label('Unpublish')
-                                            ->icon('far-eye-slash')
-                                            ->color('gray')
+                                            ->icon(EntryStatus::Draft->getIcon())
+                                            ->color(EntryStatus::Draft->getColor())
                                             ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Published)
                                             ->requiresConfirmation()
                                             ->action(function (Entry $record): void {
@@ -233,8 +237,8 @@ class EntryForm
 
                                         Action::make('reject')
                                             ->label('Zamítnout')
-                                            ->icon('far-circle-xmark')
-                                            ->color('danger')
+                                            ->icon(EntryStatus::Rejected->getIcon())
+                                            ->color(EntryStatus::Rejected->getColor())
                                             ->visible(fn (Entry $record): bool => $record->status === EntryStatus::InReview
                                                 && auth()->user()?->can('entry.publish'))
                                             ->schema([
@@ -447,22 +451,31 @@ class EntryForm
 
     private static function renderStatusOverview(Entry $record): HtmlString
     {
-        $badgeColor = match ($record->status) {
-            EntryStatus::Draft => '#6b7280',
-            EntryStatus::InReview => '#d97706',
-            EntryStatus::Published => '#16a34a',
-            EntryStatus::Scheduled => '#2563eb',
-            EntryStatus::Rejected => '#dc2626',
-        };
-
-        $label = e($record->status->getLabel());
+        $badge = self::renderStatusBadge($record->status)->toHtml();
         $meta = self::renderStatusMeta($record);
 
         return new HtmlString(
             '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;">'
-            .'<span style="display:inline-flex;align-items:center;border-radius:9999px;padding:4px 10px;font-size:12px;font-weight:600;background:'.$badgeColor.';color:#fff;">'.$label.'</span>'
+            .$badge
             .'<div style="font-size:14px;line-height:1.5;color:#374151;">'.$meta.'</div>'
             .'</div>'
+        );
+    }
+
+    private static function renderStatusBadge(EntryStatus $status): HtmlString
+    {
+        $color = $status->getColor();
+        $color = is_string($color) ? $color : 'gray';
+        $icon = generate_icon_html(
+            $status->getIcon(),
+            attributes: new ComponentAttributeBag(['class' => 'shrink-0']),
+            size: IconSize::Small,
+        )?->toHtml() ?? '';
+
+        return new HtmlString(
+            '<span class="fi-badge fi-color-'.e($color).' fi-size-sm">'
+            .'<span class="inline-flex items-center gap-1.5">'.$icon.'<span>'.e($status->getLabel()).'</span></span>'
+            .'</span>'
         );
     }
 

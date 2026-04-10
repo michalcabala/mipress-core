@@ -37,7 +37,7 @@ trait HasSeo
 
     public function getSeoImageUrl(): ?string
     {
-        return $this->resolveSeoMedia()?->url;
+        return mipress_media_url($this->resolveSeoMedia(), 'og');
     }
 
     public function getSeoImageAlt(): ?string

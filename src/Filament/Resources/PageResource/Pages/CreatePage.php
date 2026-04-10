@@ -9,6 +9,7 @@ use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
@@ -84,6 +85,7 @@ class CreatePage extends CreateRecord
         if ($user === null) {
             return [
                 $this->makeCreateDraftAction(),
+                $this->makeCancelAction(),
             ];
         }
 
@@ -98,6 +100,7 @@ class CreatePage extends CreateRecord
                 ->icon('far-ellipsis')
                 ->color('gray')
                 ->button();
+            $actions[] = $this->makeCancelAction();
 
             return $actions;
         }
@@ -111,12 +114,14 @@ class CreatePage extends CreateRecord
                 ->icon('far-ellipsis')
                 ->color('gray')
                 ->button();
+            $actions[] = $this->makeCancelAction();
 
             return $actions;
         }
 
         return [
             $this->makeCreateDraftAction(),
+            $this->makeCancelAction(),
         ];
     }
 
@@ -212,8 +217,8 @@ class CreatePage extends CreateRecord
     {
         return Action::make('createDraft')
             ->label('Uložit koncept')
-            ->icon('far-floppy-disk')
-            ->color('gray')
+            ->icon(EntryStatus::Draft->getIcon())
+            ->color(EntryStatus::Draft->getColor())
             ->submit('createAsDraft')
             ->formId('form');
     }
@@ -222,8 +227,8 @@ class CreatePage extends CreateRecord
     {
         return Action::make('createReview')
             ->label('Odeslat ke schválení')
-            ->icon('far-paper-plane')
-            ->color('primary')
+            ->icon(EntryStatus::InReview->getIcon())
+            ->color(EntryStatus::InReview->getColor())
             ->submit('createAndSubmitForReview')
             ->formId('form');
     }
@@ -232,9 +237,22 @@ class CreatePage extends CreateRecord
     {
         return Action::make('createPublish')
             ->label('Publikovat')
-            ->icon('far-circle-check')
-            ->color('primary')
+            ->icon(EntryStatus::Published->getIcon())
+            ->color(EntryStatus::Published->getColor())
             ->submit('createAndPublish')
             ->formId('form');
+    }
+
+    private function makeCancelAction(): Action
+    {
+        return Action::make('cancel')
+            ->label('Zrušit')
+            ->icon('far-xmark')
+            ->color('gray')
+            ->action(function (): void {
+                $redirectUrl = $this->getRedirectUrl();
+
+                $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
+            });
     }
 }

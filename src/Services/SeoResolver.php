@@ -244,12 +244,12 @@ class SeoResolver
 
         $media = Media::query()->find((int) $imageId);
 
-        if (! $media instanceof Media || ! filled($media->url)) {
+        if (! $media instanceof Media) {
             return [null, null];
         }
 
         return [
-            $media->url,
+            mipress_media_url($media, 'og'),
             $this->normalizeString($settings['open_graph']['default_image_alt'] ?? null)
                 ?? $this->normalizeString($media->alt)
                 ?? $fallbackTitle,
@@ -407,7 +407,7 @@ class SeoResolver
             return null;
         }
 
-        return Media::query()->find((int) $logoId)?->url;
+        return mipress_media_url(Media::query()->find((int) $logoId));
     }
 
     /**

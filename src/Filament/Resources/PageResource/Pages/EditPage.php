@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use App\Models\User;
+use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
@@ -20,6 +22,8 @@ use MiPress\Core\Models\Page;
 
 class EditPage extends EditRecord
 {
+    use UsesResourceLock;
+
     protected static string $resource = PageResource::class;
 
     protected Width|string|null $maxWidth = Width::Full;
@@ -52,6 +56,8 @@ class EditPage extends EditRecord
                 ->color('gray')
                 ->button();
         }
+
+        $actions[] = $this->makeCancelAction();
 
         return $actions;
     }
@@ -226,12 +232,31 @@ class EditPage extends EditRecord
             ->action(fn () => $this->save());
     }
 
+    private function makeCancelAction(): Action
+    {
+        return Action::make('cancel')
+            ->label('Zrušit')
+            ->icon('far-xmark')
+            ->color('gray')
+            ->action(function (): void {
+                $record = $this->getRecord();
+
+                if ($record instanceof Page) {
+                    $record->unlock();
+                }
+
+                $redirectUrl = $this->getRedirectUrl();
+
+                $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
+            });
+    }
+
     private function makeSaveDraftAction(): Action
     {
         return Action::make('saveDraft')
             ->label('Uložit koncept')
-            ->icon('far-floppy-disk')
-            ->color('gray')
+            ->icon(EntryStatus::Draft->getIcon())
+            ->color(EntryStatus::Draft->getColor())
             ->action(function (): void {
                 $this->save(false, false);
 
@@ -260,8 +285,8 @@ class EditPage extends EditRecord
     {
         return Action::make('submitForReview')
             ->label($label)
-            ->icon('far-paper-plane')
-            ->color('primary')
+            ->icon(EntryStatus::InReview->getIcon())
+            ->color(EntryStatus::InReview->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getRecord();
@@ -293,8 +318,8 @@ class EditPage extends EditRecord
     {
         return Action::make('publishPage')
             ->label($label)
-            ->icon('far-circle-check')
-            ->color('primary')
+            ->icon(EntryStatus::Published->getIcon())
+            ->color(EntryStatus::Published->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $this->save(false, false);
@@ -342,8 +367,8 @@ class EditPage extends EditRecord
     {
         return Action::make('rejectPage')
             ->label('Zamítnout')
-            ->icon('far-circle-xmark')
-            ->color('danger')
+            ->icon(EntryStatus::Rejected->getIcon())
+            ->color(EntryStatus::Rejected->getColor())
             ->schema([
                 Textarea::make('reason')
                     ->label('Důvod zamítnutí')
@@ -375,8 +400,8 @@ class EditPage extends EditRecord
     {
         return Action::make('returnToDraft')
             ->label($label)
-            ->icon('far-rotate-left')
-            ->color('gray')
+            ->icon(EntryStatus::Draft->getIcon())
+            ->color(EntryStatus::Draft->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getRecord();
@@ -403,8 +428,8 @@ class EditPage extends EditRecord
     {
         return Action::make('unpublish')
             ->label('Zrušit publikaci')
-            ->icon('far-eye-slash')
-            ->color('danger')
+            ->icon(EntryStatus::Draft->getIcon())
+            ->color(EntryStatus::Draft->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getRecord();
@@ -431,8 +456,8 @@ class EditPage extends EditRecord
     {
         return Action::make('cancelSchedule')
             ->label('Zrušit plánování')
-            ->icon('far-calendar-xmark')
-            ->color('gray')
+            ->icon(EntryStatus::Draft->getIcon())
+            ->color(EntryStatus::Draft->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getRecord();
@@ -460,8 +485,8 @@ class EditPage extends EditRecord
     {
         return Action::make('publishNow')
             ->label('Publikovat ihned')
-            ->icon('far-bolt')
-            ->color('primary')
+            ->icon(EntryStatus::Published->getIcon())
+            ->color(EntryStatus::Published->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getRecord();
@@ -489,8 +514,8 @@ class EditPage extends EditRecord
     {
         return Action::make('resubmitRejected')
             ->label('Upravit a znovu odeslat')
-            ->icon('far-paper-plane')
-            ->color('primary')
+            ->icon(EntryStatus::InReview->getIcon())
+            ->color(EntryStatus::InReview->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $this->save(false, false);

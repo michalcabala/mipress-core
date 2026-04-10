@@ -35,6 +35,7 @@ use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
 use MiPress\Core\Services\MediaCurationOrchestrator;
 use MiPress\Core\Services\MediaPathGenerator;
+use MiPress\Core\Services\MediaUrlGenerator;
 use MiPress\Core\Services\SeoResolver;
 use MiPress\Core\Services\SettingsManager;
 use MiPress\Core\Services\SitemapGenerator;
@@ -57,6 +58,7 @@ class MiPressServiceProvider extends ServiceProvider
         $this->app->singleton(CurationGenerator::class);
         $this->app->singleton(MediaCurationOrchestrator::class);
         $this->app->singleton(MediaPathGenerator::class);
+        $this->app->singleton(MediaUrlGenerator::class);
         $this->app->singleton(SitemapGenerator::class);
     }
 
@@ -81,10 +83,10 @@ class MiPressServiceProvider extends ServiceProvider
         Page::observe(ContentObserver::class);
 
         app(CurationManager::class)->presets([
-            new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 200, height: 200, format: 'jpeg', quality: 85),
-            new CurationPreset(key: 'medium', label: 'Střední', width: 600, height: null, format: 'jpeg', quality: 85),
-            new CurationPreset(key: 'large', label: 'Velký', width: 1200, height: null, format: 'jpeg', quality: 85),
-            new CurationPreset(key: 'og', label: 'OG Image', width: 1200, height: 630, format: 'jpeg', quality: 85),
+            new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 200, height: 200, format: 'webp', quality: 85),
+            new CurationPreset(key: 'medium', label: 'Střední', width: 600, height: null, format: 'webp', quality: 85),
+            new CurationPreset(key: 'large', label: 'Velký', width: 1200, height: null, format: 'webp', quality: 85),
+            new CurationPreset(key: 'og', label: 'OG Image', width: 1200, height: 630, format: 'webp', quality: 85),
         ]);
 
         Gate::policy(Media::class, MediaPolicy::class);

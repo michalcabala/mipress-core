@@ -25,6 +25,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Enums\IconSize;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -33,12 +34,15 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Page;
+
+use function Filament\Support\generate_icon_html;
 
 class PageForm
 {
@@ -128,7 +132,7 @@ class PageForm
                                 ->schema([
                                     Placeholder::make('status_badge')
                                         ->label('Aktuální stav')
-                                        ->content(fn (Page $record): HtmlString => new HtmlString('<span class="fi-badge fi-color-gray fi-size-sm">'.e($record->status->getLabel()).'</span>')),
+                                        ->content(fn (Page $record): HtmlString => self::renderStatusBadge($record->status)),
 
                                     Placeholder::make('published_status_at')
                                         ->label('Datum publikování')
@@ -277,22 +281,31 @@ class PageForm
 
     private static function renderStatusOverview(Page $record): HtmlString
     {
-        $badgeColor = match ($record->status) {
-            EntryStatus::Draft => '#6b7280',
-            EntryStatus::InReview => '#d97706',
-            EntryStatus::Published => '#16a34a',
-            EntryStatus::Scheduled => '#2563eb',
-            EntryStatus::Rejected => '#dc2626',
-        };
-
-        $label = e($record->status->getLabel());
+        $badge = self::renderStatusBadge($record->status)->toHtml();
         $meta = self::renderStatusMeta($record);
 
         return new HtmlString(
             '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;">'
-            .'<span style="display:inline-flex;align-items:center;border-radius:9999px;padding:4px 10px;font-size:12px;font-weight:600;background:'.$badgeColor.';color:#fff;">'.$label.'</span>'
+            .$badge
             .'<div style="font-size:14px;line-height:1.5;color:#374151;">'.$meta.'</div>'
             .'</div>'
+        );
+    }
+
+    private static function renderStatusBadge(EntryStatus $status): HtmlString
+    {
+        $color = $status->getColor();
+        $color = is_string($color) ? $color : 'gray';
+        $icon = generate_icon_html(
+            $status->getIcon(),
+            attributes: new ComponentAttributeBag(['class' => 'shrink-0']),
+            size: IconSize::Small,
+        )?->toHtml() ?? '';
+
+        return new HtmlString(
+            '<span class="fi-badge fi-color-'.e($color).' fi-size-sm">'
+            .'<span class="inline-flex items-center gap-1.5">'.$icon.'<span>'.e($status->getLabel()).'</span></span>'
+            .'</span>'
         );
     }
 

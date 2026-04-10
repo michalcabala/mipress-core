@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Enums;
 
+use Filament\Support\Contracts\HasColor;
+use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum EntryStatus: string implements HasLabel
+enum EntryStatus: string implements HasColor, HasIcon, HasLabel
 {
     case Draft = 'draft';
     case InReview = 'in_review';
@@ -25,14 +27,25 @@ enum EntryStatus: string implements HasLabel
         };
     }
 
-    public function getColor(): string
+    public function getColor(): string|array|null
     {
         return match ($this) {
             self::Draft => 'gray',
-            self::InReview => 'info',
+            self::InReview => 'warning',
             self::Published => 'success',
-            self::Scheduled => 'warning',
+            self::Scheduled => 'info',
             self::Rejected => 'danger',
+        };
+    }
+
+    public function getIcon(): ?string
+    {
+        return match ($this) {
+            self::Draft => 'far-file-lines',
+            self::InReview => 'far-paper-plane',
+            self::Published => 'far-circle-check',
+            self::Scheduled => 'far-clock',
+            self::Rejected => 'far-circle-xmark',
         };
     }
 }

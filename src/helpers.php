@@ -2,10 +2,12 @@
 
 declare(strict_types=1);
 
+use Awcodes\Curator\Models\Media;
 use Illuminate\Support\Collection as SupportCollection;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
+use MiPress\Core\Services\MediaUrlGenerator;
 use MiPress\Core\Services\SeoResolver;
 use MiPress\Core\Services\SettingsManager;
 use MiPress\Core\Theme\ThemeManager;
@@ -77,6 +79,20 @@ if (! function_exists('mipress_entry_url')) {
     function mipress_entry_url(Entry|Page $entry): ?string
     {
         return $entry->getPublicUrl();
+    }
+}
+
+if (! function_exists('mipress_media_url')) {
+    function mipress_media_url(?Media $media, string $variant = 'default'): ?string
+    {
+        return app(MediaUrlGenerator::class)->media($media, $variant);
+    }
+}
+
+if (! function_exists('mipress_media_path_url')) {
+    function mipress_media_path_url(?string $path, string $variant = 'default', string $disk = 'public'): ?string
+    {
+        return app(MediaUrlGenerator::class)->path($path, $variant, $disk);
     }
 }
 

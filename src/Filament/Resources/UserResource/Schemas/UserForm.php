@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\UserResource\Schemas;
 
 use App\Models\User;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
@@ -21,6 +22,19 @@ class UserForm
         return $schema->components([
             Section::make('Základní informace')
                 ->schema([
+                    FileUpload::make('avatar_path')
+                        ->label('Avatar')
+                        ->helperText('Profilová fotka uživatele v administraci.')
+                        ->avatar()
+                        ->imageEditor()
+                        ->circleCropper()
+                        ->disk('public')
+                        ->directory('avatars/users')
+                        ->visibility('public')
+                        ->moveFiles()
+                        ->maxSize(2048)
+                        ->imageResizeTargetWidth('512')
+                        ->imageResizeTargetHeight('512'),
                     Grid::make(2)
                         ->schema([
                             TextInput::make('name')

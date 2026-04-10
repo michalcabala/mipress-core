@@ -16,13 +16,14 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Section;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
@@ -51,6 +52,20 @@ class PagesTable
 
         return $table
             ->columns([
+                IconColumn::make('resource_lock_state')
+                    ->label('Zámek')
+                    ->alignCenter()
+                    ->state(fn (Page $record): ?string => static::getResourceLockState($record))
+                    ->icon(fn (?string $state): ?string => match ($state) {
+                        'mine', 'other' => 'fal-lock',
+                        default => null,
+                    })
+                    ->color(fn (?string $state): ?string => match ($state) {
+                        'mine' => 'primary',
+                        'other' => 'danger',
+                        default => null,
+                    })
+                    ->tooltip(fn (Page $record, ?string $state): ?string => static::getResourceLockTooltip($record, $state)),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -67,6 +82,7 @@ class PagesTable
                 TextColumn::make('status')
                     ->label('Stav')
                     ->badge()
+                    ->icon(fn (EntryStatus $state): ?string => $state->getIcon())
                     ->color(fn (EntryStatus $state) => $state->getColor())
                     ->sortable(),
                 TextColumn::make('author.name')
@@ -88,20 +104,6 @@ class PagesTable
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions())
                     ->searchable(),
-                DateRangeFilter::make('created_at')
-                    ->label('Datum vytvoření')
-                    ->format('d.m.Y')
-                    ->withIndicator()
-                    ->modifyQueryUsing(function (Builder $query, ?Carbon $startDate, ?Carbon $endDate, mixed $dateString): Builder {
-                        if (blank($dateString) || ! $startDate || ! $endDate) {
-                            return $query;
-                        }
-
-                        return $query->whereBetween('created_at', [
-                            $startDate->copy()->startOfDay(),
-                            $endDate->copy()->endOfDay(),
-                        ]);
-                    }),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')
                     ->options(fn (): array => static::getCreatedMonthOptions())
@@ -118,8 +120,13 @@ class PagesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
+                SelectFilter::make('status')
+                    ->label('Stav')
+                    ->options(EntryStatus::class)
+                    ->native(false),
                 TrashedFilter::make(),
             ])
+            ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters))
             ->actions([
                 ActionGroup::make([
                     Action::make('toggleHomepage')
@@ -191,6 +198,28 @@ class PagesTable
             ]);
     }
 
+    private static function getResourceLockState(Page $record): ?string
+    {
+        $resourceLock = $record->resourceLock;
+
+        if ($resourceLock === null || $resourceLock->isExpired($record->getLockTimeout())) {
+            return null;
+        }
+
+        return $record->isLockedByCurrentUser() ? 'mine' : 'other';
+    }
+
+    private static function getResourceLockTooltip(Page $record, ?string $state): ?string
+    {
+        return match ($state) {
+            'mine' => 'Právě upravujete vy',
+            'other' => filled($record->resourceLock?->user?->name)
+                ? 'Právě upravuje '.$record->resourceLock->user->name
+                : 'Právě upravuje jiný uživatel',
+            default => null,
+        };
+    }
+
     private static function getHomepagePageId(): ?string
     {
         return Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY)
@@ -231,15 +260,16 @@ class PagesTable
      */
     private static function getCreatedMonthOptions(): array
     {
-        $pages = Page::query()
-            ->whereNotNull('created_at')
-            ->orderByDesc('created_at')
-            ->get(['created_at']);
+        $createdMonthExpression = static::getCreatedMonthExpression(Page::query()->getModel()->getConnection()->getDriverName());
 
-        $values = $pages
-            ->map(fn (Page $page): ?string => $page->created_at?->format('Y-m'))
+        $values = Page::query()
+            ->whereNotNull('created_at')
+            ->toBase()
+            ->selectRaw("{$createdMonthExpression} as created_month")
+            ->distinct()
+            ->orderByDesc('created_month')
+            ->pluck('created_month')
             ->filter(fn (?string $value): bool => filled($value))
-            ->unique()
             ->values();
 
         $options = [];
@@ -255,6 +285,46 @@ class PagesTable
         }
 
         return $options;
+    }
+
+    private static function getCreatedMonthExpression(string $driver): string
+    {
+        return match ($driver) {
+            'sqlite' => "strftime('%Y-%m', created_at)",
+            'pgsql' => "to_char(created_at, 'YYYY-MM')",
+            default => "DATE_FORMAT(created_at, '%Y-%m')",
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<int, Section>
+     */
+    private static function getFiltersFormSchema(array $filters): array
+    {
+        $sections = [];
+
+        $basicFilters = array_values(array_filter([
+            $filters['author_id'] ?? null,
+            $filters['created_month'] ?? null,
+        ]));
+
+        if ($basicFilters !== []) {
+            $sections[] = Section::make('Základní')
+                ->schema($basicFilters);
+        }
+
+        $stateFilters = array_values(array_filter([
+            $filters['status'] ?? null,
+            $filters['trashed'] ?? null,
+        ]));
+
+        if ($stateFilters !== []) {
+            $sections[] = Section::make('Stav')
+                ->schema($stateFilters);
+        }
+
+        return $sections;
     }
 
     private static function formatHierarchyTitle(string $title, int $depth): string

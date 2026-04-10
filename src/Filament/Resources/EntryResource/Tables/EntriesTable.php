@@ -16,6 +16,8 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Section;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -24,7 +26,6 @@ use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Malzariey\FilamentDaterangepickerFilter\Filters\DateRangeFilter;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
@@ -49,9 +50,22 @@ class EntriesTable
                     ->label('Obrázek')
                     ->height(40)
                     ->width(40)
-                    ->state(fn (Entry $record): ?string => $record->featuredImage?->hasCuration('thumbnail')
-                        ? $record->featuredImage->getCuration('thumbnail')['url']
-                        : $record->featuredImage?->url),
+                    ->checkFileExistence(false)
+                    ->state(fn (Entry $record): ?string => mipress_media_url($record->featuredImage, 'thumbnail')),
+                IconColumn::make('resource_lock_state')
+                    ->label('Zámek')
+                    ->alignCenter()
+                    ->state(fn (Entry $record): ?string => static::getResourceLockState($record))
+                    ->icon(fn (?string $state): ?string => match ($state) {
+                        'mine', 'other' => 'fal-lock',
+                        default => null,
+                    })
+                    ->color(fn (?string $state): ?string => match ($state) {
+                        'mine' => 'primary',
+                        'other' => 'danger',
+                        default => null,
+                    })
+                    ->tooltip(fn (Entry $record, ?string $state): ?string => static::getResourceLockTooltip($record, $state)),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -59,6 +73,7 @@ class EntriesTable
                 TextColumn::make('status')
                     ->label('Stav')
                     ->badge()
+                    ->icon(fn (EntryStatus $state): ?string => $state->getIcon())
                     ->color(fn (EntryStatus $state) => $state->getColor())
                     ->sortable(),
                 ...static::getTaxonomyColumns($currentCollection),
@@ -81,20 +96,6 @@ class EntriesTable
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions($currentCollection))
                     ->searchable(),
-                DateRangeFilter::make('created_at')
-                    ->label('Datum vytvoření')
-                    ->format('d.m.Y')
-                    ->withIndicator()
-                    ->modifyQueryUsing(function (Builder $query, ?Carbon $startDate, ?Carbon $endDate, mixed $dateString): Builder {
-                        if (blank($dateString) || ! $startDate || ! $endDate) {
-                            return $query;
-                        }
-
-                        return $query->whereBetween('created_at', [
-                            $startDate->copy()->startOfDay(),
-                            $endDate->copy()->endOfDay(),
-                        ]);
-                    }),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')
                     ->options(fn (): array => static::getCreatedMonthOptions($currentCollection))
@@ -111,9 +112,14 @@ class EntriesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
+                SelectFilter::make('status')
+                    ->label('Stav')
+                    ->options(EntryStatus::class)
+                    ->native(false),
                 ...static::getTaxonomyFilters($currentCollection),
                 TrashedFilter::make(),
             ])
+            ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters, $currentCollection))
             ->actions([
                 ActionGroup::make([
                     EditAction::make()
@@ -133,6 +139,28 @@ class EntriesTable
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function getResourceLockState(Entry $record): ?string
+    {
+        $resourceLock = $record->resourceLock;
+
+        if ($resourceLock === null || $resourceLock->isExpired($record->getLockTimeout())) {
+            return null;
+        }
+
+        return $record->isLockedByCurrentUser() ? 'mine' : 'other';
+    }
+
+    private static function getResourceLockTooltip(Entry $record, ?string $state): ?string
+    {
+        return match ($state) {
+            'mine' => 'Právě upravujete vy',
+            'other' => filled($record->resourceLock?->user?->name)
+                ? 'Právě upravuje '.$record->resourceLock->user->name
+                : 'Právě upravuje jiný uživatel',
+            default => null,
+        };
     }
 
     /**
@@ -170,19 +198,20 @@ class EntriesTable
     {
         $collection ??= EntryResource::getCurrentCollection();
 
-        $entries = Entry::query()
+        $createdMonthExpression = static::getCreatedMonthExpression(Entry::query()->getModel()->getConnection()->getDriverName());
+
+        $values = Entry::query()
             ->when(
                 $collection,
                 fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
             )
             ->whereNotNull('created_at')
-            ->orderByDesc('created_at')
-            ->get(['created_at']);
-
-        $values = $entries
-            ->map(fn (Entry $entry): ?string => $entry->created_at?->format('Y-m'))
+            ->toBase()
+            ->selectRaw("{$createdMonthExpression} as created_month")
+            ->distinct()
+            ->orderByDesc('created_month')
+            ->pluck('created_month')
             ->filter(fn (?string $value): bool => filled($value))
-            ->unique()
             ->values();
 
         $options = [];
@@ -198,6 +227,15 @@ class EntriesTable
         }
 
         return $options;
+    }
+
+    private static function getCreatedMonthExpression(string $driver): string
+    {
+        return match ($driver) {
+            'sqlite' => "strftime('%Y-%m', created_at)",
+            'pgsql' => "to_char(created_at, 'YYYY-MM')",
+            default => "DATE_FORMAT(created_at, '%Y-%m')",
+        };
     }
 
     /**
@@ -242,6 +280,44 @@ class EntriesTable
         return $terms
             ->map(fn (string $term): string => '<span class="fi-badge fi-color-custom bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">'.e($term).'</span>')
             ->implode(' ');
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<int, Section>
+     */
+    private static function getFiltersFormSchema(array $filters, ?Collection $collection = null): array
+    {
+        $sections = [];
+
+        $basicFilters = array_values(array_filter([
+            $filters['author_id'] ?? null,
+            $filters['created_month'] ?? null,
+        ]));
+
+        if ($basicFilters !== []) {
+            $sections[] = Section::make('Základní')
+                ->schema($basicFilters);
+        }
+
+        $taxonomyFilters = static::getTaxonomyFilterComponents($filters, $collection);
+
+        if ($taxonomyFilters !== []) {
+            $sections[] = Section::make('Taxonomie')
+                ->schema($taxonomyFilters);
+        }
+
+        $stateFilters = array_values(array_filter([
+            $filters['status'] ?? null,
+            $filters['trashed'] ?? null,
+        ]));
+
+        if ($stateFilters !== []) {
+            $sections[] = Section::make('Stav')
+                ->schema($stateFilters);
+        }
+
+        return $sections;
     }
 
     /**
@@ -340,6 +416,25 @@ class EntriesTable
                     return $taxonomy->title.': '.$names;
                 });
         })->toArray();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<int, mixed>
+     */
+    private static function getTaxonomyFilterComponents(array $filters, ?Collection $collection = null): array
+    {
+        $collection ??= EntryResource::getCurrentCollection();
+
+        if (! $collection) {
+            return [];
+        }
+
+        return $collection->taxonomies
+            ->map(fn (Taxonomy $taxonomy): mixed => $filters["taxonomy_{$taxonomy->getKey()}"] ?? null)
+            ->filter()
+            ->values()
+            ->all();
     }
 
     /**

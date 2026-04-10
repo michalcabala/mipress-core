@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 
 class CurationGenerator
 {
+    private const CURATION_EXTENSION = 'webp';
+
     private const RASTER_MIME_TYPES = [
         'image/jpeg',
         'image/png',
@@ -134,8 +136,8 @@ class CurationGenerator
             default => $image->scaleDown($width),
         };
 
-        $encodedImage = $image->encodeByExtension($media->ext, quality: 85);
-        $fileName = $media->name.'-'.$key.'.'.$media->ext;
+        $encodedImage = $image->encodeByExtension(self::CURATION_EXTENSION, quality: 85);
+        $fileName = $media->name.'-'.$key.'.'.self::CURATION_EXTENSION;
 
         $curationPath = $this->buildPath($media->directory, $fileName);
 
@@ -156,7 +158,7 @@ class CurationGenerator
                 'height' => $curationHeight,
                 'size' => $storage->size($curationPath),
                 'type' => $encodedImage->mediaType(),
-                'ext' => $media->ext,
+                'ext' => self::CURATION_EXTENSION,
                 'url' => $storage->url($curationPath),
             ],
         ];

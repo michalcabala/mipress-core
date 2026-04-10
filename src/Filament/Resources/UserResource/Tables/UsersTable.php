@@ -15,6 +15,7 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -28,8 +29,16 @@ class UsersTable
     public static function table(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('roles'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['roles']))
             ->columns([
+                ImageColumn::make('avatar')
+                    ->label('Avatar')
+                    ->height(40)
+                    ->width(40)
+                    ->circular()
+                    ->checkFileExistence(false)
+                    ->state(fn (User $record): ?string => $record->getFilamentAvatarUrl()),
+
                 TextColumn::make('name')
                     ->label('Jméno')
                     ->searchable()
