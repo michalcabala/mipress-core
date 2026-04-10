@@ -91,7 +91,7 @@ class SettingsManager
 
     private function settingsTableExists(): bool
     {
-        if (Cache::get(self::SETTINGS_TABLE_EXISTS_CACHE_KEY) === true) {
+        if (Cache::memo()->get(self::SETTINGS_TABLE_EXISTS_CACHE_KEY) === true) {
             return true;
         }
 
@@ -99,7 +99,7 @@ class SettingsManager
             return false;
         }
 
-        Cache::forever(self::SETTINGS_TABLE_EXISTS_CACHE_KEY, true);
+        Cache::memo()->forever(self::SETTINGS_TABLE_EXISTS_CACHE_KEY, true);
 
         return true;
     }
