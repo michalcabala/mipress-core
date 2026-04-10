@@ -6,8 +6,8 @@ namespace MiPress\Core\Filament\Pages;
 
 use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -230,16 +230,16 @@ class GlobalSeoSettings extends Page
                 Section::make('Náhled a kontrola')
                     ->description('Živý přehled nad výsledným title, description, social meta a základními riziky.')
                     ->schema([
-                        Placeholder::make('health')
+                        TextEntry::make('health')
                             ->hiddenLabel()
-                            ->content(fn (): HtmlString => $this->renderWarnings())
+                            ->state(fn (): HtmlString => $this->renderWarnings())
                             ->columnSpanFull(),
-                        Placeholder::make('serp_preview')
+                        TextEntry::make('serp_preview')
                             ->hiddenLabel()
-                            ->content(fn (): HtmlString => $this->renderSerpPreview()),
-                        Placeholder::make('social_preview')
+                            ->state(fn (): HtmlString => $this->renderSerpPreview()),
+                        TextEntry::make('social_preview')
                             ->hiddenLabel()
-                            ->content(fn (): HtmlString => $this->renderSocialPreview()),
+                            ->state(fn (): HtmlString => $this->renderSocialPreview()),
                     ])
                     ->columns(2),
             ])

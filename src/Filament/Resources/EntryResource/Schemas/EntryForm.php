@@ -15,7 +15,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\MarkdownEditor;
-use Filament\Forms\Components\Placeholder;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\RichEditor;
@@ -74,9 +74,9 @@ class EntryForm
             $components[] = Section::make()
                 ->compact()
                 ->schema([
-                    Placeholder::make('status_overview')
+                    TextEntry::make('status_overview')
                         ->hiddenLabel()
-                        ->content(fn (): HtmlString => self::renderStatusOverview($record)),
+                        ->state(fn (): HtmlString => self::renderStatusOverview($record)),
                 ]);
         }
 
@@ -205,19 +205,19 @@ class EntryForm
                             Section::make('Stav')
                                 ->visible($isEdit)
                                 ->schema([
-                                    Placeholder::make('status_badge')
+                                    TextEntry::make('status_badge')
                                         ->label('Aktuální stav')
-                                        ->content(fn (Entry $record): HtmlString => self::renderStatusBadge($record->status)),
+                                        ->state(fn (Entry $record): HtmlString => self::renderStatusBadge($record->status)),
 
-                                    Placeholder::make('published_status_at')
+                                    TextEntry::make('published_status_at')
                                         ->label('Datum publikování')
                                         ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Published && filled($record->published_at))
-                                        ->content(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
+                                        ->state(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
 
-                                    Placeholder::make('review_note_notice')
+                                    TextEntry::make('review_note_notice')
                                         ->label('Důvod zamítnutí')
                                         ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Rejected && filled($record->review_note))
-                                        ->content(fn (Entry $record): string => $record->review_note ?? ''),
+                                        ->state(fn (Entry $record): string => $record->review_note ?? ''),
 
                                     Actions::make([
                                         Action::make('unpublish')
@@ -318,18 +318,18 @@ class EntryForm
                             Section::make('Detaily obsahu')
                                 ->visible($isEdit)
                                 ->schema([
-                                    Placeholder::make('entry_id')
+                                    TextEntry::make('entry_id')
                                         ->label('ID')
-                                        ->content(fn (Entry $record): string => (string) $record->id),
-                                    Placeholder::make('created_info')
+                                        ->state(fn (Entry $record): string => (string) $record->id),
+                                    TextEntry::make('created_info')
                                         ->label('Vytvořeno')
-                                        ->content(fn (Entry $record): string => ($record->created_at?->format('j. n. Y H:i') ?? '—').' — '.($record->author?->name ?? '—')),
-                                    Placeholder::make('updated_info')
+                                        ->state(fn (Entry $record): string => ($record->created_at?->format('j. n. Y H:i') ?? '—').' — '.($record->author?->name ?? '—')),
+                                    TextEntry::make('updated_info')
                                         ->label('Upraveno')
-                                        ->content(fn (Entry $record): string => ($record->updated_at?->format('j. n. Y H:i') ?? '—').' — '.($record->author?->name ?? '—')),
-                                    Placeholder::make('published_info')
+                                        ->state(fn (Entry $record): string => ($record->updated_at?->format('j. n. Y H:i') ?? '—').' — '.($record->author?->name ?? '—')),
+                                    TextEntry::make('published_info')
                                         ->label('Publikováno')
-                                        ->content(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
+                                        ->state(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
                                 ]),
 
                             Section::make('Hlavní obrázek')
