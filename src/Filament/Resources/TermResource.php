@@ -9,6 +9,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use MiPress\Core\Filament\Resources\TermResource\Pages\CreateTerm;
 use MiPress\Core\Filament\Resources\TermResource\Pages\EditTerm;
 use MiPress\Core\Filament\Resources\TermResource\Pages\ListTerms;
@@ -47,6 +48,7 @@ class TermResource extends Resource
 
     public static function getNavigationItems(): array
     {
+        /** @var Collection<int, Taxonomy> $taxonomies */
         $taxonomies = Taxonomy::with('collection')
             ->whereNotNull('collection_id')
             ->orderBy('title')
@@ -55,6 +57,7 @@ class TermResource extends Resource
         $items = [];
 
         foreach ($taxonomies as $taxonomy) {
+            /** @var Taxonomy $taxonomy */
             $collection = $taxonomy->collection;
 
             if (! $collection) {
@@ -85,7 +88,7 @@ class TermResource extends Resource
         }
 
         $request = request();
-        $cacheKey = 'mipress.current_taxonomy.' . (string) $taxonomy;
+        $cacheKey = 'mipress.current_taxonomy.'.(string) $taxonomy;
 
         if ($request->attributes->has($cacheKey)) {
             /** @var Taxonomy|null $cachedTaxonomy */
