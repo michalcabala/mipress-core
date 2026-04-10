@@ -10,6 +10,7 @@ use Filament\Support\Facades\FilamentIcon;
 use Filament\Tables\Table;
 use Filament\View\PanelsIconAlias;
 use MiPress\Core\Filament\Pages\EditSettings;
+use MiPress\Core\Filament\Pages\GlobalSeoSettings;
 use MiPress\Core\Filament\Pages\SitemapSettings;
 use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Plugins\BotlyPlugin;
@@ -36,7 +37,7 @@ class MiPressPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel
-            ->discoverClusters(in: __DIR__, for: 'MiPress\\Core\\Filament')
+            ->discoverClusters(in: __DIR__.'/Clusters', for: 'MiPress\\Core\\Filament\\Clusters')
             ->navigationGroups([
                 'Obsah',
                 'Formuláře',
@@ -55,6 +56,7 @@ class MiPressPlugin implements Plugin
             ])
             ->pages([
                 EditSettings::class,
+                GlobalSeoSettings::class,
                 ThemeSettings::class,
                 SitemapSettings::class,
             ])

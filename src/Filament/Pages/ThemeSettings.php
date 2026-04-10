@@ -9,6 +9,7 @@ use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use MiPress\Core\Enums\UserRole;
+use MiPress\Core\Filament\Clusters\WebCluster;
 use MiPress\Core\Theme\ThemeManager;
 use MiPress\Core\Theme\ThemeManifest;
 
@@ -16,11 +17,11 @@ class ThemeSettings extends Page
 {
     protected string $view = 'mipress::filament.pages.theme-settings';
 
+    protected static ?string $cluster = WebCluster::class;
+
     protected static string|\BackedEnum|null $navigationIcon = 'fal-palette';
 
     protected static ?string $navigationLabel = 'Témata';
-
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
 
     protected static ?int $navigationSort = 90;
 

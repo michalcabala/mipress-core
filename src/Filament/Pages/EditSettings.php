@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Pages;
 
-use Filament\Actions\Action;
 use App\Models\User;
+use BladeUI\Icons\Exceptions\SvgNotFound;
+use BladeUI\Icons\Factory as IconFactory;
+use Filament\Actions\Action;
 use Filament\Navigation\NavigationItem;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -13,9 +15,11 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
+use MiPress\Core\Filament\Clusters\WebCluster;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Models\Setting;
 use MiPress\Core\Services\BlueprintFieldResolver;
+use MiPress\Core\Services\GlobalSeoSettingsManager;
 use MiPress\Core\Services\SettingsManager;
 use Spatie\Permission\Models\Permission;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -24,13 +28,21 @@ class EditSettings extends Page
 {
     protected string $view = 'mipress::filament.pages.edit-settings';
 
-    protected static ?string $slug = 'settings/{handle}';
+    protected static ?string $cluster = WebCluster::class;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
+    protected static ?string $slug = 'settings/{handle}';
 
     protected static ?string $navigationLabel = 'Nastavení';
 
     protected static ?int $navigationSort = 10;
+
+    /** @var list<string> */
+    private const HIDDEN_NAVIGATION_HANDLES = ['scripts', 'seo', 'site'];
+
+    /** @var array<string, list<string>> */
+    private const HIDDEN_FIELD_HANDLES = [
+        'seo' => ['robots'],
+    ];
 
     /** @var array<string, mixed> */
     public array $data = [];
@@ -86,8 +98,7 @@ class EditSettings extends Page
 
         return static::getNavigationSettings()
             ->map(fn (\MiPress\Core\Models\Setting $setting): NavigationItem => NavigationItem::make($setting->name)
-                ->group('Nastavení')
-                ->icon($setting->icon ?: 'fal-gear')
+                ->icon(static::resolveNavigationIcon($setting->icon))
                 ->sort((int) $setting->sort_order)
                 ->url(static::getUrl(['handle' => $setting->handle]))
                 ->isActiveWhen(fn (): bool => request()->route('handle') === $setting->handle)
@@ -111,7 +122,9 @@ class EditSettings extends Page
         $setting = $this->resolveSetting();
 
         return $form->schema(
-            BlueprintFieldResolver::resolveAll($setting->blueprint?->fields ?? []),
+            BlueprintFieldResolver::resolveAll(
+                static::filterHiddenFields($setting->blueprint?->fields ?? [], $setting->handle),
+            ),
         );
     }
 
@@ -166,6 +179,10 @@ class EditSettings extends Page
 
     private function resolveSetting(): Setting
     {
+        if (in_array($this->handle, [GlobalSeoSettingsManager::HANDLE, 'site'], true)) {
+            throw new NotFoundHttpException();
+        }
+
         $setting = app(SettingsManager::class)->find($this->handle);
 
         if ($setting === null) {
@@ -192,11 +209,72 @@ class EditSettings extends Page
 
         $settings = app(SettingsManager::class)
             ->all()
+            ->reject(fn (Setting $setting): bool => in_array($setting->handle, self::HIDDEN_NAVIGATION_HANDLES, true))
             ->sortBy('sort_order')
             ->values();
 
         $request->attributes->set($cacheKey, $settings);
 
         return $settings;
+    }
+
+    private static function resolveNavigationIcon(?string $icon): string
+    {
+        static $resolvedIcons = [];
+
+        $icon ??= 'fal-gear';
+        $icon = static::normalizeNavigationIcon($icon);
+
+        if (array_key_exists($icon, $resolvedIcons)) {
+            return $resolvedIcons[$icon];
+        }
+
+        try {
+            app(IconFactory::class)->svg($icon);
+
+            return $resolvedIcons[$icon] = $icon;
+        } catch (SvgNotFound) {
+            return $resolvedIcons[$icon] = 'fal-gear';
+        }
+    }
+
+    private static function normalizeNavigationIcon(string $icon): string
+    {
+        return match ($icon) {
+            'fal-search' => 'fal-magnifying-glass',
+            'far-search' => 'far-magnifying-glass',
+            'fas-search' => 'fas-magnifying-glass',
+            default => $icon,
+        };
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int, array<string, mixed>>
+     */
+    private static function filterHiddenFields(array $fields, string $handle): array
+    {
+        $hiddenFields = self::HIDDEN_FIELD_HANDLES[$handle] ?? [];
+
+        if ($hiddenFields === []) {
+            return $fields;
+        }
+
+        return collect($fields)
+            ->map(function (array $item) use ($hiddenFields): ?array {
+                if (is_array($item['fields'] ?? null)) {
+                    $item['fields'] = collect($item['fields'])
+                        ->filter(fn (mixed $field): bool => is_array($field) && ! in_array($field['handle'] ?? null, $hiddenFields, true))
+                        ->values()
+                        ->all();
+
+                    return $item['fields'] === [] ? null : $item;
+                }
+
+                return in_array($item['handle'] ?? null, $hiddenFields, true) ? null : $item;
+            })
+            ->filter()
+            ->values()
+            ->all();
     }
 }

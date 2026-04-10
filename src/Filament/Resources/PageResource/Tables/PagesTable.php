@@ -29,7 +29,11 @@ use MiPress\Core\Models\Setting;
 
 class PagesTable
 {
-    private const HOMEPAGE_PAGE_SETTING_KEY = 'site.homepage_page_id';
+    private const HOMEPAGE_PAGE_SETTING_KEY = 'general.homepage_page_id';
+
+    private const LEGACY_HOMEPAGE_PAGE_SETTING_KEY = 'site.homepage_page_id';
+
+    private const LEGACY_HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
 
     /**
      * @var array<int, int>
@@ -43,7 +47,7 @@ class PagesTable
 
     public static function table(Table $table): Table
     {
-        $homepageId = Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY);
+        $homepageId = static::getHomepagePageId();
 
         return $table
             ->columns([
@@ -134,11 +138,11 @@ class PagesTable
                         })
                         ->requiresConfirmation()
                         ->action(function (Page $record): void {
-                            $homepageId = Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY);
+                            $homepageId = static::getHomepagePageId();
                             $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;
 
                             if ($isCurrentHomepage) {
-                                Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, null);
+                                static::storeHomepagePageId(null);
 
                                 Notification::make()
                                     ->title('Homepage zrušena')
@@ -159,7 +163,7 @@ class PagesTable
                                 return;
                             }
 
-                            Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, (string) $record->getKey());
+                            static::storeHomepagePageId((string) $record->getKey());
 
                             Notification::make()
                                 ->title('Homepage nastavena')
@@ -185,6 +189,19 @@ class PagesTable
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function getHomepagePageId(): ?string
+    {
+        return Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY)
+            ?? Setting::getValue(self::LEGACY_HOMEPAGE_PAGE_SETTING_KEY);
+    }
+
+    private static function storeHomepagePageId(?string $pageId): void
+    {
+        Setting::putValue(self::HOMEPAGE_PAGE_SETTING_KEY, $pageId);
+        Setting::putValue(self::LEGACY_HOMEPAGE_PAGE_SETTING_KEY, null);
+        Setting::putValue(self::LEGACY_HOMEPAGE_ENTRY_SETTING_KEY, null);
     }
 
     /**

@@ -15,7 +15,7 @@ class BotlyPage extends \Awcodes\Botly\Filament\Pages\BotlyPage
 
     protected static ?string $navigationLabel = 'Správa robots.txt';
 
-    protected static ?int $navigationSort = 10;
+    protected static ?int $navigationSort = 20;
 
     public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null
     {

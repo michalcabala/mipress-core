@@ -6,6 +6,7 @@ use Illuminate\Support\Collection as SupportCollection;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
+use MiPress\Core\Services\SeoResolver;
 use MiPress\Core\Services\SettingsManager;
 use MiPress\Core\Theme\ThemeManager;
 
@@ -98,5 +99,16 @@ if (! function_exists('settings')) {
         $manager = app(SettingsManager::class);
 
         return $manager->get($handle, $key, $default);
+    }
+}
+
+if (! function_exists('mipress_seo')) {
+    /**
+     * @param  array<string, mixed>  $context
+     * @return array<string, mixed>
+     */
+    function mipress_seo(array $context = []): array
+    {
+        return app(SeoResolver::class)->resolve($context);
     }
 }

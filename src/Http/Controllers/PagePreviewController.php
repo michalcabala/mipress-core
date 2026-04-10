@@ -26,6 +26,7 @@ class PagePreviewController extends Controller
         $rendered = view($viewName, [
             'entry' => $page,
             'page' => $page,
+            'collection' => null,
             'relatedEntries' => collect(),
             'isPreview' => true,
         ])->render();

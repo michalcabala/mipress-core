@@ -32,7 +32,7 @@ class SitemapSettings extends Page
 
     protected static ?string $title = 'Nastavení sitemapy';
 
-    protected static ?int $navigationSort = 20;
+    protected static ?int $navigationSort = 30;
 
     /** @var array<string, mixed> */
     public array $data = [];

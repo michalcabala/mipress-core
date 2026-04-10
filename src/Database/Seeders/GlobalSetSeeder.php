@@ -23,15 +23,6 @@ class GlobalSetSeeder extends Seeder
                 ],
             ],
             [
-                'handle' => 'site',
-                'title' => 'Nastavení webu',
-                'data' => [
-                    'default_locale' => 'cs',
-                    'date_format' => 'j. F Y',
-                    'per_page' => 12,
-                ],
-            ],
-            [
                 'handle' => 'social',
                 'title' => 'Sociální sítě',
                 'data' => [
