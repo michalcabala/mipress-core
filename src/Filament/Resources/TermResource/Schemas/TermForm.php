@@ -8,6 +8,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use MiPress\Core\Filament\Resources\TermResource;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 
@@ -58,10 +59,8 @@ class TermForm
             return null;
         }
 
-        if (is_numeric($taxonomyIdentifier)) {
-            return Taxonomy::find((int) $taxonomyIdentifier);
-        }
-
-        return Taxonomy::where('handle', (string) $taxonomyIdentifier)->first();
+        return TermResource::resolveTaxonomy(is_numeric($taxonomyIdentifier)
+            ? (int) $taxonomyIdentifier
+            : (string) $taxonomyIdentifier);
     }
 }

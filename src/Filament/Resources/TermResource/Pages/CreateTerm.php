@@ -6,7 +6,6 @@ namespace MiPress\Core\Filament\Resources\TermResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Filament\Resources\TermResource;
-use MiPress\Core\Models\Taxonomy;
 
 class CreateTerm extends CreateRecord
 {
@@ -40,9 +39,7 @@ class CreateTerm extends CreateRecord
             return $data;
         }
 
-        $taxonomy = is_numeric($this->taxonomyHandle)
-            ? Taxonomy::find((int) $this->taxonomyHandle)
-            : Taxonomy::where('handle', $this->taxonomyHandle)->first();
+        $taxonomy = TermResource::resolveTaxonomy($this->taxonomyHandle);
 
         if ($taxonomy) {
             $data['taxonomy_id'] = $taxonomy->getKey();

@@ -88,9 +88,7 @@ class ListTerms extends ListRecords
             return null;
         }
 
-        $this->resolvedTaxonomy = is_numeric($this->taxonomyHandle)
-            ? Taxonomy::find((int) $this->taxonomyHandle)
-            : Taxonomy::where('handle', $this->taxonomyHandle)->first();
+        $this->resolvedTaxonomy = TermResource::resolveTaxonomy($this->taxonomyHandle);
 
         return $this->resolvedTaxonomy;
     }

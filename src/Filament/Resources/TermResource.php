@@ -29,6 +29,22 @@ class TermResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    public static function getCurrentTaxonomyIdentifier(): int|string|null
+    {
+        $request = request();
+        $taxonomy = $request->route('taxonomy')
+            ?? $request->query('taxonomy')
+            ?? $request->query('taxonomy_id');
+
+        if (! filled($taxonomy)) {
+            return null;
+        }
+
+        return is_numeric($taxonomy)
+            ? (int) $taxonomy
+            : (string) $taxonomy;
+    }
+
     public static function getNavigationItems(): array
     {
         $taxonomies = Taxonomy::with('collection')
@@ -51,7 +67,7 @@ class TermResource extends Resource
                 ->parentItem($collection->name)
                 ->sort($collection->sort_order + 1)
                 ->url(static::getUrl('index', ['taxonomy' => $taxonomy->handle]))
-                ->isActiveWhen(fn () => static::getCurrentTaxonomy()?->getKey() === $taxonomy->getKey());
+                ->isActiveWhen(fn (): bool => static::isCurrentTaxonomy($taxonomy));
         }
 
         return $items;
@@ -59,20 +75,47 @@ class TermResource extends Resource
 
     public static function getCurrentTaxonomy(): ?Taxonomy
     {
-        $request = request();
-        $taxonomy = $request->route('taxonomy')
-            ?? $request->query('taxonomy')
-            ?? $request->query('taxonomy_id');
+        return static::resolveTaxonomy(static::getCurrentTaxonomyIdentifier());
+    }
 
+    public static function resolveTaxonomy(int|string|null $taxonomy): ?Taxonomy
+    {
         if (! filled($taxonomy)) {
             return null;
         }
 
-        if (is_numeric($taxonomy)) {
-            return Taxonomy::find((int) $taxonomy);
+        $request = request();
+        $cacheKey = 'mipress.current_taxonomy.' . (string) $taxonomy;
+
+        if ($request->attributes->has($cacheKey)) {
+            /** @var Taxonomy|null $cachedTaxonomy */
+            $cachedTaxonomy = $request->attributes->get($cacheKey);
+
+            return $cachedTaxonomy;
         }
 
-        return Taxonomy::where('handle', (string) $taxonomy)->first();
+        $resolvedTaxonomy = is_numeric($taxonomy)
+            ? Taxonomy::find((int) $taxonomy)
+            : Taxonomy::where('handle', (string) $taxonomy)->first();
+
+        $request->attributes->set($cacheKey, $resolvedTaxonomy);
+
+        return $resolvedTaxonomy;
+    }
+
+    public static function isCurrentTaxonomy(Taxonomy $taxonomy): bool
+    {
+        $currentTaxonomy = static::getCurrentTaxonomyIdentifier();
+
+        if ($currentTaxonomy === null) {
+            return false;
+        }
+
+        if (is_int($currentTaxonomy)) {
+            return $taxonomy->getKey() === $currentTaxonomy;
+        }
+
+        return $taxonomy->handle === $currentTaxonomy;
     }
 
     public static function getEloquentQuery(): Builder
