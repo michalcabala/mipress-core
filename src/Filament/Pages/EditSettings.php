@@ -90,7 +90,7 @@ class EditSettings extends Page
         }
 
         return static::getNavigationSettings()
-            ->map(fn (\MiPress\Core\Models\Setting $setting): NavigationItem => NavigationItem::make($setting->name)
+            ->map(fn (Setting $setting): NavigationItem => NavigationItem::make($setting->name)
                 ->icon(static::resolveNavigationIcon($setting->icon))
                 ->sort((int) $setting->sort_order)
                 ->url(static::getUrl(['handle' => $setting->handle]))
@@ -202,7 +202,7 @@ class EditSettings extends Page
     }
 
     /**
-     * @return Collection<int, \MiPress\Core\Models\Setting>
+     * @return Collection<int, Setting>
      */
     private static function getNavigationSettings(): Collection
     {
@@ -210,7 +210,7 @@ class EditSettings extends Page
         $cacheKey = 'mipress.settings.navigation';
 
         if ($request->attributes->has($cacheKey)) {
-            /** @var Collection<int, \MiPress\Core\Models\Setting> $settings */
+            /** @var Collection<int, Setting> $settings */
             $settings = $request->attributes->get($cacheKey);
 
             return $settings;
