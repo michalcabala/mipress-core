@@ -14,14 +14,13 @@ use Filament\Pages\Page;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Schema as SchemaFacade;
 use MiPress\Core\Filament\Clusters\WebCluster;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Models\Setting;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
 use MiPress\Core\Services\SettingsManager;
-use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Exceptions\PermissionDoesNotExist;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class EditSettings extends Page
@@ -71,21 +70,9 @@ class EditSettings extends Page
             }
 
             try {
-                // During rollout, permission may be missing until seeders run.
-                if (! SchemaFacade::hasTable('permissions')) {
-                    return true;
-                }
-
-                $permissionExists = Permission::query()
-                    ->where('name', 'settings.manage')
-                    ->where('guard_name', 'web')
-                    ->exists();
-
-                if (! $permissionExists) {
-                    return true;
-                }
-
                 return $user->hasPermissionTo('settings.manage');
+            } catch (PermissionDoesNotExist) {
+                return true;
             } catch (\Throwable) {
                 return true;
             }
@@ -117,17 +104,6 @@ class EditSettings extends Page
         $this->form->fill([
             'data' => $setting->data ?? [],
         ]);
-    }
-
-    public function form(Schema $form): Schema
-    {
-        $setting = $this->resolveSetting();
-
-        return $form->schema(
-            BlueprintFieldResolver::resolveAll(
-                static::filterHiddenFields($setting->blueprint?->fields ?? [], $setting->handle),
-            ),
-        );
     }
 
     public function save(): void

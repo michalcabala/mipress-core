@@ -104,7 +104,14 @@ class MiPressServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
 
         Event::listen(Authenticated::class, function (Authenticated $event): void {
-            $event->user->loadMissing('roles');
+            if (! method_exists($event->user, 'loadMissing')) {
+                return;
+            }
+
+            $event->user->loadMissing([
+                'roles.permissions',
+                'permissions',
+            ]);
         });
 
         $this->app->make(ThemeManager::class)->registerViews();

@@ -96,6 +96,12 @@ class Setting extends Model
             ? explode('.', $key, 2)
             : ['system', $key];
 
+        if (app()->bound(SettingsManager::class)) {
+            $value = app(SettingsManager::class)->get($handle, $path, $default);
+
+            return $value === null ? null : (string) $value;
+        }
+
         $setting = static::query()->where('handle', $handle)->first();
 
         if (! $setting) {

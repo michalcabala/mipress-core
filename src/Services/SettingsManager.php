@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Services;
 
 use Closure;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
@@ -13,6 +14,8 @@ use MiPress\Core\Models\Setting;
 
 class SettingsManager
 {
+    private const SETTINGS_TABLE_EXISTS_CACHE_KEY = 'mipress.settings.table_exists';
+
     /** @var Collection<int, Setting>|null */
     private ?Collection $settings = null;
 
@@ -69,30 +72,14 @@ class SettingsManager
      */
     private function loadSettings(): Collection
     {
-        if (! Schema::hasTable('settings')) {
-            return collect();
-        }
-
-        $columns = collect(Schema::getColumns('settings'))->pluck('name');
-
-        if (! $columns->contains('handle')) {
+        if (! $this->settingsTableExists()) {
             return collect();
         }
 
         try {
-            $query = Setting::query();
-
-            if ($columns->contains('blueprint_id')) {
-                $query->with('blueprint');
-            }
-
-            if ($columns->contains('sort_order')) {
-                $query->orderBy('sort_order');
-            } else {
-                $query->orderBy('handle');
-            }
-
-            return $query->get();
+            return Setting::query()
+                ->orderBy('sort_order')
+                ->get();
         } catch (QueryException $exception) {
             Log::warning('Unable to load miPress settings.', [
                 'message' => $exception->getMessage(),
@@ -100,5 +87,20 @@ class SettingsManager
 
             return collect();
         }
+    }
+
+    private function settingsTableExists(): bool
+    {
+        if (Cache::get(self::SETTINGS_TABLE_EXISTS_CACHE_KEY) === true) {
+            return true;
+        }
+
+        if (! Schema::hasTable('settings')) {
+            return false;
+        }
+
+        Cache::forever(self::SETTINGS_TABLE_EXISTS_CACHE_KEY, true);
+
+        return true;
     }
 }
