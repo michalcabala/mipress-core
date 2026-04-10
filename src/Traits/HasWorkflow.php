@@ -41,7 +41,20 @@ trait HasWorkflow
     public function scopeScheduled(Builder $query): Builder
     {
         return $query->where('status', EntryStatus::Scheduled)
-            ->where('published_at', '>', now());
+            ->where(function (Builder $scheduled): void {
+                $scheduled
+                    ->where(function (Builder $query): void {
+                        $query
+                            ->whereNotNull('scheduled_at')
+                            ->where('scheduled_at', '>', now());
+                    })
+                    ->orWhere(function (Builder $legacy): void {
+                        $legacy
+                            ->whereNull('scheduled_at')
+                            ->whereNotNull('published_at')
+                            ->where('published_at', '>', now());
+                    });
+            });
     }
 
     public function scopeForStatus(Builder $query, EntryStatus $status): Builder
@@ -53,6 +66,7 @@ trait HasWorkflow
     {
         $this->status = EntryStatus::Published;
         $this->published_at ??= now();
+        $this->scheduled_at = null;
         $this->save();
 
         return $this;
@@ -86,6 +100,7 @@ trait HasWorkflow
     public function schedule(\DateTimeInterface $publishAt): static
     {
         $this->status = EntryStatus::Scheduled;
+        $this->scheduled_at = $publishAt;
         $this->published_at = $publishAt;
         $this->save();
 

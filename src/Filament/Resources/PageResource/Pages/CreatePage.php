@@ -41,21 +41,27 @@ class CreatePage extends CreateRecord
 
         if ($this->createIntent === 'review') {
             $data['status'] = EntryStatus::InReview;
+            $data['scheduled_at'] = null;
 
             return $data;
         }
 
         if ($this->createIntent === 'publish') {
+            $scheduledAt = data_get($data, 'scheduled_at');
             $publishedAt = data_get($data, 'published_at');
+            $scheduleAt = $scheduledAt ?: $publishedAt;
 
-            if ($publishedAt && now()->lt($publishedAt)) {
+            if ($scheduleAt && now()->lt($scheduleAt)) {
                 $data['status'] = EntryStatus::Scheduled;
+                $data['scheduled_at'] = $scheduleAt;
+                $data['published_at'] = $scheduleAt;
 
                 return $data;
             }
 
             $data['status'] = EntryStatus::Published;
             $data['published_at'] = $publishedAt ?: now();
+            $data['scheduled_at'] = null;
 
             return $data;
         }

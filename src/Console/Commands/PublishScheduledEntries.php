@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Console\Commands;
 
-use Illuminate\Console\Command;
 use Filament\Notifications\Notification;
+use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Schema;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Entry;
-use Illuminate\Support\Facades\Schema;
 
 class PublishScheduledEntries extends Command
 {
@@ -19,9 +21,23 @@ class PublishScheduledEntries extends Command
 
     public function handle(): int
     {
+        /** @var Collection<int, Entry> $entries */
         $entries = Entry::query()
             ->where('status', EntryStatus::Scheduled->value)
-            ->where('published_at', '<=', now())
+            ->where(function (Builder $query): void {
+                $query
+                    ->where(function (Builder $scheduled): void {
+                        $scheduled
+                            ->whereNotNull('scheduled_at')
+                            ->where('scheduled_at', '<=', now());
+                    })
+                    ->orWhere(function (Builder $legacy): void {
+                        $legacy
+                            ->whereNull('scheduled_at')
+                            ->whereNotNull('published_at')
+                            ->where('published_at', '<=', now());
+                    });
+            })
             ->get();
 
         if ($entries->isEmpty()) {
@@ -31,9 +47,12 @@ class PublishScheduledEntries extends Command
         }
 
         foreach ($entries as $entry) {
+            /** @var Entry $entry */
             $oldStatus = $entry->status;
 
             $entry->status = EntryStatus::Published;
+            $entry->published_at = $entry->published_at?->isFuture() ? now() : ($entry->published_at ?? now());
+            $entry->scheduled_at = null;
             $entry->save();
 
             AuditLog::logStatusChange($entry, EntryStatus::Published, $oldStatus, 'Automaticky publikováno plánovačem.');

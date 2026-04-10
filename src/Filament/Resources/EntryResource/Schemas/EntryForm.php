@@ -7,39 +7,29 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Schemas;
 use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Mason\Enums\SidebarPosition;
 use Awcodes\Mason\Mason;
+use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Components\ColorPicker;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\MarkdownEditor;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Forms\Components\Radio;
-use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
-use Filament\Support\Enums\IconSize;
 use Filament\Schemas\Components\Actions;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\IconSize;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
-use CodeWithDennis\FilamentSelectTree\SelectTree;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
@@ -504,11 +494,12 @@ class EntryForm
 
         $actor = e($statusLog?->user?->name ?? 'Systém');
         $date = e($statusLog?->created_at?->format('j. n. Y H:i') ?? '—');
+        $scheduledAt = $record->scheduled_at ?? $record->published_at;
 
         return match ($record->status) {
             EntryStatus::Published => 'Publikováno · schválil '.$actor.' · '.$date,
             EntryStatus::Rejected => 'Zamítnuto · zamítl '.$actor.' · '.$date.'<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
-            EntryStatus::Scheduled => 'Naplánováno na '.e($record->published_at?->format('j. n. Y H:i') ?? '—').' · naplánoval '.$actor,
+            EntryStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—').' · naplánoval '.$actor,
             EntryStatus::InReview => 'Odesláno ke schválení · odeslal '.$actor.' · '.$date,
             default => '',
         };
@@ -564,11 +555,11 @@ class EntryForm
                             return;
                         }
 
-                            $ids = $record->terms
-                                ->where('taxonomy_id', $taxonomyId)
-                                ->pluck('id')
-                                ->all();
-                            $component->state($ids);
+                        $ids = $record->terms
+                            ->where('taxonomy_id', $taxonomyId)
+                            ->pluck('id')
+                            ->all();
+                        $component->state($ids);
                     })
                     ->dehydrated(false);
             }
@@ -591,11 +582,11 @@ class EntryForm
                         return;
                     }
 
-                        $ids = $record->terms
-                            ->where('taxonomy_id', $taxonomyId)
-                            ->pluck('id')
-                            ->all();
-                        $component->state($ids);
+                    $ids = $record->terms
+                        ->where('taxonomy_id', $taxonomyId)
+                        ->pluck('id')
+                        ->all();
+                    $component->state($ids);
                 })
                 ->dehydrated(false)
                 ->searchable();
@@ -607,88 +598,5 @@ class EntryForm
                 ->collapsible()
                 ->schema($fields),
         ];
-    }
-
-    /**
-     * @return array<int, Section>
-     */
-    protected static function buildBlueprintSections(?object $blueprint): array
-    {
-        if (! $blueprint || empty($blueprint->fields)) {
-            return [];
-        }
-
-        $sections = [];
-
-        foreach ($blueprint->fields as $sectionDef) {
-            $fields = [];
-
-            foreach ($sectionDef['fields'] ?? [] as $fieldDef) {
-                $component = self::buildFieldComponent($fieldDef);
-
-                if ($component) {
-                    $fields[] = $component;
-                }
-            }
-
-            if (! empty($fields)) {
-                $sections[] = Section::make($sectionDef['section'] ?? 'Pole')
-                    ->statePath('data')
-                    ->schema($fields);
-            }
-        }
-
-        return $sections;
-    }
-
-    protected static function buildFieldComponent(array $fieldDef): mixed
-    {
-        $handle = $fieldDef['handle'] ?? null;
-        $label = $fieldDef['label'] ?? $handle;
-        $required = (bool) ($fieldDef['required'] ?? false);
-
-        if (! $handle) {
-            return null;
-        }
-
-        $component = match ($fieldDef['type'] ?? 'text') {
-            'textarea' => Textarea::make($handle)->label($label)->rows(4),
-            'number' => TextInput::make($handle)->label($label)->numeric(),
-            'select' => Select::make($handle)->label($label)->options($fieldDef['options'] ?? []),
-            'checkbox' => Checkbox::make($handle)->label($label),
-            'toggle' => Toggle::make($handle)->label($label),
-            'radio' => Radio::make($handle)->label($label)->options($fieldDef['options'] ?? []),
-            'datetime' => DateTimePicker::make($handle)->label($label),
-            'date' => DatePicker::make($handle)->label($label),
-            'media' => CuratorPicker::make($handle)->label($label),
-            'color' => ColorPicker::make($handle)->label($label),
-            'tags' => TagsInput::make($handle)->label($label),
-            'repeater' => Repeater::make($handle)->label($label)->schema([
-                TextInput::make('value')->label('Hodnota'),
-            ])->addActionLabel('Přidat záznam'),
-            'keyvalue' => KeyValue::make($handle)->label($label),
-            'richtext' => RichEditor::make($handle)->label($label)->columnSpanFull(),
-            'markdown' => MarkdownEditor::make($handle)->label($label)->columnSpanFull(),
-            'mason' => Mason::make($handle)
-                ->label($label)
-                ->bricks(EditorialBrickCollection::make())
-                ->previewLayout('layouts.mason-preview')
-                ->colorModeToggle()
-                ->defaultColorMode('light')
-                ->doubleClickToEdit()
-                ->displayActionsAsGrid()
-                ->sortBricks()
-                ->sidebarPosition(SidebarPosition::End)
-                ->extraInputAttributes(['style' => 'min-height: 42rem;'])
-                ->columnSpanFull(),
-            'hidden' => Hidden::make($handle),
-            default => TextInput::make($handle)->label($label)->maxLength(255),
-        };
-
-        if ($required) {
-            $component->required();
-        }
-
-        return $component;
     }
 }

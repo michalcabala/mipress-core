@@ -15,6 +15,7 @@ use Filament\Support\Enums\Width;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\ValidationException;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
@@ -24,7 +25,7 @@ use MiPress\Core\Models\Entry;
 
 class EditEntry extends EditRecord
 {
-    use UsesResourceLock, HandlesResourceLockRenewal, HandlesWorkflowValidationErrors {
+    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, UsesResourceLock {
         HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
     }
 
@@ -194,9 +195,50 @@ class EditEntry extends EditRecord
             return null;
         }
 
-        return (int) $resolvedParentId === (int) $record->getKey()
-            ? null
-            : (int) $resolvedParentId;
+        $resolvedParentId = (int) $resolvedParentId;
+
+        if ($resolvedParentId === (int) $record->getKey()) {
+            return null;
+        }
+
+        if ($this->wouldCreateHierarchyCycle($record, $resolvedParentId)) {
+            throw ValidationException::withMessages([
+                'parent_id' => 'Nelze vybrat podřízenou položku jako nadřazenou.',
+            ]);
+        }
+
+        return $resolvedParentId;
+    }
+
+    private function wouldCreateHierarchyCycle(Entry $record, int $candidateParentId): bool
+    {
+        $currentId = $candidateParentId;
+        $visited = [];
+
+        while ($currentId > 0) {
+            if ($currentId === (int) $record->getKey()) {
+                return true;
+            }
+
+            if (isset($visited[$currentId])) {
+                return true;
+            }
+
+            $visited[$currentId] = true;
+
+            $parentId = Entry::query()
+                ->where('collection_id', $record->collection_id)
+                ->whereKey($currentId)
+                ->value('parent_id');
+
+            if (! is_numeric($parentId)) {
+                return false;
+            }
+
+            $currentId = (int) $parentId;
+        }
+
+        return false;
     }
 
     /**
@@ -391,8 +433,12 @@ class EditEntry extends EditRecord
                 $record->refresh();
                 $oldStatus = $record->status;
 
-                if ($record->published_at?->isFuture()) {
+                $scheduleAt = $record->scheduled_at ?? $record->published_at;
+
+                if ($scheduleAt?->isFuture()) {
                     $record->status = EntryStatus::Scheduled;
+                    $record->scheduled_at = $scheduleAt;
+                    $record->published_at = $scheduleAt;
                     $record->review_note = null;
                     $record->save();
 
@@ -400,7 +446,7 @@ class EditEntry extends EditRecord
 
                     Notification::make()
                         ->title('Publikace naplánována')
-                        ->body('Záznam bude automaticky publikován '.$record->published_at->format('j. n. Y H:i').'.')
+                        ->body('Záznam bude automaticky publikován '.$scheduleAt->format('j. n. Y H:i').'.')
                         ->success()
                         ->send();
 
@@ -411,6 +457,7 @@ class EditEntry extends EditRecord
 
                 $record->status = EntryStatus::Published;
                 $record->published_at ??= now();
+                $record->scheduled_at = null;
                 $record->review_note = null;
                 $record->save();
 
@@ -545,6 +592,7 @@ class EditEntry extends EditRecord
                 $record->status = EntryStatus::Draft;
                 $record->review_note = null;
                 $record->published_at = null;
+                $record->scheduled_at = null;
                 $record->save();
 
                 AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
@@ -573,6 +621,7 @@ class EditEntry extends EditRecord
                 $oldStatus = $record->status;
                 $record->status = EntryStatus::Published;
                 $record->published_at = now();
+                $record->scheduled_at = null;
                 $record->review_note = null;
                 $record->save();
 
