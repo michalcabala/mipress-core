@@ -7,8 +7,6 @@ namespace MiPress\Core;
 use Awcodes\Curator\Config\CurationManager;
 use Awcodes\Curator\Curations\CurationPreset;
 use Awcodes\Curator\Models\Media;
-use Illuminate\Auth\Events\Authenticated;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
@@ -102,17 +100,6 @@ class MiPressServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'mipress');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
-
-        Event::listen(Authenticated::class, function (Authenticated $event): void {
-            if (! method_exists($event->user, 'loadMissing')) {
-                return;
-            }
-
-            $event->user->loadMissing([
-                'roles.permissions',
-                'permissions',
-            ]);
-        });
 
         $this->app->make(ThemeManager::class)->registerViews();
 
