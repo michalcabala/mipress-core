@@ -7,6 +7,7 @@ namespace MiPress\Core\Theme;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\View;
+use Illuminate\View\FileViewFinder;
 use InvalidArgumentException;
 use MiPress\Core\Models\Setting;
 
@@ -17,6 +18,8 @@ class ThemeManager
     private const SETTING_KEY = 'theme.active';
 
     public const DEFAULT_THEME = 'default';
+
+    private ?string $activeTheme = null;
 
     public function __construct(private readonly string $themesPath) {}
 
@@ -56,8 +59,12 @@ class ThemeManager
 
     public function getActive(): string
     {
+        if ($this->activeTheme !== null) {
+            return $this->activeTheme;
+        }
+
         try {
-            return Cache::remember(self::CACHE_KEY, 3600, function (): string {
+            return $this->activeTheme = Cache::remember(self::CACHE_KEY, 3600, function (): string {
                 try {
                     return Setting::getValue(self::SETTING_KEY, self::DEFAULT_THEME) ?? self::DEFAULT_THEME;
                 } catch (\Exception) {
@@ -67,7 +74,7 @@ class ThemeManager
             });
         } catch (\Exception) {
             // cache table may not exist yet during initial install
-            return self::DEFAULT_THEME;
+            return $this->activeTheme = self::DEFAULT_THEME;
         }
     }
 
@@ -80,6 +87,7 @@ class ThemeManager
         Setting::putValue(self::SETTING_KEY, $slug);
 
         Cache::forget(self::CACHE_KEY);
+        $this->activeTheme = $slug;
         $this->registerViews();
     }
 
@@ -91,6 +99,7 @@ class ThemeManager
 
     public function registerViews(): void
     {
+        /** @var FileViewFinder $finder */
         $finder = View::getFinder();
         $finder->flush();
 
