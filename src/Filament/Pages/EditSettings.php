@@ -12,6 +12,7 @@ use Filament\Navigation\NavigationItem;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
 use MiPress\Core\Filament\Clusters\WebCluster;
@@ -39,7 +40,7 @@ class EditSettings extends Page
     protected static ?int $navigationSort = 10;
 
     /** @var list<string> */
-    private const HIDDEN_NAVIGATION_HANDLES = ['scripts', 'seo', 'site'];
+    private const HIDDEN_NAVIGATION_HANDLES = ['scripts', 'seo', 'site', 'sitemap'];
 
     /** @var array<string, list<string>> */
     private const HIDDEN_FIELD_HANDLES = [
@@ -102,6 +103,13 @@ class EditSettings extends Page
     public function mount(string $handle): void
     {
         $this->handle = $handle;
+
+        if ($redirectUrl = $this->getDedicatedSettingsUrl($handle)) {
+            $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
+
+            return;
+        }
+
         $setting = $this->resolveSetting();
 
         $this->form->fill([
@@ -171,7 +179,7 @@ class EditSettings extends Page
 
     private function resolveSetting(): Setting
     {
-        if (in_array($this->handle, [GlobalSeoSettingsManager::HANDLE, 'site'], true)) {
+        if (in_array($this->handle, [GlobalSeoSettingsManager::HANDLE, 'site', 'sitemap'], true)) {
             throw new NotFoundHttpException();
         }
 
@@ -182,6 +190,15 @@ class EditSettings extends Page
         }
 
         return $setting;
+    }
+
+    private function getDedicatedSettingsUrl(string $handle): ?string
+    {
+        return match ($handle) {
+            GlobalSeoSettingsManager::HANDLE => GlobalSeoSettings::getUrl(),
+            'sitemap' => SitemapSettings::getUrl(),
+            default => null,
+        };
     }
 
     /**
