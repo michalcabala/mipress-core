@@ -54,25 +54,31 @@ class EditSettings extends Page
         return 'fal-gear';
     }
 
+    private static ?bool $canAccessCache = null;
+
     public static function canAccess(): bool
     {
+        if (static::$canAccessCache !== null) {
+            return static::$canAccessCache;
+        }
+
         $user = auth()->user();
 
         if (! $user instanceof User) {
-            return false;
+            return static::$canAccessCache = false;
         }
 
         if (! $user->hasAnyRole([
             UserRole::SuperAdmin->value,
             UserRole::Admin->value,
         ])) {
-            return false;
+            return static::$canAccessCache = false;
         }
 
         try {
             // During rollout, permission may be missing until seeders run.
             if (! SchemaFacade::hasTable('permissions')) {
-                return true;
+                return static::$canAccessCache = true;
             }
 
             $permissionExists = Permission::query()
@@ -81,12 +87,12 @@ class EditSettings extends Page
                 ->exists();
 
             if (! $permissionExists) {
-                return true;
+                return static::$canAccessCache = true;
             }
 
-            return $user->hasPermissionTo('settings.manage');
+            return static::$canAccessCache = $user->hasPermissionTo('settings.manage');
         } catch (\Throwable) {
-            return true;
+            return static::$canAccessCache = true;
         }
     }
 

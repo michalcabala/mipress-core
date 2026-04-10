@@ -526,6 +526,8 @@ class EntryForm
             return [];
         }
 
+        $record?->loadMissing('terms');
+
         $fields = $taxonomies->map(function (Taxonomy $taxonomy) use ($record): Select|SelectTree {
             $taxonomyId = $taxonomy->getKey();
 
@@ -550,9 +552,9 @@ class EntryForm
                             return;
                         }
 
-                            $ids = $record->terms()
+                            $ids = $record->terms
                                 ->where('taxonomy_id', $taxonomyId)
-                                ->pluck('terms.id')
+                                ->pluck('id')
                                 ->all();
                             $component->state($ids);
                     })
@@ -577,9 +579,9 @@ class EntryForm
                         return;
                     }
 
-                        $ids = $record->terms()
+                        $ids = $record->terms
                             ->where('taxonomy_id', $taxonomyId)
-                            ->pluck('terms.id')
+                            ->pluck('id')
                             ->all();
                         $component->state($ids);
                 })

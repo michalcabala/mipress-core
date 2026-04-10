@@ -73,18 +73,20 @@ class SettingsManager
             return collect();
         }
 
-        if (! Schema::hasColumn('settings', 'handle')) {
+        $columns = collect(Schema::getColumns('settings'))->pluck('name');
+
+        if (! $columns->contains('handle')) {
             return collect();
         }
 
         try {
             $query = Setting::query();
 
-            if (Schema::hasColumn('settings', 'blueprint_id')) {
+            if ($columns->contains('blueprint_id')) {
                 $query->with('blueprint');
             }
 
-            if (Schema::hasColumn('settings', 'sort_order')) {
+            if ($columns->contains('sort_order')) {
                 $query->orderBy('sort_order');
             } else {
                 $query->orderBy('handle');
