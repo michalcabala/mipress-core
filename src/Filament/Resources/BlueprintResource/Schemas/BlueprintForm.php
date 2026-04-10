@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 
@@ -58,7 +59,8 @@ class BlueprintForm
                                         ->label('Typ pole')
                                         ->required()
                                         ->options(fn (): array => app(FieldTypeRegistry::class)->groupedOptions())
-                                        ->searchable(),
+                                        ->searchable()
+                                        ->live(),
                                     Select::make('required')
                                         ->label('Povinné')
                                         ->options([
@@ -67,6 +69,11 @@ class BlueprintForm
                                         ])
                                         ->default('0'),
                                 ]),
+                                Section::make('Nastavení pole')
+                                    ->schema(fn (Get $get): array => static::getFieldTypeSettings($get('type')))
+                                    ->visible(fn (Get $get): bool => static::hasFieldTypeSettings($get('type')))
+                                    ->compact()
+                                    ->collapsible(),
                             ])
                             ->reorderable()
                             ->collapsible()
@@ -79,5 +86,28 @@ class BlueprintForm
                     ->addActionLabel('Přidat sekci'),
             ]),
         ]);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function getFieldTypeSettings(?string $type): array
+    {
+        if (! $type) {
+            return [];
+        }
+
+        $registry = app(FieldTypeRegistry::class);
+
+        if (! $registry->has($type)) {
+            return [];
+        }
+
+        return $registry->get($type)->settingsSchema();
+    }
+
+    private static function hasFieldTypeSettings(?string $type): bool
+    {
+        return static::getFieldTypeSettings($type) !== [];
     }
 }

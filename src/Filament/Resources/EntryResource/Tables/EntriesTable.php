@@ -32,6 +32,7 @@ use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
+use MiPress\Core\Services\BlueprintFieldResolver;
 
 class EntriesTable
 {
@@ -77,6 +78,7 @@ class EntriesTable
                     ->color(fn (EntryStatus $state) => $state->getColor())
                     ->sortable(),
                 ...static::getTaxonomyColumns($currentCollection),
+                ...static::getBlueprintColumns($currentCollection),
                 TextColumn::make('updated_at')
                     ->label('Datum')
                     ->isoDateTime('LLL')
@@ -117,6 +119,7 @@ class EntriesTable
                     ->options(EntryStatus::class)
                     ->native(false),
                 ...static::getTaxonomyFilters($currentCollection),
+                ...static::getBlueprintFilters($currentCollection),
                 TrashedFilter::make(),
             ])
             ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters, $currentCollection))
@@ -283,6 +286,34 @@ class EntriesTable
     }
 
     /**
+     * @return array<int, mixed>
+     */
+    private static function getBlueprintColumns(?Collection $collection = null): array
+    {
+        $collection ??= EntryResource::getCurrentCollection();
+
+        if (! $collection?->blueprint) {
+            return [];
+        }
+
+        return BlueprintFieldResolver::resolveTableColumns($collection->blueprint->fields ?? []);
+    }
+
+    /**
+     * @return array<int, mixed>
+     */
+    private static function getBlueprintFilters(?Collection $collection = null): array
+    {
+        $collection ??= EntryResource::getCurrentCollection();
+
+        if (! $collection?->blueprint) {
+            return [];
+        }
+
+        return BlueprintFieldResolver::resolveFilters($collection->blueprint->fields ?? []);
+    }
+
+    /**
      * @param  array<string, mixed>  $filters
      * @return array<int, Section>
      */
@@ -305,6 +336,13 @@ class EntriesTable
         if ($taxonomyFilters !== []) {
             $sections[] = Section::make('Taxonomie')
                 ->schema($taxonomyFilters);
+        }
+
+        $blueprintFilters = static::getBlueprintFilterComponents($filters, $collection);
+
+        if ($blueprintFilters !== []) {
+            $sections[] = Section::make('Pole šablony')
+                ->schema($blueprintFilters);
         }
 
         $stateFilters = array_values(array_filter([
@@ -435,6 +473,65 @@ class EntriesTable
             ->filter()
             ->values()
             ->all();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     * @return array<int, mixed>
+     */
+    private static function getBlueprintFilterComponents(array $filters, ?Collection $collection = null): array
+    {
+        $collection ??= EntryResource::getCurrentCollection();
+
+        if (! $collection?->blueprint) {
+            return [];
+        }
+
+        $registry = app(\MiPress\Core\FieldTypes\FieldTypeRegistry::class);
+        $blueprintFields = static::flattenBlueprintFields($collection->blueprint->fields ?? []);
+
+        return collect($blueprintFields)
+            ->map(function (array $fieldDef) use ($filters, $registry): mixed {
+                $handle = $fieldDef['handle'] ?? null;
+                $typeKey = $fieldDef['type'] ?? 'text';
+
+                if (! $handle || ! $registry->has($typeKey)) {
+                    return null;
+                }
+
+                $type = $registry->get($typeKey);
+
+                if ($type->toFilter($handle, $fieldDef['label'] ?? $handle, $fieldDef['config'] ?? []) === null) {
+                    return null;
+                }
+
+                return $filters[$handle] ?? null;
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int, array<string, mixed>>
+     */
+    private static function flattenBlueprintFields(array $fields): array
+    {
+        if (empty($fields)) {
+            return [];
+        }
+
+        $firstItem = $fields[0] ?? [];
+
+        if (isset($firstItem['section'])) {
+            return collect($fields)
+                ->flatMap(fn (array $section): array => $section['fields'] ?? [])
+                ->values()
+                ->all();
+        }
+
+        return $fields;
     }
 
     /**

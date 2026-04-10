@@ -113,4 +113,99 @@ class BlueprintFieldResolver
                 ->schema($components),
         ];
     }
+
+    /**
+     * Build Filament table columns from Blueprint field definitions.
+     * Only fields whose FieldType returns a non-null toTableColumn() are included.
+     *
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int, mixed>
+     */
+    public static function resolveTableColumns(array $fields): array
+    {
+        $registry = app(FieldTypeRegistry::class);
+
+        return collect(static::flattenFields($fields))
+            ->map(function (array $fieldDef) use ($registry): mixed {
+                $handle = $fieldDef['handle'] ?? null;
+                $label = $fieldDef['label'] ?? $handle;
+                $config = $fieldDef['config'] ?? [];
+                $typeKey = $fieldDef['type'] ?? 'text';
+
+                if (! $handle) {
+                    return null;
+                }
+
+                $type = $registry->get($typeKey);
+                $column = $type->toTableColumn("data.{$handle}", $label, $config);
+
+                return $column?->toggleable();
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Build Filament table filters from Blueprint field definitions.
+     * Only fields whose FieldType returns a non-null toFilter() are included.
+     * Filters query the JSON `data` column using Eloquent's `->` JSON syntax.
+     *
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int, mixed>
+     */
+    public static function resolveFilters(array $fields): array
+    {
+        $registry = app(FieldTypeRegistry::class);
+
+        return collect(static::flattenFields($fields))
+            ->map(function (array $fieldDef) use ($registry): mixed {
+                $handle = $fieldDef['handle'] ?? null;
+                $label = $fieldDef['label'] ?? $handle;
+                $config = $fieldDef['config'] ?? [];
+                $typeKey = $fieldDef['type'] ?? 'text';
+
+                if (! $handle) {
+                    return null;
+                }
+
+                $type = $registry->get($typeKey);
+                $filter = $type->toFilter($handle, $label, $config);
+
+                if ($filter === null) {
+                    return null;
+                }
+
+                // Prefix filter name to avoid naming collisions, and set attribute to JSON path
+                return $filter
+                    ->attribute("data->{$handle}");
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Flatten nested section→fields structure into a single flat list of field definitions.
+     *
+     * @param  array<int, array<string, mixed>>  $fields
+     * @return array<int, array<string, mixed>>
+     */
+    protected static function flattenFields(array $fields): array
+    {
+        if (empty($fields)) {
+            return [];
+        }
+
+        $firstItem = $fields[0] ?? [];
+
+        if (isset($firstItem['section'])) {
+            return collect($fields)
+                ->flatMap(fn (array $section): array => $section['fields'] ?? [])
+                ->values()
+                ->all();
+        }
+
+        return $fields;
+    }
 }
