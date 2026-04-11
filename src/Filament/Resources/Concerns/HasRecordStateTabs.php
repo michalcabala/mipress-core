@@ -10,26 +10,15 @@ use MiPress\Core\Enums\EntryStatus;
 
 trait HasRecordStateTabs
 {
-    public function bootedHasRecordStateTabs(): void
-    {
-        if (! $this->normalizeRecordStateTab()) {
-            return;
-        }
-
-        if (method_exists($this, 'flushCachedTableRecords')) {
-            $this->flushCachedTableRecords();
-        }
-    }
-
     /**
-     * @return array<string|int|null, Tab>
+     * @return array<string, Tab>
      */
     public function getTabs(): array
     {
         $counts = $this->getRecordStateTabCounts();
 
         $tabs = [
-            null => Tab::make('Celkem')
+            'all' => Tab::make('Celkem')
                 ->icon('far-layer-group')
                 ->badge(fn (): int => $counts['visibleTotal'])
                 ->badgeColor('gray')
@@ -48,7 +37,7 @@ trait HasRecordStateTabs
                 ->badge(fn (): int => $count)
                 ->badgeColor($status->getColor())
                 ->deferBadge()
-                ->query(fn (Builder $query): Builder => $this->applyStatusConstraint($query, $status));
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', $status->value));
         }
 
         if ($counts['trashedTotal'] > 0) {
@@ -57,10 +46,24 @@ trait HasRecordStateTabs
                 ->badge(fn (): int => $counts['trashedTotal'])
                 ->badgeColor('danger')
                 ->deferBadge()
-                ->query(fn (Builder $query): Builder => $this->applyTrashedRecordsConstraint($query));
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->onlyTrashed());
         }
 
         return $tabs;
+    }
+
+    public function getDefaultActiveTab(): string|int|null
+    {
+        return 'all';
+    }
+
+    protected function loadDefaultActiveTab(): void
+    {
+        parent::loadDefaultActiveTab();
+
+        if (filled($this->activeTab) && ! array_key_exists($this->activeTab, $this->getCachedTabs())) {
+            $this->activeTab = $this->getDefaultActiveTab();
+        }
     }
 
     abstract protected function getRecordStateTabsBaseQuery(): Builder;
@@ -89,38 +92,5 @@ trait HasRecordStateTabs
                 ->reject(fn (object $row): bool => (int) $row->is_visible === 1)
                 ->sum(fn (object $row): int => (int) $row->aggregate),
         ];
-    }
-
-    private function normalizeRecordStateTab(): bool
-    {
-        if (! filled($this->activeTab)) {
-            return false;
-        }
-
-        $tabs = $this->getTabs();
-
-        if (array_key_exists($this->activeTab, $tabs)) {
-            return false;
-        }
-
-        $defaultTab = array_key_first($tabs);
-
-        if ($defaultTab === null && $tabs === []) {
-            return false;
-        }
-
-        $this->activeTab = $defaultTab;
-
-        return true;
-    }
-
-    private function applyStatusConstraint(Builder $query, EntryStatus $status): Builder
-    {
-        return $query->where('status', $status->value);
-    }
-
-    private function applyTrashedRecordsConstraint(Builder $query): Builder
-    {
-        return $query->onlyTrashed();
     }
 }
