@@ -43,7 +43,7 @@ trait HasWorkflowActions
                 ->button();
         }
 
-        $actions[] = $this->makeCancelAction();
+        $actions[] = $this->getCancelFormAction();
 
         return $actions;
     }
@@ -74,6 +74,8 @@ trait HasWorkflowActions
     abstract protected function workflowPreviewRouteParameterName(): string;
 
     abstract protected function workflowEditUrl(Model $record): string;
+
+    abstract protected function getCancelFormAction(): Action;
 
     protected function workflowReviewPermission(): string
     {
@@ -194,25 +196,6 @@ trait HasWorkflowActions
             ->color('primary')
             ->icon('far-floppy-disk')
             ->action(fn () => $this->save());
-    }
-
-    private function makeCancelAction(): Action
-    {
-        return Action::make('cancel')
-            ->label('Zrušit')
-            ->icon('far-xmark')
-            ->color('gray')
-            ->action(function (): void {
-                $record = $this->getWorkflowRecord();
-
-                if ($record instanceof Model) {
-                    $record->unlock();
-                }
-
-                $redirectUrl = $this->getRedirectUrl();
-
-                $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
-            });
     }
 
     private function makeSaveDraftAction(): Action
