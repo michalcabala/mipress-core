@@ -60,16 +60,6 @@ class EntryForm
 
         $components = [];
 
-        if ($isEdit && $record instanceof Entry) {
-            $components[] = Section::make()
-                ->compact()
-                ->schema([
-                    TextEntry::make('status_overview')
-                        ->hiddenLabel()
-                        ->state(fn (): HtmlString => self::renderStatusOverview($record)),
-                ]);
-        }
-
         $components[] =
             Grid::make([
                 'default' => 1,
