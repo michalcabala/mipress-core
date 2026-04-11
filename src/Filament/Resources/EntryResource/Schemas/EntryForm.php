@@ -310,7 +310,6 @@ class EntryForm
             ->options(self::getPublicationStatusOptions($record))
             ->colors(self::getPublicationStatusColors())
             ->icons(self::getPublicationStatusIcons())
-            ->grouped()
             ->inline()
             ->required()
             ->default(EntryStatus::Draft->value)

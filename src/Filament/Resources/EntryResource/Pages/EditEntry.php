@@ -71,6 +71,28 @@ class EditEntry extends EditRecord
     }
 
     /**
+     * @return array<string>
+     */
+    public function getResourceBreadcrumbs(): array
+    {
+        $collection = $this->getRecord()->collection;
+
+        if ($collection === null) {
+            return parent::getResourceBreadcrumbs();
+        }
+
+        $breadcrumbs = [
+            static::getResource()::getUrl('index', ['collection' => $collection->handle]) => $collection->name,
+        ];
+
+        if (filled($cluster = static::getCluster())) {
+            return $cluster::unshiftClusterBreadcrumbs($breadcrumbs);
+        }
+
+        return $breadcrumbs;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
