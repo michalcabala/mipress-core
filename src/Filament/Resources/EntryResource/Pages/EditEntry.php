@@ -30,6 +30,8 @@ class EditEntry extends EditRecord
 
     protected static ?string $navigationLabel = 'Editace';
 
+    protected static string|\BackedEnum|null $navigationIcon = 'far-pen-to-square';
+
     protected Width|string|null $maxWidth = Width::Full;
 
     protected function getFormActions(): array

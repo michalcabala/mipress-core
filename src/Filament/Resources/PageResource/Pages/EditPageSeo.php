@@ -16,6 +16,8 @@ class EditPageSeo extends EditPage
 
     protected static ?string $navigationLabel = 'SEO';
 
+    protected static string|\BackedEnum|null $navigationIcon = 'far-magnifying-glass';
+
     public function form(Schema $schema): Schema
     {
         return PageSeoForm::configure($schema);

@@ -16,6 +16,8 @@ class EditEntrySeo extends EditEntry
 
     protected static ?string $navigationLabel = 'SEO';
 
+    protected static string|\BackedEnum|null $navigationIcon = 'far-magnifying-glass';
+
     public function form(Schema $schema): Schema
     {
         return EntrySeoForm::configure($schema);

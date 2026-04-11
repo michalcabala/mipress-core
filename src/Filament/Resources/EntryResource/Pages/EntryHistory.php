@@ -6,8 +6,11 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Filament\Concerns\ConfiguresRevisionTable;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Revision;
 
 class EntryHistory extends ManageRelatedRecords
 {
@@ -22,6 +25,36 @@ class EntryHistory extends ManageRelatedRecords
     protected static ?string $breadcrumb = 'Revize';
 
     protected static ?string $navigationLabel = 'Revize';
+
+    protected static string|\BackedEnum|null $navigationIcon = 'far-code-compare';
+
+    public static function getNavigationBadge(): ?string
+    {
+        $record = request()->route('record');
+
+        if ($record instanceof Model) {
+            $record = $record->getKey();
+        }
+
+        if (blank($record)) {
+            return null;
+        }
+
+        return (string) Revision::query()
+            ->where('revisionable_type', app(Entry::class)->getMorphClass())
+            ->where('revisionable_id', $record)
+            ->count();
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'gray';
+    }
+
+    public static function getNavigationBadgeTooltip(): string
+    {
+        return 'Počet revizí';
+    }
 
     public function getHeading(): string
     {
