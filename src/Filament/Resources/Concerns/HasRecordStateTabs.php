@@ -12,7 +12,7 @@ trait HasRecordStateTabs
 {
     public function bootedHasRecordStateTabs(): void
     {
-        if (! $this->syncRecordStateTab()) {
+        if (! $this->normalizeRecordStateTab()) {
             return;
         }
 
@@ -22,14 +22,14 @@ trait HasRecordStateTabs
     }
 
     /**
-     * @return array<string, Tab>
+     * @return array<string|int|null, Tab>
      */
     public function getTabs(): array
     {
         $counts = $this->getRecordStateTabCounts();
 
         $tabs = [
-            'all' => Tab::make('Celkem')
+            null => Tab::make('Celkem')
                 ->icon('far-layer-group')
                 ->badge(fn (): int => $counts['visibleTotal'])
                 ->badgeColor('gray')
@@ -48,7 +48,7 @@ trait HasRecordStateTabs
                 ->badge(fn (): int => $count)
                 ->badgeColor($status->getColor())
                 ->deferBadge()
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyStatusConstraint($query, $status));
+                ->query(fn (Builder $query): Builder => $this->applyStatusConstraint($query, $status));
         }
 
         if ($counts['trashedTotal'] > 0) {
@@ -57,7 +57,7 @@ trait HasRecordStateTabs
                 ->badge(fn (): int => $counts['trashedTotal'])
                 ->badgeColor('danger')
                 ->deferBadge()
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyTrashedRecordsConstraint($query));
+                ->query(fn (Builder $query): Builder => $this->applyTrashedRecordsConstraint($query));
         }
 
         return $tabs;
@@ -91,24 +91,25 @@ trait HasRecordStateTabs
         ];
     }
 
-    private function syncRecordStateTab(): bool
+    private function normalizeRecordStateTab(): bool
     {
+        if (! filled($this->activeTab)) {
+            return false;
+        }
+
         $tabs = $this->getTabs();
+
+        if (array_key_exists($this->activeTab, $tabs)) {
+            return false;
+        }
+
         $defaultTab = array_key_first($tabs);
 
-        if ($defaultTab === null) {
+        if ($defaultTab === null && $tabs === []) {
             return false;
         }
 
-        $normalizedActiveTab = filled($this->activeTab) && array_key_exists($this->activeTab, $tabs)
-            ? $this->activeTab
-            : $defaultTab;
-
-        if ($this->activeTab === $normalizedActiveTab) {
-            return false;
-        }
-
-        $this->activeTab = $normalizedActiveTab;
+        $this->activeTab = $defaultTab;
 
         return true;
     }
