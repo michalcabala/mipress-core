@@ -17,11 +17,10 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Filament\Support\Enums\IconPosition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use MiPress\Core\Enums\EntryStatus;
@@ -133,11 +132,6 @@ class PagesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
-                SelectFilter::make('status')
-                    ->label('Stav')
-                    ->options(EntryStatus::class)
-                    ->native(false),
-                TrashedFilter::make(),
             ])
             ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters))
             ->actions([
@@ -348,16 +342,6 @@ class PagesTable
         if ($basicFilters !== []) {
             $sections[] = Section::make('Základní')
                 ->schema($basicFilters);
-        }
-
-        $stateFilters = array_values(array_filter([
-            $filters['status'] ?? null,
-            $filters['trashed'] ?? null,
-        ]));
-
-        if ($stateFilters !== []) {
-            $sections[] = Section::make('Stav')
-                ->schema($stateFilters);
         }
 
         return $sections;

@@ -17,17 +17,17 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Section;
+use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Filament\Support\Enums\IconPosition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
@@ -119,13 +119,8 @@ class EntriesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
-                SelectFilter::make('status')
-                    ->label('Stav')
-                    ->options(EntryStatus::class)
-                    ->native(false),
                 ...static::getTaxonomyFilters($currentCollection),
                 ...static::getBlueprintFilters($currentCollection),
-                TrashedFilter::make(),
             ])
             ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters, $currentCollection))
             ->actions([
@@ -435,16 +430,6 @@ class EntriesTable
                 ->schema($blueprintFilters);
         }
 
-        $stateFilters = array_values(array_filter([
-            $filters['status'] ?? null,
-            $filters['trashed'] ?? null,
-        ]));
-
-        if ($stateFilters !== []) {
-            $sections[] = Section::make('Stav')
-                ->schema($stateFilters);
-        }
-
         return $sections;
     }
 
@@ -580,7 +565,7 @@ class EntriesTable
             return [];
         }
 
-        $registry = app(\MiPress\Core\FieldTypes\FieldTypeRegistry::class);
+        $registry = app(FieldTypeRegistry::class);
         $blueprintFields = static::flattenBlueprintFields($collection->blueprint->fields ?? []);
 
         return collect($blueprintFields)
