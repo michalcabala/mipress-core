@@ -5,15 +5,19 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Concerns;
 
 use Filament\Actions\Action;
+use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Component;
+use Filament\Schemas\Components\Fieldset;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\HtmlString;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Revision;
 use MiPress\Core\Services\RevisionDiffPresenter;
@@ -103,9 +107,8 @@ trait ConfiguresRevisionTable
                     ->modalWidth(Width::SevenExtraLarge)
                     ->modalHeading('Porovnání s aktuálním stavem')
                     ->modalDescription('Uvidíte jen pole, která se liší oproti aktuálně uložené verzi obsahu.')
-                    ->modalContent(function (Revision $record): HtmlString {
-                        return $this->buildRevisionDiffHtml($record);
-                    })
+                    ->schema(fn (Revision $record): array => $this->buildRevisionDiffSchema($record))
+                    ->action(fn () => null)
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Zavřít'),
                 Action::make('restore')
@@ -157,29 +160,36 @@ trait ConfiguresRevisionTable
                 ->live()
                 ->searchable()
                 ->native(false),
-            Placeholder::make('comparison_result')
-                ->label('Rozdíly')
-                ->content(function (Get $get): HtmlString {
+            Section::make('Rozdíly')
+                ->schema(function (Get $get): array {
                     $revisionAId = $get('revision_a');
                     $revisionBId = $get('revision_b');
 
                     if (! $revisionAId || ! $revisionBId) {
-                        return new HtmlString('<div class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200/80 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">Vyberte obě revize k porovnání.</div>');
+                        return [
+                            Placeholder::make('comparison_hint')
+                                ->hiddenLabel()
+                                ->content('Vyberte obě revize k porovnání.'),
+                        ];
                     }
 
-                    return $this->buildTwoRevisionDiffHtml((int) $revisionAId, $revisionBId === '__current__' ? null : (int) $revisionBId);
+                    return $this->buildTwoRevisionDiffSchema((int) $revisionAId, $revisionBId === '__current__' ? null : (int) $revisionBId, prefix: 'compare');
                 })
                 ->columnSpanFull(),
         ];
     }
 
-    protected function buildTwoRevisionDiffHtml(int $revisionAId, ?int $revisionBId): HtmlString
+    protected function buildTwoRevisionDiffSchema(int $revisionAId, ?int $revisionBId, string $prefix = 'compare'): array
     {
         $owner = $this->resolveRevisionOwner();
         $revisionA = Revision::find($revisionAId);
 
         if (! $revisionA) {
-            return new HtmlString('<div class="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 ring-1 ring-danger-200/80 dark:bg-danger-500/10 dark:text-danger-300 dark:ring-danger-500/20">Revize nebyla nalezena.</div>');
+            return [
+                Placeholder::make($prefix.'_missing_revision_a')
+                    ->hiddenLabel()
+                    ->content('Revize nebyla nalezena.'),
+            ];
         }
 
         $leftData = $revisionA->data ?? [];
@@ -194,17 +204,21 @@ trait ConfiguresRevisionTable
             $revisionB = Revision::find($revisionBId);
 
             if (! $revisionB) {
-                return new HtmlString('<div class="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 ring-1 ring-danger-200/80 dark:bg-danger-500/10 dark:text-danger-300 dark:ring-danger-500/20">Revize nebyla nalezena.</div>');
+                return [
+                    Placeholder::make($prefix.'_missing_revision_b')
+                        ->hiddenLabel()
+                        ->content('Revize nebyla nalezena.'),
+                ];
             }
 
             $rightData = $revisionB->data ?? [];
             $rightLabel = $revisionB->created_at->format('j. n. Y H:i:s');
         }
 
-        return $this->revisionDiffPresenter()->renderComparison($leftData, $rightData, $leftLabel, $rightLabel);
+        return $this->buildComparisonSchema($leftData, $rightData, $leftLabel, $rightLabel, $prefix);
     }
 
-    protected function buildRevisionDiffHtml(Revision $record): HtmlString
+    protected function buildRevisionDiffSchema(Revision $record): array
     {
         $owner = $this->resolveRevisionOwner();
         $leftData = $record->data ?? [];
@@ -212,12 +226,149 @@ trait ConfiguresRevisionTable
             ->except(['id', 'created_at', 'updated_at', 'deleted_at'])
             ->toArray();
 
-        return $this->revisionDiffPresenter()->renderComparison(
+        return $this->buildComparisonSchema(
             $leftData,
             $rightData,
             $record->created_at->format('j. n. Y H:i:s'),
             'Aktuální stav',
+            'record_'.$record->getKey(),
         );
+    }
+
+    /**
+     * @return array<int, Component|Field>
+     */
+    protected function buildComparisonSchema(array $leftData, array $rightData, string $leftLabel, string $rightLabel, string $prefix): array
+    {
+        $payload = $this->revisionDiffPresenter()->buildComparisonPayload($leftData, $rightData, $leftLabel, $rightLabel);
+
+        if (($payload['change_count'] ?? 0) === 0) {
+            return [
+                Placeholder::make($prefix.'_no_changes')
+                    ->hiddenLabel()
+                    ->content('Vybrané verze neobsahují žádné rozdíly.'),
+            ];
+        }
+
+        $components = [
+            Section::make('Souhrn')
+                ->schema([
+                    Grid::make([
+                        'default' => 1,
+                        'md' => 3,
+                    ])->schema([
+                        Placeholder::make($prefix.'_summary_count')
+                            ->label('Porovnávané položky')
+                            ->content((string) ($payload['change_count'] ?? 0)),
+                        Placeholder::make($prefix.'_summary_left')
+                            ->label('Levá verze')
+                            ->content((string) ($payload['left_label'] ?? $leftLabel)),
+                        Placeholder::make($prefix.'_summary_right')
+                            ->label('Pravá verze')
+                            ->content((string) ($payload['right_label'] ?? $rightLabel)),
+                    ]),
+                ]),
+        ];
+
+        foreach (($payload['standard_sections'] ?? []) as $sectionIndex => $section) {
+            $sectionName = (string) ($section['name'] ?? 'Rozdíly');
+            $changes = is_array($section['changes'] ?? null) ? $section['changes'] : [];
+
+            if ($changes === []) {
+                continue;
+            }
+
+            $sectionSchema = [];
+
+            foreach ($changes as $changeIndex => $change) {
+                $changeField = (string) ($change['field'] ?? 'Pole');
+                $changePath = (string) ($change['path'] ?? '');
+                $oldValue = (string) ($change['old'] ?? '—');
+                $newValue = (string) ($change['new'] ?? '—');
+
+                $sectionSchema[] = Fieldset::make($changeField)
+                    ->schema([
+                        Placeholder::make($prefix.'_std_'.$sectionIndex.'_'.$changeIndex.'_path')
+                            ->label('Klíč')
+                            ->content($changePath),
+                        Grid::make([
+                            'default' => 1,
+                            'md' => 2,
+                        ])->schema([
+                            Placeholder::make($prefix.'_std_'.$sectionIndex.'_'.$changeIndex.'_old')
+                                ->label($leftLabel)
+                                ->content($oldValue),
+                            Placeholder::make($prefix.'_std_'.$sectionIndex.'_'.$changeIndex.'_new')
+                                ->label($rightLabel)
+                                ->content($newValue),
+                        ]),
+                    ]);
+            }
+
+            $components[] = Section::make($sectionName)
+                ->collapsible()
+                ->schema($sectionSchema);
+        }
+
+        foreach (($payload['mason_sections'] ?? []) as $masonIndex => $masonSection) {
+            $masonLabel = (string) ($masonSection['label'] ?? 'Mason obsah');
+            $summary = is_array($masonSection['summary'] ?? null) ? $masonSection['summary'] : [];
+            $changes = is_array($masonSection['changes'] ?? null) ? $masonSection['changes'] : [];
+
+            if ($changes === []) {
+                continue;
+            }
+
+            $masonSchema = [
+                Grid::make([
+                    'default' => 1,
+                    'md' => 5,
+                ])->schema([
+                    Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_total')
+                        ->label('Změny')
+                        ->content((string) ($summary['total'] ?? 0)),
+                    Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_added')
+                        ->label('Přidáno')
+                        ->content((string) ($summary['added'] ?? 0)),
+                    Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_removed')
+                        ->label('Odebráno')
+                        ->content((string) ($summary['removed'] ?? 0)),
+                    Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_moved')
+                        ->label('Přesunuto')
+                        ->content((string) ($summary['moved'] ?? 0)),
+                    Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_changed')
+                        ->label('Upraveno')
+                        ->content((string) ($summary['changed'] ?? 0)),
+                ]),
+            ];
+
+            foreach ($changes as $changeIndex => $change) {
+                $typeLabel = (string) ($change['type_label'] ?? 'Změna');
+                $blockType = (string) ($change['block_type'] ?? 'Blok');
+                $fieldsetLabel = $typeLabel.' · '.$blockType;
+
+                $masonSchema[] = Fieldset::make($fieldsetLabel)
+                    ->schema([
+                        Grid::make([
+                            'default' => 1,
+                            'md' => 2,
+                        ])->schema([
+                            Placeholder::make($prefix.'_mason_'.$masonIndex.'_'.$changeIndex.'_left')
+                                ->label($leftLabel)
+                                ->content((string) ($change['left'] ?? 'Žádný blok')),
+                            Placeholder::make($prefix.'_mason_'.$masonIndex.'_'.$changeIndex.'_right')
+                                ->label($rightLabel)
+                                ->content((string) ($change['right'] ?? 'Žádný blok')),
+                        ]),
+                    ]);
+            }
+
+            $components[] = Section::make($masonLabel)
+                ->collapsible()
+                ->schema($masonSchema);
+        }
+
+        return $components;
     }
 
     protected function resolveRevisionStatus(Revision $record): ?EntryStatus

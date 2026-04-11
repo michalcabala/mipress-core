@@ -83,6 +83,98 @@ class RevisionDiffPresenter
         return 'Uloženo '.$fieldCount.' polí';
     }
 
+    /**
+     * @return array{
+     *     change_count: int,
+     *     left_label: string,
+     *     right_label: string,
+     *     standard_sections: array<int, array{name: string, changes: array<int, array{field: string, path: string, old: string, new: string}>>>,
+     *     mason_sections: array<int, array{
+     *         label: string,
+     *         summary: array{added: int, removed: int, moved: int, changed: int, total: int},
+     *         changes: array<int, array{type: string, type_label: string, block_type: string, left: string, right: string}>
+     *     }>
+     * }
+     */
+    public function buildComparisonPayload(array $leftData, array $rightData, string $leftLabel, string $rightLabel): array
+    {
+        $fieldChanges = $this->collectChanges($leftData, $rightData);
+        $masonComparisons = $this->collectMasonComparisons($leftData, $rightData);
+
+        $grouped = collect($fieldChanges)
+            ->groupBy('section')
+            ->map(fn ($items): array => $items->all())
+            ->all();
+
+        $orderedSectionNames = [];
+
+        foreach (self::SECTION_ORDER as $sectionName) {
+            if (isset($grouped[$sectionName])) {
+                $orderedSectionNames[] = $sectionName;
+            }
+        }
+
+        foreach (array_keys($grouped) as $sectionName) {
+            if (! in_array($sectionName, $orderedSectionNames, true)) {
+                $orderedSectionNames[] = (string) $sectionName;
+            }
+        }
+
+        $standardSections = collect($orderedSectionNames)
+            ->map(function (string $sectionName) use ($grouped): array {
+                /** @var array<int, array<string, mixed>> $rows */
+                $rows = $grouped[$sectionName] ?? [];
+
+                return [
+                    'name' => $sectionName,
+                    'changes' => collect($rows)
+                        ->map(fn (array $change): array => [
+                            'field' => (string) $change['field'],
+                            'path' => (string) $change['path'],
+                            'old' => $this->formatValueForText($change['old'] ?? null),
+                            'new' => $this->formatValueForText($change['new'] ?? null),
+                        ])
+                        ->all(),
+                ];
+            })
+            ->all();
+
+        $masonSections = collect($masonComparisons)
+            ->map(function (array $comparison): array {
+                return [
+                    'label' => (string) $comparison['label'],
+                    'summary' => $comparison['summary'],
+                    'changes' => collect($comparison['changes'])
+                        ->map(function (array $change): array {
+                            $leftBlock = is_array($change['left'] ?? null) ? $change['left'] : null;
+                            $rightBlock = is_array($change['right'] ?? null) ? $change['right'] : null;
+                            $blockType = (string) ($rightBlock['type'] ?? $leftBlock['type'] ?? 'Blok');
+
+                            return [
+                                'type' => (string) $change['type'],
+                                'type_label' => $this->resolveMasonChangeLabel((string) $change['type'], (bool) ($change['moved'] ?? false)),
+                                'block_type' => $blockType,
+                                'left' => $this->formatMasonBlockForText($leftBlock),
+                                'right' => $this->formatMasonBlockForText($rightBlock),
+                            ];
+                        })
+                        ->all(),
+                ];
+            })
+            ->all();
+
+        $changeCount = count($fieldChanges) + collect($masonComparisons)
+            ->sum(fn (array $comparison): int => (int) ($comparison['summary']['total'] ?? 0));
+
+        return [
+            'change_count' => $changeCount,
+            'left_label' => $leftLabel,
+            'right_label' => $rightLabel,
+            'standard_sections' => $standardSections,
+            'mason_sections' => $masonSections,
+        ];
+    }
+
     public function renderComparison(array $leftData, array $rightData, string $leftLabel, string $rightLabel): HtmlString
     {
         $fieldChanges = $this->collectChanges($leftData, $rightData);
@@ -239,6 +331,78 @@ class RevisionDiffPresenter
         }
 
         return $summary;
+    }
+
+    private function resolveMasonChangeLabel(string $type, bool $moved): string
+    {
+        if ($type === 'added') {
+            return 'Přidaný blok';
+        }
+
+        if ($type === 'removed') {
+            return 'Odebraný blok';
+        }
+
+        if ($type === 'moved') {
+            return 'Přesunutý blok';
+        }
+
+        return $moved ? 'Upravený + přesunutý blok' : 'Upravený blok';
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $block
+     */
+    private function formatMasonBlockForText(?array $block): string
+    {
+        if (! is_array($block)) {
+            return 'Žádný blok';
+        }
+
+        $position = ((int) ($block['index'] ?? 0)) + 1;
+        $identifier = is_string($block['id'] ?? null) && trim($block['id']) !== ''
+            ? 'ID: '.$block['id']
+            : 'ID: —';
+        $preview = trim((string) ($block['preview'] ?? ''));
+        $payload = $this->formatValueForText($block['data'] ?? null);
+
+        $lines = [
+            'Pozice #'.$position,
+            $identifier,
+        ];
+
+        if ($preview !== '') {
+            $lines[] = 'Náhled: '.$preview;
+        }
+
+        $lines[] = 'Data: '.$payload;
+
+        return implode("\n", $lines);
+    }
+
+    private function formatValueForText(mixed $value): string
+    {
+        if ($value === null) {
+            return '—';
+        }
+
+        if (is_bool($value)) {
+            return $value ? 'Ano' : 'Ne';
+        }
+
+        if (is_array($value)) {
+            $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+            return (string) Str::of($json ?: '[]')->limit(2400);
+        }
+
+        $stringValue = trim((string) $value);
+
+        if ($stringValue === '') {
+            return 'Prázdná hodnota';
+        }
+
+        return (string) Str::of($stringValue)->limit(500);
     }
 
     /**
