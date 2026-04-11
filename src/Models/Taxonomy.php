@@ -29,6 +29,8 @@ class Taxonomy extends Model
         'show_in_entries_filter',
         'searchable_in_entries_table',
         'sortable_in_entries_table',
+        'entries_table_display_mode',
+        'entries_table_badge_palette',
     ];
 
     protected $casts = [
@@ -39,6 +41,8 @@ class Taxonomy extends Model
         'show_in_entries_filter' => 'boolean',
         'searchable_in_entries_table' => 'boolean',
         'sortable_in_entries_table' => 'boolean',
+        'entries_table_display_mode' => 'string',
+        'entries_table_badge_palette' => 'string',
     ];
 
     public function getSlugOptions(): SlugOptions

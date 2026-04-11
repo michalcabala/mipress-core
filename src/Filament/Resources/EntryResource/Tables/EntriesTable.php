@@ -273,7 +273,7 @@ class EntriesTable
 
             return TextColumn::make("taxonomy_{$taxonomyId}")
                 ->label($taxonomy->title)
-                ->state(fn (Entry $record): string => static::formatTaxonomyBadges($record, $taxonomy))
+                ->state(fn (Entry $record): string => static::formatTaxonomyTerms($record, $taxonomy))
                 ->html()
                 ->toggleable()
                 ->searchable(
@@ -315,7 +315,7 @@ class EntriesTable
         return $query->orderBy($sortSubQuery, $direction);
     }
 
-    private static function formatTaxonomyBadges(Entry $record, Taxonomy $taxonomy): string
+    private static function formatTaxonomyTerms(Entry $record, Taxonomy $taxonomy): string
     {
         $terms = $record->terms
             ->where('taxonomy_id', $taxonomy->getKey())
@@ -327,9 +327,42 @@ class EntriesTable
             return '<span class="text-gray-500">-</span>';
         }
 
+        if (static::getTaxonomyDisplayMode($taxonomy) === 'text') {
+            return e($terms->implode(', '));
+        }
+
+        $badgeClasses = implode(' ', static::getTaxonomyBadgeClasses($taxonomy));
+
         return $terms
-            ->map(fn (string $term): string => '<span class="fi-badge fi-color-custom bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200">'.e($term).'</span>')
+            ->map(fn (string $term): string => '<span class="'.e($badgeClasses).'">'.e($term).'</span>')
             ->implode(' ');
+    }
+
+    private static function getTaxonomyDisplayMode(Taxonomy $taxonomy): string
+    {
+        $displayMode = (string) ($taxonomy->entries_table_display_mode ?? 'badges');
+
+        return in_array($displayMode, ['badges', 'text'], true)
+            ? $displayMode
+            : 'badges';
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function getTaxonomyBadgeClasses(Taxonomy $taxonomy): array
+    {
+        $baseClasses = ['fi-badge', 'fi-color-custom'];
+        $palette = (string) ($taxonomy->entries_table_badge_palette ?? 'neutral');
+
+        return array_merge($baseClasses, match ($palette) {
+            'primary' => ['bg-blue-100', 'text-blue-700', 'dark:bg-blue-900/40', 'dark:text-blue-200'],
+            'success' => ['bg-emerald-100', 'text-emerald-700', 'dark:bg-emerald-900/40', 'dark:text-emerald-200'],
+            'warning' => ['bg-amber-100', 'text-amber-700', 'dark:bg-amber-900/40', 'dark:text-amber-200'],
+            'danger' => ['bg-red-100', 'text-red-700', 'dark:bg-red-900/40', 'dark:text-red-200'],
+            'info' => ['bg-cyan-100', 'text-cyan-700', 'dark:bg-cyan-900/40', 'dark:text-cyan-200'],
+            default => ['bg-gray-100', 'text-gray-700', 'dark:bg-gray-800', 'dark:text-gray-200'],
+        });
     }
 
     /**

@@ -10,6 +10,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use MiPress\Core\Models\Collection;
 
@@ -78,6 +79,32 @@ class TaxonomyForm
                     Toggle::make('sortable_in_entries_table')
                         ->label('Sloupec je řaditelný')
                         ->default(false),
+                ]),
+                Grid::make(2)->schema([
+                    Select::make('entries_table_display_mode')
+                        ->label('Režim zobrazení')
+                        ->options([
+                            'badges' => 'Štítky',
+                            'text' => 'Text',
+                        ])
+                        ->default('badges')
+                        ->required()
+                        ->native(false)
+                        ->live(),
+                    Select::make('entries_table_badge_palette')
+                        ->label('Paleta štítků')
+                        ->options([
+                            'neutral' => 'Neutrální',
+                            'primary' => 'Primární',
+                            'success' => 'Úspěch',
+                            'warning' => 'Upozornění',
+                            'danger' => 'Nebezpečí',
+                            'info' => 'Informace',
+                        ])
+                        ->default('neutral')
+                        ->required()
+                        ->native(false)
+                        ->visible(fn (Get $get): bool => ($get('entries_table_display_mode') ?? 'badges') === 'badges'),
                 ]),
             ]),
         ]);
