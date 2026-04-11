@@ -40,6 +40,20 @@ class PageForm
         $isEdit = $record instanceof Page;
 
         $components = [];
+        $seoSection = Section::make('SEO')
+            ->icon('fal-magnifying-glass')
+            ->collapsible()
+            ->schema([
+                TextInput::make('meta_title')
+                    ->label('SEO titulek')
+                    ->maxLength(60)
+                    ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek stránky.'),
+                Textarea::make('meta_description')
+                    ->label('SEO popis')
+                    ->maxLength(160)
+                    ->rows(3)
+                    ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
+            ]);
 
         $components[] =
             Grid::make([
@@ -90,21 +104,7 @@ class PageForm
                                         ->extraInputAttributes(['style' => 'min-height: 42rem;'])
                                         ->columnSpanFull(),
                                 ]),
-
-                            Section::make('SEO')
-                                ->icon('fal-magnifying-glass')
-                                ->collapsible()
-                                ->schema([
-                                    TextInput::make('meta_title')
-                                        ->label('SEO titulek')
-                                        ->maxLength(60)
-                                        ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek stránky.'),
-                                    Textarea::make('meta_description')
-                                        ->label('SEO popis')
-                                        ->maxLength(160)
-                                        ->rows(3)
-                                        ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
-                                ]),
+                            ...($isEdit ? [] : [$seoSection]),
                         ]),
 
                     Grid::make(1)

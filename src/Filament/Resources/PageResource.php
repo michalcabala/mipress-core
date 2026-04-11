@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources;
 
 use Filament\Pages\Enums\SubNavigationPosition;
-use Filament\Resources\Resource;
 use Filament\Resources\Pages\Page as FilamentPage;
+use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Filament\Resources\PageResource\Pages\CreatePage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\EditPage;
+use MiPress\Core\Filament\Resources\PageResource\Pages\EditPageSeo;
 use MiPress\Core\Filament\Resources\PageResource\Pages\ListPages;
 use MiPress\Core\Filament\Resources\PageResource\Pages\PageHistory;
 use MiPress\Core\Filament\Resources\PageResource\Schemas\PageForm;
@@ -59,6 +60,7 @@ class PageResource extends Resource
     {
         return $page->generateNavigationItems([
             EditPage::class,
+            EditPageSeo::class,
             PageHistory::class,
         ]);
     }
@@ -69,6 +71,7 @@ class PageResource extends Resource
             'index' => ListPages::route('/'),
             'create' => CreatePage::route('/create'),
             'edit' => EditPage::route('/{record}/edit'),
+            'seo' => EditPageSeo::route('/{record}/seo'),
             'history' => PageHistory::route('/{record}/history'),
         ];
     }

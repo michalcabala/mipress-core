@@ -59,6 +59,25 @@ class EntryForm
         $isEdit = $record instanceof Entry;
 
         $components = [];
+        $seoSection = Section::make('SEO')
+            ->icon('fal-magnifying-glass')
+            ->collapsible()
+            ->schema([
+                TextInput::make('meta_title')
+                    ->label('SEO titulek')
+                    ->maxLength(60)
+                    ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek položky.'),
+                Textarea::make('meta_description')
+                    ->label('SEO popis')
+                    ->maxLength(160)
+                    ->rows(3)
+                    ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
+                CuratorPicker::make('og_image_id')
+                    ->relationship('ogImage', 'id')
+                    ->label('OG obrázek')
+                    ->nullable()
+                    ->helperText('Obrázek pro sdílení na sociálních sítích.'),
+            ]);
 
         $components[] =
             Grid::make([
@@ -112,26 +131,7 @@ class EntryForm
                                         ->columnSpanFull(),
                                     ...BlueprintFieldResolver::resolveAll($blueprint->fields ?? []),
                                 ]),
-
-                            Section::make('SEO')
-                                ->icon('fal-magnifying-glass')
-                                ->collapsible()
-                                ->schema([
-                                    TextInput::make('meta_title')
-                                        ->label('SEO titulek')
-                                        ->maxLength(60)
-                                        ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek položky.'),
-                                    Textarea::make('meta_description')
-                                        ->label('SEO popis')
-                                        ->maxLength(160)
-                                        ->rows(3)
-                                        ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
-                                    CuratorPicker::make('og_image_id')
-                                        ->relationship('ogImage', 'id')
-                                        ->label('OG obrázek')
-                                        ->nullable()
-                                        ->helperText('Obrázek pro sdílení na sociálních sítích.'),
-                                ]),
+                            ...($isEdit ? [] : [$seoSection]),
                         ]),
 
                     Grid::make(1)

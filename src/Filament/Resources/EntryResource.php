@@ -6,8 +6,8 @@ namespace MiPress\Core\Filament\Resources;
 
 use Filament\Navigation\NavigationItem;
 use Filament\Pages\Enums\SubNavigationPosition;
-use Filament\Resources\Resource;
 use Filament\Resources\Pages\Page as FilamentPage;
+use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
+use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntrySeo;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryHistory;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\ListEntries;
 use MiPress\Core\Filament\Resources\EntryResource\Schemas\EntryForm;
@@ -169,6 +170,7 @@ class EntryResource extends Resource
     {
         return $page->generateNavigationItems([
             EditEntry::class,
+            EditEntrySeo::class,
             EntryHistory::class,
         ]);
     }
@@ -179,6 +181,7 @@ class EntryResource extends Resource
             'create' => CreateEntry::route('/{collection?}/create'),
             'index' => ListEntries::route('/{collection?}'),
             'edit' => EditEntry::route('/{record}/edit'),
+            'seo' => EditEntrySeo::route('/{record}/seo'),
             'history' => EntryHistory::route('/{record}/history'),
         ];
     }
