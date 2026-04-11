@@ -11,14 +11,14 @@ use MiPress\Core\Enums\EntryStatus;
 trait HasRecordStateTabs
 {
     /**
-     * @return array<string, Tab>
+     * @return array<string|int|null, Tab>
      */
     public function getTabs(): array
     {
         $counts = $this->getRecordStateTabCounts();
 
         $tabs = [
-            'all' => Tab::make('Celkem')
+            null => Tab::make('Celkem')
                 ->icon('far-layer-group')
                 ->badge(fn (): int => $counts['visibleTotal'])
                 ->badgeColor('gray')
@@ -37,7 +37,7 @@ trait HasRecordStateTabs
                 ->badge(fn (): int => $count)
                 ->badgeColor($status->getColor())
                 ->deferBadge()
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->where('status', $status->value));
+                ->query(fn (Builder $query): Builder => $query->where('status', $status->value));
         }
 
         if ($counts['trashedTotal'] > 0) {
@@ -46,24 +46,10 @@ trait HasRecordStateTabs
                 ->badge(fn (): int => $counts['trashedTotal'])
                 ->badgeColor('danger')
                 ->deferBadge()
-                ->modifyQueryUsing(fn (Builder $query): Builder => $query->onlyTrashed());
+                ->query(fn (Builder $query): Builder => $query->onlyTrashed());
         }
 
         return $tabs;
-    }
-
-    public function getDefaultActiveTab(): string|int|null
-    {
-        return 'all';
-    }
-
-    protected function loadDefaultActiveTab(): void
-    {
-        parent::loadDefaultActiveTab();
-
-        if (filled($this->activeTab) && ! array_key_exists($this->activeTab, $this->getCachedTabs())) {
-            $this->activeTab = $this->getDefaultActiveTab();
-        }
     }
 
     abstract protected function getRecordStateTabsBaseQuery(): Builder;
