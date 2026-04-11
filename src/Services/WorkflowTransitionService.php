@@ -59,6 +59,14 @@ class WorkflowTransitionService
     public function prepareReviewData(array $data): array
     {
         $data['status'] = EntryStatus::InReview;
+        $data['scheduled_at'] = null;
+
+        $publishedAt = $this->normalizeDate(data_get($data, 'published_at'));
+
+        if ($publishedAt?->isFuture() === true) {
+            $data['published_at'] = null;
+        }
+
         $data['review_note'] = null;
 
         return $data;
@@ -160,6 +168,14 @@ class WorkflowTransitionService
     private function prepareDraftData(array $data): array
     {
         $data['status'] = EntryStatus::Draft;
+        $data['scheduled_at'] = null;
+
+        $publishedAt = $this->normalizeDate(data_get($data, 'published_at'));
+
+        if ($publishedAt?->isFuture() === true) {
+            $data['published_at'] = null;
+        }
+
         $data['review_note'] = null;
 
         return $data;
@@ -208,10 +224,7 @@ class WorkflowTransitionService
      */
     private function prepareCreateReviewData(array $data): array
     {
-        $data = $this->prepareReviewData($data);
-        $data['scheduled_at'] = null;
-
-        return $data;
+        return $this->prepareReviewData($data);
     }
 
     private function normalizeDate(mixed $value): ?CarbonInterface

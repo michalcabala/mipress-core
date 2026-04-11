@@ -17,9 +17,9 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
-use Filament\Support\Enums\IconPosition;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
@@ -35,16 +35,6 @@ class PagesTable
 
     private const LEGACY_HOMEPAGE_ENTRY_SETTING_KEY = 'site.homepage_entry_id';
 
-    /**
-     * @var array<int, int>
-     */
-    private static array $pageDepthCache = [];
-
-    /**
-     * @var array<int, int|null>|null
-     */
-    private static ?array $pageParentMap = null;
-
     public static function table(Table $table): Table
     {
         $homepageId = static::getHomepagePageId();
@@ -53,14 +43,6 @@ class PagesTable
             ->columns([
                 TextColumn::make('title')
                     ->label('Titulek')
-                    ->icon(fn (Page $record): ?string => static::getResourceLockState($record) !== null ? 'fal-lock' : null)
-                    ->iconPosition(IconPosition::Before)
-                    ->iconColor(fn (Page $record): ?string => match (static::getResourceLockState($record)) {
-                        'mine' => 'primary',
-                        'other' => 'danger',
-                        default => null,
-                    })
-                    ->tooltip(fn (Page $record): ?string => static::getResourceLockTooltip($record, static::getResourceLockState($record)))
                     ->searchable()
                     ->sortable()
                     ->formatStateUsing(fn (Page $record): string => static::formatHierarchyTitle($record->title, static::getPageDepth($record)))
@@ -112,6 +94,9 @@ class PagesTable
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->filters([
+                SelectFilter::make('status')
+                    ->label('Stav')
+                    ->options(EntryStatus::class),
                 SelectFilter::make('author_id')
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions())
@@ -132,6 +117,7 @@ class PagesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
+                TrashedFilter::make(),
             ])
             ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters))
             ->actions([
@@ -162,6 +148,8 @@ class PagesTable
                                 : 'Tato stránka se nastaví jako výchozí domovská stránka webu.';
                         })
                         ->action(function (Page $record): void {
+                            $record->refresh();
+
                             $homepageId = static::getHomepagePageId();
                             $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;
 
@@ -177,7 +165,11 @@ class PagesTable
                                 return;
                             }
 
-                            if ($record->status !== EntryStatus::Published) {
+                            if (
+                                $record->status !== EntryStatus::Published
+                                || ! ($record->published_at instanceof Carbon)
+                                || $record->published_at->isFuture()
+                            ) {
                                 Notification::make()
                                     ->title('Nelze nastavit jako homepage')
                                     ->body('Domovskou stránku lze nastavit pouze na publikovanou stránku.')
@@ -213,41 +205,6 @@ class PagesTable
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    private static function getResourceLockState(Page $record): ?string
-    {
-        $resourceLock = $record->resourceLock;
-
-        if ($resourceLock === null || $resourceLock->isExpired($record->getLockTimeout())) {
-            return null;
-        }
-
-        return $record->isLockedByCurrentUser() ? 'mine' : 'other';
-    }
-
-    private static function getResourceLockTooltip(Page $record, ?string $state): ?string
-    {
-        return match ($state) {
-            'mine' => 'Právě upravujete vy',
-            'other' => static::getOtherResourceLockTooltip($record),
-            default => null,
-        };
-    }
-
-    private static function getOtherResourceLockTooltip(Page $record): string
-    {
-        if (
-            filled($record->resourceLock?->user_id)
-            && filled($record->author_id)
-            && (int) $record->resourceLock->user_id === (int) $record->author_id
-            && $record->relationLoaded('author')
-            && filled($record->author?->name)
-        ) {
-            return 'Právě upravuje '.$record->author->name;
-        }
-
-        return 'Právě upravuje jiný uživatel';
     }
 
     private static function getHomepagePageId(): ?string
@@ -334,14 +291,24 @@ class PagesTable
     {
         $sections = [];
 
-        $basicFilters = array_values(array_filter([
+        $publicationFilters = array_values(array_filter([
+            $filters['status'] ?? null,
+            $filters['trashed'] ?? null,
+        ]));
+
+        if ($publicationFilters !== []) {
+            $sections[] = Section::make('Publikace')
+                ->schema($publicationFilters);
+        }
+
+        $metadataFilters = array_values(array_filter([
             $filters['author_id'] ?? null,
             $filters['created_month'] ?? null,
         ]));
 
-        if ($basicFilters !== []) {
-            $sections[] = Section::make('Základní')
-                ->schema($basicFilters);
+        if ($metadataFilters !== []) {
+            $sections[] = Section::make('Metadata')
+                ->schema($metadataFilters);
         }
 
         return $sections;
@@ -359,9 +326,10 @@ class PagesTable
     private static function getPageDepth(Page $record): int
     {
         $recordId = (int) $record->getKey();
+        $depthCache = static::getPageDepthCache();
 
-        if (array_key_exists($recordId, static::$pageDepthCache)) {
-            return static::$pageDepthCache[$recordId];
+        if (array_key_exists($recordId, $depthCache)) {
+            return $depthCache[$recordId];
         }
 
         $parentMap = static::getPageParentMap();
@@ -379,7 +347,8 @@ class PagesTable
             $currentParentId = $parentMap[$currentParentId] ?? null;
         }
 
-        static::$pageDepthCache[$recordId] = $depth;
+        $depthCache[$recordId] = $depth;
+        static::setPageDepthCache($depthCache);
 
         return $depth;
     }
@@ -389,16 +358,56 @@ class PagesTable
      */
     private static function getPageParentMap(): array
     {
-        if (static::$pageParentMap !== null) {
-            return static::$pageParentMap;
+        $parentMap = static::getRequestParentMap();
+
+        if ($parentMap !== null) {
+            return $parentMap;
         }
 
-        static::$pageParentMap = Page::query()
+        $parentMap = Page::query()
             ->select(['id', 'parent_id'])
             ->get()
             ->mapWithKeys(fn (Page $page): array => [(int) $page->getKey() => $page->parent_id ? (int) $page->parent_id : null])
             ->all();
 
-        return static::$pageParentMap;
+        static::setRequestParentMap($parentMap);
+
+        return $parentMap;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private static function getPageDepthCache(): array
+    {
+        $cache = request()->attributes->get('mipress.pages.depth_cache', []);
+
+        return is_array($cache) ? $cache : [];
+    }
+
+    /**
+     * @param  array<int, int>  $cache
+     */
+    private static function setPageDepthCache(array $cache): void
+    {
+        request()->attributes->set('mipress.pages.depth_cache', $cache);
+    }
+
+    /**
+     * @return array<int, int|null>|null
+     */
+    private static function getRequestParentMap(): ?array
+    {
+        $map = request()->attributes->get('mipress.pages.parent_map');
+
+        return is_array($map) ? $map : null;
+    }
+
+    /**
+     * @param  array<int, int|null>  $parentMap
+     */
+    private static function setRequestParentMap(array $parentMap): void
+    {
+        request()->attributes->set('mipress.pages.parent_map', $parentMap);
     }
 }

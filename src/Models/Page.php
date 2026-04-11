@@ -7,7 +7,6 @@ namespace MiPress\Core\Models;
 use App\Models\User;
 use Awcodes\Curator\Models\Media;
 use Awcodes\Mason\Support\MasonRenderer;
-use Blendbyte\FilamentResourceLock\Models\Concerns\HasLocks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +25,7 @@ use Spatie\Sluggable\SlugOptions;
 
 class Page extends Model
 {
-    use Auditable, HasFactory, HasLocks, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
+    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
 
     protected $table = 'pages';
 

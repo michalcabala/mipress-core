@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
-use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
+use Carbon\CarbonInterface;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
+use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
-use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
+use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\AuditLog;
@@ -21,10 +22,9 @@ use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditPage extends EditRecord
 {
+    use HandlesWorkflowValidationErrors;
     use HasContextualCrudNotifications;
-    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, UsesResourceLock {
-        HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
-    }
+    use HasWorkflowActions;
     use UsesCurrentPageSubNavigation;
 
     protected static string $resource = PageResource::class;
@@ -37,26 +37,25 @@ class EditPage extends EditRecord
 
     protected ?EntryStatus $statusBeforeSave = null;
 
-    protected function getHeaderActions(): array
+    protected function getRedirectUrl(): string
+    {
+        return static::$resource::getUrl('index');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getSubNavigationParameters(): array
     {
         return [
-            $this->getSaveFormAction()
-                ->label('Aktualizovat')
-                ->icon('far-floppy-disk')
-                ->formId('form'),
-            $this->getCancelFormAction()
-                ->icon('far-xmark'),
+            ...parent::getSubNavigationParameters(),
+            'currentPageClass' => static::class,
         ];
     }
 
     protected function getFormActions(): array
     {
         return [];
-    }
-
-    protected function getRedirectUrl(): string
-    {
-        return static::$resource::getUrl('index');
     }
 
     /**
@@ -81,7 +80,13 @@ class EditPage extends EditRecord
             $data['slug'] = $record->slug;
         }
 
-        $data['parent_id'] = $this->resolveParentId($data);
+        if (array_key_exists('parent_id', $data)) {
+            $data['parent_id'] = $this->resolveParentId($data);
+        }
+
+        if (! $this->shouldPrepareWorkflowData($data)) {
+            return $data;
+        }
 
         return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
             $data,
@@ -95,6 +100,12 @@ class EditPage extends EditRecord
         $record = $this->getRecord();
 
         if (! $record instanceof Page) {
+            return;
+        }
+
+        if (! $this->shouldProcessStatusChange()) {
+            $this->statusBeforeSave = $record->status;
+
             return;
         }
 
@@ -122,6 +133,70 @@ class EditPage extends EditRecord
         $this->statusBeforeSave = $record->status;
     }
 
+    protected function workflowRecordClass(): string
+    {
+        return Page::class;
+    }
+
+    protected function workflowPublishActionName(): string
+    {
+        return 'publishPage';
+    }
+
+    protected function workflowRejectActionName(): string
+    {
+        return 'rejectPage';
+    }
+
+    protected function workflowUpdateActionName(): string
+    {
+        return 'updatePage';
+    }
+
+    protected function workflowPublishedNotificationTitle(): string
+    {
+        return 'Stránka publikována';
+    }
+
+    protected function workflowRejectedNotificationTitle(): string
+    {
+        return 'Stránka zamítnuta';
+    }
+
+    protected function workflowScheduledNotificationBody(CarbonInterface $scheduleAt): string
+    {
+        return 'Publikace stránky je naplánována na '.$scheduleAt->format('j. n. Y H:i').'.';
+    }
+
+    protected function workflowReviewNotificationTitle(): string
+    {
+        return 'Nová stránka ke schválení';
+    }
+
+    protected function workflowReviewNotificationBody(Model $record): string
+    {
+        if (! $record instanceof Page) {
+            return 'Stránka čeká na schválení publikace.';
+        }
+
+        return 'Stránka "'.$record->title.'" čeká na schválení publikace.';
+    }
+
+    protected function workflowPreviewRouteName(): string
+    {
+        return 'preview.page';
+    }
+
+    protected function workflowPreviewRouteParameterName(): string
+    {
+        return 'page';
+    }
+
+    protected function workflowEditUrl(Model $record): string
+    {
+        return PageResource::getUrl('edit', ['record' => $record]);
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
@@ -137,5 +212,38 @@ class EditPage extends EditRecord
             $record,
             data_get($data, 'parent_id'),
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function shouldPrepareWorkflowData(array $data): bool
+    {
+        $mountedActionName = $this->getMountedAction()?->getName();
+
+        $containsWorkflowFields = array_key_exists('status', $data)
+            || array_key_exists('published_at', $data)
+            || array_key_exists('scheduled_at', $data);
+
+        if (! $containsWorkflowFields) {
+            return false;
+        }
+
+        if ($mountedActionName === null) {
+            return true;
+        }
+
+        return $mountedActionName === $this->workflowUpdateActionName();
+    }
+
+    private function shouldProcessStatusChange(): bool
+    {
+        $mountedActionName = $this->getMountedAction()?->getName();
+
+        if ($mountedActionName === null) {
+            return true;
+        }
+
+        return $mountedActionName === $this->workflowUpdateActionName();
     }
 }

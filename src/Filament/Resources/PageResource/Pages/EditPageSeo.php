@@ -5,14 +5,10 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Filament\Schemas\Schema;
-use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\PageResource\Schemas\PageSeoForm;
-use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditPageSeo extends EditPage
 {
-    use UsesCurrentPageSubNavigation;
-
     protected static ?string $title = 'SEO';
 
     protected static ?string $breadcrumb = 'SEO';
@@ -24,18 +20,5 @@ class EditPageSeo extends EditPage
     public function form(Schema $schema): Schema
     {
         return PageSeoForm::configure($schema);
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeSave(array $data): array
-    {
-        if ($this->workflowIntent === 'review') {
-            $data = app(WorkflowTransitionService::class)->prepareReviewData($data);
-        }
-
-        return $data;
     }
 }

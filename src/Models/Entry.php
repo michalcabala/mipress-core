@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace MiPress\Core\Models;
 
 use App\Models\User;
+use Awcodes\Curator\Models\Media;
 use Awcodes\Mason\Support\MasonRenderer;
-use Blendbyte\FilamentResourceLock\Models\Concerns\HasLocks;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
@@ -28,7 +27,7 @@ use Spatie\Sluggable\SlugOptions;
 
 class Entry extends Model
 {
-    use Auditable, HasFactory, HasLocks, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
+    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
 
     protected $table = 'entries';
 
@@ -168,12 +167,12 @@ class Entry extends Model
 
     public function featuredImage(): BelongsTo
     {
-        return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'featured_image_id');
+        return $this->belongsTo(Media::class, 'featured_image_id');
     }
 
     public function ogImage(): BelongsTo
     {
-        return $this->belongsTo(\Awcodes\Curator\Models\Media::class, 'og_image_id');
+        return $this->belongsTo(Media::class, 'og_image_id');
     }
 
     public function terms(): BelongsToMany

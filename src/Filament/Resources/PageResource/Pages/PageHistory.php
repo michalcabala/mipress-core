@@ -75,6 +75,17 @@ class PageHistory extends ManageRelatedRecords
             : 'K dispozici je '.$revisionCount.' uložených verzí. Kliknutím na řádek otevřete detail změn, případně můžete starší verzi obnovit.';
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function getSubNavigationParameters(): array
+    {
+        return [
+            ...parent::getSubNavigationParameters(),
+            'currentPageClass' => static::class,
+        ];
+    }
+
     public function table(Table $table): Table
     {
         return $this->configureRevisionTable($table);

@@ -4,13 +4,11 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
-use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
-use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\AuditLog;
@@ -22,10 +20,8 @@ use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditEntry extends EditRecord
 {
+    use HandlesWorkflowValidationErrors;
     use HasContextualCrudNotifications;
-    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, UsesResourceLock {
-        HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
-    }
     use UsesCurrentPageSubNavigation;
 
     protected static string $resource = EntryResource::class;
@@ -62,6 +58,17 @@ class EditEntry extends EditRecord
         return static::$resource::getUrl('index', [
             'collection' => $collection?->handle,
         ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getSubNavigationParameters(): array
+    {
+        return [
+            ...parent::getSubNavigationParameters(),
+            'currentPageClass' => static::class,
+        ];
     }
 
     /**

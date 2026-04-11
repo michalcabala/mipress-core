@@ -16,17 +16,22 @@ trait UsesCurrentPageSubNavigation
      */
     public static function getNavigationItems(array $urlParameters = []): array
     {
+        $navigationUrlParameters = $urlParameters;
+        $isCurrentPageClass = ($urlParameters['currentPageClass'] ?? null) === static::class;
+
+        unset($navigationUrlParameters['currentPageClass']);
+
         return [
             NavigationItem::make(static::getNavigationLabel())
                 ->group(static::getNavigationGroup())
                 ->parentItem(static::getNavigationParentItem())
                 ->icon(static::getNavigationIcon())
                 ->activeIcon(static::getActiveNavigationIcon())
-                ->isActiveWhen(fn (): bool => static::isCurrentSubNavigationRoute())
+                ->isActiveWhen(fn (): bool => $isCurrentPageClass || static::isCurrentSubNavigationRoute())
                 ->sort(static::getNavigationSort())
                 ->badge(static::getSubNavigationBadge($urlParameters), color: static::getNavigationBadgeColor())
                 ->badgeTooltip(static::getNavigationBadgeTooltip())
-                ->url(static::getNavigationUrl($urlParameters)),
+                ->url(static::getNavigationUrl($navigationUrlParameters)),
         ];
     }
 
@@ -40,13 +45,6 @@ trait UsesCurrentPageSubNavigation
 
     protected static function isCurrentSubNavigationRoute(): bool
     {
-        $currentRequest = request();
-        $currentRouteName = $currentRequest->route()?->getName();
-
-        if (is_string($currentRouteName) && ! str_starts_with($currentRouteName, 'livewire.')) {
-            return $currentRequest->routeIs(static::getNavigationItemActiveRoutePattern());
-        }
-
         return original_request()->routeIs(static::getNavigationItemActiveRoutePattern());
     }
 }

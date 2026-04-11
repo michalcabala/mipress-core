@@ -23,6 +23,8 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\IconSize;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
@@ -373,16 +375,47 @@ class PageForm
      */
     private static function getParentOptions(?Page $record): array
     {
-        $query = Page::query()->orderBy('title');
+        $locale = $record?->locale;
+
+        $query = Page::query()
+            ->orderBy('title')
+            ->when(
+                filled($locale),
+                fn (Builder $builder): Builder => $builder->where('locale', $locale),
+            );
 
         if ($record instanceof Page) {
             $query->whereKeyNot($record->getKey());
         }
 
-        return $query
-            ->get(['id', 'title'])
-            ->pluck('title', 'id')
-            ->all();
+        $pages = $query
+            ->get(['id', 'title', 'parent_id'])
+            ->groupBy(fn (Page $page): string => (string) ($page->parent_id ?? 0));
+
+        return self::flattenParentOptions($pages);
+    }
+
+    /**
+     * @param  Collection<string, Collection<int, Page>>  $groupedPages
+     * @param  array<int, string>  $options
+     * @return array<int, string>
+     */
+    private static function flattenParentOptions(
+        Collection $groupedPages,
+        int $parentId = 0,
+        int $depth = 0,
+        array $options = [],
+    ): array {
+        /** @var Collection<int, Page> $children */
+        $children = $groupedPages->get((string) $parentId, collect());
+
+        foreach ($children as $child) {
+            $prefix = $depth > 0 ? str_repeat('— ', $depth) : '';
+            $options[(int) $child->getKey()] = $prefix.$child->title;
+            $options = self::flattenParentOptions($groupedPages, (int) $child->getKey(), $depth + 1, $options);
+        }
+
+        return $options;
     }
 
     private static function formatPublicationDate(Page $record): string

@@ -8,16 +8,17 @@ use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use MiPress\Core\Filament\Resources\Concerns\HasRecordStateTabs;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
 use MiPress\Core\Models\Collection;
-use MiPress\Core\Models\Entry;
 
 class ListEntries extends ListRecords
 {
-    use HasRecordStateTabs;
+    public string $collectionHandle = '';
+
+    private bool $hasResolvedCollection = false;
+
+    private ?Collection $resolvedCollection = null;
 
     protected static string $resource = EntryResource::class;
 
@@ -25,17 +26,6 @@ class ListEntries extends ListRecords
     {
         return [];
     }
-
-    protected function getTableQuery(): Builder
-    {
-        return parent::getTableQuery()->with('resourceLock');
-    }
-
-    public string $collectionHandle = '';
-
-    private bool $hasResolvedCollection = false;
-
-    private ?Collection $resolvedCollection = null;
 
     public function mount(?string $collection = null): void
     {
@@ -53,11 +43,18 @@ class ListEntries extends ListRecords
         parent::mount();
     }
 
+    protected function getTableQuery(): Builder
+    {
+        return parent::getTableQuery();
+    }
+
     public function table(Table $table): Table
     {
         $collection = $this->resolveCollection();
+        $suffix = filled($this->collectionHandle) ? str($this->collectionHandle)->studly()->toString() : 'Index';
 
         return EntriesTable::table($table, $collection)
+            ->queryStringIdentifier('entries'.$suffix)
             ->modifyQueryUsing(function (Builder $query): void {
                 $resolvedCollection = $this->resolveCollection();
 
@@ -81,17 +78,7 @@ class ListEntries extends ListRecords
 
     public function getTitle(): string
     {
-        return $this->resolveCollection()?->name ?? 'Položky';
-    }
-
-    protected function getRecordStateTabsBaseQuery(): Builder
-    {
-        return Entry::query()
-            ->withoutGlobalScopes([SoftDeletingScope::class])
-            ->when(
-                $this->resolveCollection(),
-                fn (Builder $query, Collection $collection): Builder => $query->where('collection_id', $collection->id),
-            );
+        return $this->resolveCollection()?->name ?? 'PoloĹľky';
     }
 
     private function resolveCollection(): ?Collection
