@@ -10,6 +10,21 @@ use Illuminate\Support\Collection;
 
 class UserFieldRenderer
 {
+    /**
+     * @param  iterable<int, User>  $users
+     * @return array<int, string>
+     */
+    public static function mapUsersToOptionLabels(iterable $users): array
+    {
+        return collect($users)
+            ->filter(fn (mixed $user): bool => $user instanceof User)
+            ->sortBy(fn (User $user): string => mb_strtolower((string) filament()->getUserName($user)))
+            ->mapWithKeys(fn (User $user): array => [
+                (int) $user->getKey() => static::renderOption($user),
+            ])
+            ->all();
+    }
+
     public static function renderOption(mixed $user): string
     {
         $resolvedUser = static::resolveUser($user);

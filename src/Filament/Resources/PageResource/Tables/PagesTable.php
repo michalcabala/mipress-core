@@ -24,7 +24,9 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\Filament\Tables\Columns\UserColumn;
+use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
 
@@ -99,7 +101,7 @@ class PagesTable
                 SelectFilter::make('status')
                     ->label('Stav')
                     ->options(EntryStatus::class),
-                SelectFilter::make('author_id')
+                UserSelectFilter::make('author_id')
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions())
                     ->searchable(),
@@ -237,11 +239,12 @@ class PagesTable
             return [];
         }
 
-        return User::query()
+        $authors = User::query()
             ->whereIn('id', $authorIds)
             ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
+            ->get();
+
+        return UserFieldRenderer::mapUsersToOptionLabels($authors);
     }
 
     /**

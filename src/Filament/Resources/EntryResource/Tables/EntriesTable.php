@@ -28,6 +28,8 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Tables\Columns\UserColumn;
+use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
+use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
@@ -96,7 +98,7 @@ class EntriesTable
                 SelectFilter::make('status')
                     ->label('Stav')
                     ->options(EntryStatus::class),
-                SelectFilter::make('author_id')
+                UserSelectFilter::make('author_id')
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions($currentCollection))
                     ->searchable(),
@@ -163,11 +165,12 @@ class EntriesTable
             return [];
         }
 
-        return User::query()
+        $authors = User::query()
             ->whereIn('id', $authorIds)
             ->orderBy('name')
-            ->pluck('name', 'id')
-            ->all();
+            ->get();
+
+        return UserFieldRenderer::mapUsersToOptionLabels($authors);
     }
 
     /**
