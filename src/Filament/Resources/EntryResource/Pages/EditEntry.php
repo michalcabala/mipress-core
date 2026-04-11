@@ -14,6 +14,7 @@ use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
+use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Services\EntryTaxonomySyncService;
@@ -25,6 +26,7 @@ class EditEntry extends EditRecord
     use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, HasWorkflowActions, UsesResourceLock {
         HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
     }
+    use UsesCurrentPageSubNavigation;
 
     protected static string $resource = EntryResource::class;
 

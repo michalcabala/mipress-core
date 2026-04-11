@@ -14,6 +14,7 @@ use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
+use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Services\HierarchyParentResolver;
@@ -24,6 +25,7 @@ class EditPage extends EditRecord
     use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, HasWorkflowActions, UsesResourceLock {
         HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
     }
+    use UsesCurrentPageSubNavigation;
 
     protected static string $resource = PageResource::class;
 

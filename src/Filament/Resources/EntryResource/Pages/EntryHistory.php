@@ -8,6 +8,7 @@ use Filament\Resources\Pages\ManageRelatedRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Filament\Concerns\ConfiguresRevisionTable;
+use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Revision;
@@ -15,6 +16,7 @@ use MiPress\Core\Models\Revision;
 class EntryHistory extends ManageRelatedRecords
 {
     use ConfiguresRevisionTable;
+    use UsesCurrentPageSubNavigation;
 
     protected static string $resource = EntryResource::class;
 
@@ -28,9 +30,12 @@ class EntryHistory extends ManageRelatedRecords
 
     protected static string|\BackedEnum|null $navigationIcon = 'far-code-compare';
 
-    public static function getNavigationBadge(): ?string
+    /**
+     * @param  array<string, mixed>  $urlParameters
+     */
+    protected static function getSubNavigationBadge(array $urlParameters = []): ?string
     {
-        $record = request()->route('record');
+        $record = $urlParameters['record'] ?? null;
 
         if ($record instanceof Model) {
             $record = $record->getKey();
