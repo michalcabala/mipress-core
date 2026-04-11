@@ -90,7 +90,7 @@ class RevisionDiffPresenter
 
         if ($fieldChanges === [] && $masonComparisons === []) {
             return new HtmlString(
-                '<div class="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">'
+                '<div class="rounded-xl bg-white p-4 text-sm text-gray-600 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:text-gray-300 dark:ring-white/10">'
                 .'Vybrané verze neobsahují žádné rozdíly.'
                 .'</div>',
             );
@@ -99,7 +99,7 @@ class RevisionDiffPresenter
         $changeCount = count($fieldChanges) + collect($masonComparisons)
             ->sum(fn (array $comparison): int => (int) ($comparison['summary']['total'] ?? 0));
 
-        $html = '<div class="space-y-4">'
+        $html = '<div class="space-y-4 text-gray-950 dark:text-white">'
             .'<div class="grid gap-3 md:grid-cols-3">'
             .$this->renderMetaCard('Porovnávané položky', (string) $changeCount, 'Výchozí zobrazení ukazuje jen změněná pole a bloky.')
             .$this->renderMetaCard('Levá verze', $leftLabel, 'Starší nebo referenční revize.')
@@ -289,7 +289,7 @@ class RevisionDiffPresenter
                 return '<tr class="align-top">'
                     .'<td class="px-4 py-3">'
                     .'<p class="text-sm font-medium text-gray-900 dark:text-white">'.e((string) $change['field']).'</p>'
-                    .'<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">'.e((string) $change['path']).'</p>'
+                    .'<p class="mt-1 inline-flex rounded-md bg-gray-100 px-1.5 py-0.5 text-[11px] text-gray-600 dark:bg-white/5 dark:text-gray-400">'.e((string) $change['path']).'</p>'
                     .'</td>'
                     .'<td class="px-4 py-3">'.$this->renderValue($change['old'] ?? null, 'warning').'</td>'
                     .'<td class="px-4 py-3">'.$this->renderValue($change['new'] ?? null, 'success').'</td>'
@@ -297,20 +297,20 @@ class RevisionDiffPresenter
             })
             ->implode('');
 
-        return '<section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">'
-            .'<div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">'
+        return '<section class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">'
+            .'<div class="border-b border-gray-200/90 px-4 py-3 dark:border-white/10">'
             .'<h3 class="text-sm font-semibold text-gray-900 dark:text-white">'.e($sectionName).'</h3>'
             .'</div>'
             .'<div class="overflow-x-auto">'
-            .'<table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">'
-            .'<thead class="bg-gray-50 dark:bg-gray-950/40">'
+            .'<table class="min-w-full divide-y divide-gray-200/90 dark:divide-white/10">'
+            .'<thead class="bg-gray-50/90 dark:bg-white/5">'
             .'<tr>'
             .'<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Pole</th>'
             .'<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-amber-700 dark:text-amber-300">'.e($leftLabel).'</th>'
             .'<th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">'.e($rightLabel).'</th>'
             .'</tr>'
             .'</thead>'
-            .'<tbody class="divide-y divide-gray-100 dark:divide-gray-800">'
+            .'<tbody class="divide-y divide-gray-100/90 dark:divide-white/10">'
             .$rows
             .'</tbody>'
             .'</table>'
@@ -343,12 +343,12 @@ class RevisionDiffPresenter
             ->map(fn (array $change): string => $this->renderMasonChangeCard($change, $leftLabel, $rightLabel))
             ->implode('');
 
-        return '<section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">'
-            .'<div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">'
+        return '<section class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">'
+            .'<div class="border-b border-gray-200/90 px-4 py-3 dark:border-white/10">'
             .'<h3 class="text-sm font-semibold text-gray-900 dark:text-white">'.e($comparison['label']).'</h3>'
             .'<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Rich diff bloků s heuristikou přesunů.</p>'
             .'</div>'
-            .'<div class="grid gap-3 border-b border-gray-200 p-4 md:grid-cols-5 dark:border-gray-800">'
+            .'<div class="grid gap-3 border-b border-gray-200/90 p-4 md:grid-cols-5 dark:border-white/10">'
             .$this->renderMetaCardInline('Změny', (string) $summary['total'])
             .$this->renderMetaCardInline('Přidáno', (string) $summary['added'])
             .$this->renderMetaCardInline('Odebráno', (string) $summary['removed'])
@@ -363,7 +363,7 @@ class RevisionDiffPresenter
 
     private function renderMetaCardInline(string $label, string $value): string
     {
-        return '<div class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-800 dark:bg-gray-950/40">'
+        return '<div class="rounded-lg bg-gray-50 px-3 py-2 ring-1 ring-gray-200/80 dark:bg-white/5 dark:ring-white/10">'
             .'<p class="text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">'.e($label).'</p>'
             .'<p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">'.e($value).'</p>'
             .'</div>';
@@ -376,7 +376,7 @@ class RevisionDiffPresenter
     {
         $badge = $this->renderMasonBadge($change['type'], (bool) ($change['moved'] ?? false));
 
-        return '<article class="rounded-xl border border-gray-200 bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-900">'
+        return '<article class="rounded-xl bg-white p-3 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">'
             .'<div class="mb-3">'.$badge.'</div>'
             .'<div class="grid gap-3 md:grid-cols-2">'
             .$this->renderMasonBlockSide($leftLabel, $change['left'] ?? null, 'warning')
@@ -412,7 +412,7 @@ class RevisionDiffPresenter
     private function renderMasonBlockSide(string $label, ?array $block, string $tone): string
     {
         if ($block === null) {
-            return '<div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-950/40 dark:text-gray-400">'
+            return '<div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3 text-sm text-gray-500 dark:border-white/15 dark:bg-white/5 dark:text-gray-400">'
                 .'<p class="text-xs font-semibold uppercase tracking-wide">'.e($label).'</p>'
                 .'<p class="mt-2">Žádný blok</p>'
                 .'</div>';
@@ -422,7 +422,7 @@ class RevisionDiffPresenter
         $identifier = is_string($block['id'] ?? null) ? ' · ID '.$block['id'] : '';
         $preview = trim((string) ($block['preview'] ?? ''));
 
-        return '<div class="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-800 dark:bg-gray-900">'
+        return '<div class="rounded-lg bg-white p-3 ring-1 ring-gray-200/80 dark:bg-gray-900/80 dark:ring-white/10">'
             .'<p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">'.e($label).'</p>'
             .'<p class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">'.e((string) ($block['type'] ?? 'Blok')).'</p>'
             .'<p class="text-xs text-gray-500 dark:text-gray-400">Pozice #'.e((string) $position).e($identifier).'</p>'
@@ -914,7 +914,7 @@ class RevisionDiffPresenter
 
     private function renderMetaCard(string $label, string $value, string $description): string
     {
-        return '<div class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">'
+        return '<div class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-950/5 dark:bg-gray-900 dark:ring-white/10">'
             .'<p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">'.e($label).'</p>'
             .'<p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">'.e($value).'</p>'
             .'<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">'.e($description).'</p>'
@@ -924,9 +924,9 @@ class RevisionDiffPresenter
     private function renderValue(mixed $value, string $tone): string
     {
         $wrapperClasses = match ($tone) {
-            'warning' => 'border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-500/10',
-            'success' => 'border-emerald-200 bg-emerald-50 dark:border-emerald-900/60 dark:bg-emerald-500/10',
-            default => 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900',
+            'warning' => 'border-amber-200 bg-amber-50 dark:border-amber-500/20 dark:bg-amber-500/10',
+            'success' => 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/20 dark:bg-emerald-500/10',
+            default => 'border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5',
         };
 
         return '<div class="max-w-xl rounded-lg border '.$wrapperClasses.' px-3 py-2 text-sm text-gray-800 dark:text-gray-100">'
@@ -947,7 +947,7 @@ class RevisionDiffPresenter
         if (is_array($value)) {
             $json = json_encode($value, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 
-            return '<pre class="whitespace-pre-wrap wrap-break-word text-xs font-mono leading-5">'.e((string) Str::of($json ?: '[]')->limit(2400)).'</pre>';
+            return '<pre class="whitespace-pre-wrap wrap-break-word text-xs font-mono leading-5 text-gray-700 dark:text-gray-200">'.e((string) Str::of($json ?: '[]')->limit(2400)).'</pre>';
         }
 
         $stringValue = trim((string) $value);

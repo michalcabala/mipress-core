@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Concerns;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -158,12 +159,12 @@ trait ConfiguresRevisionTable
                 ->native(false),
             Placeholder::make('comparison_result')
                 ->label('Rozdíly')
-                ->content(function (\Filament\Schemas\Components\Utilities\Get $get): HtmlString {
+                ->content(function (Get $get): HtmlString {
                     $revisionAId = $get('revision_a');
                     $revisionBId = $get('revision_b');
 
                     if (! $revisionAId || ! $revisionBId) {
-                        return new HtmlString('<p class="text-sm text-gray-500 dark:text-gray-400">Vyberte obě revize k porovnání.</p>');
+                        return new HtmlString('<div class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600 ring-1 ring-gray-200/80 dark:bg-white/5 dark:text-gray-300 dark:ring-white/10">Vyberte obě revize k porovnání.</div>');
                     }
 
                     return $this->buildTwoRevisionDiffHtml((int) $revisionAId, $revisionBId === '__current__' ? null : (int) $revisionBId);
@@ -178,7 +179,7 @@ trait ConfiguresRevisionTable
         $revisionA = Revision::find($revisionAId);
 
         if (! $revisionA) {
-            return new HtmlString('<p class="text-sm text-danger-600">Revize nebyla nalezena.</p>');
+            return new HtmlString('<div class="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 ring-1 ring-danger-200/80 dark:bg-danger-500/10 dark:text-danger-300 dark:ring-danger-500/20">Revize nebyla nalezena.</div>');
         }
 
         $leftData = $revisionA->data ?? [];
@@ -193,7 +194,7 @@ trait ConfiguresRevisionTable
             $revisionB = Revision::find($revisionBId);
 
             if (! $revisionB) {
-                return new HtmlString('<p class="text-sm text-danger-600">Revize nebyla nalezena.</p>');
+                return new HtmlString('<div class="rounded-lg bg-danger-50 px-3 py-2 text-sm text-danger-700 ring-1 ring-danger-200/80 dark:bg-danger-500/10 dark:text-danger-300 dark:ring-danger-500/20">Revize nebyla nalezena.</div>');
             }
 
             $rightData = $revisionB->data ?? [];
