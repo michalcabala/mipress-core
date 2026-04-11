@@ -10,67 +10,116 @@ use MiPress\Core\Enums\EntryStatus;
 
 trait HasRecordStateTabs
 {
+    public function bootedHasRecordStateTabs(): void
+    {
+        if (! $this->syncRecordStateTab()) {
+            return;
+        }
+
+        if (method_exists($this, 'flushCachedTableRecords')) {
+            $this->flushCachedTableRecords();
+        }
+    }
+
     /**
      * @return array<string, Tab>
      */
     public function getTabs(): array
     {
+        $counts = $this->getRecordStateTabCounts();
+
         $tabs = [
             'all' => Tab::make('Celkem')
-                ->badge(fn (): int => $this->getRecordStateTabBadgeQuery()->count())
+                ->icon('far-layer-group')
+                ->badge(fn (): int => $counts['visibleTotal'])
                 ->badgeColor('gray')
-                ->deferBadge()
-                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyVisibleRecordsConstraint($query)),
+                ->deferBadge(),
         ];
 
         foreach (EntryStatus::cases() as $status) {
+            $count = $counts['visibleStatusCounts'][$status->value] ?? 0;
+
+            if ($count < 1) {
+                continue;
+            }
+
             $tabs[$status->value] = Tab::make($status->getLabel())
-                ->badge(fn (): int => $this->getRecordStateTabBadgeQuery($status)->count())
+                ->icon($status->getIcon())
+                ->badge(fn (): int => $count)
                 ->badgeColor($status->getColor())
                 ->deferBadge()
                 ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyStatusConstraint($query, $status));
         }
 
-        $tabs['trashed'] = Tab::make('Koš')
-            ->badge(fn (): int => $this->getTrashedRecordStateTabBadgeQuery()->count())
-            ->badgeColor('danger')
-            ->deferBadge()
-            ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyTrashedRecordsConstraint($query));
+        if ($counts['trashedTotal'] > 0) {
+            $tabs['trashed'] = Tab::make('Koš')
+                ->icon('far-trash-can')
+                ->badge(fn (): int => $counts['trashedTotal'])
+                ->badgeColor('danger')
+                ->deferBadge()
+                ->modifyQueryUsing(fn (Builder $query): Builder => $this->applyTrashedRecordsConstraint($query));
+        }
 
         return $tabs;
     }
 
     abstract protected function getRecordStateTabsBaseQuery(): Builder;
 
-    private function getRecordStateTabBadgeQuery(?EntryStatus $status = null): Builder
+    /**
+     * @return array{visibleTotal: int, visibleStatusCounts: array<string, int>, trashedTotal: int}
+     */
+    private function getRecordStateTabCounts(): array
     {
-        $query = $this->applyVisibleRecordsConstraint(clone $this->getRecordStateTabsBaseQuery());
+        $countRows = (clone $this->getRecordStateTabsBaseQuery())
+            ->toBase()
+            ->selectRaw('status, (deleted_at IS NULL) as is_visible, COUNT(*) as aggregate')
+            ->groupBy('status')
+            ->groupByRaw('(deleted_at IS NULL)')
+            ->get();
 
-        if ($status instanceof EntryStatus) {
-            $query->where('status', $status->value);
-        }
+        $visibleStatusCounts = $countRows
+            ->filter(fn (object $row): bool => (int) $row->is_visible === 1)
+            ->mapWithKeys(fn (object $row): array => [(string) $row->status => (int) $row->aggregate])
+            ->all();
 
-        return $query;
+        return [
+            'visibleTotal' => array_sum($visibleStatusCounts),
+            'visibleStatusCounts' => $visibleStatusCounts,
+            'trashedTotal' => (int) $countRows
+                ->reject(fn (object $row): bool => (int) $row->is_visible === 1)
+                ->sum(fn (object $row): int => (int) $row->aggregate),
+        ];
     }
 
-    private function getTrashedRecordStateTabBadgeQuery(): Builder
+    private function syncRecordStateTab(): bool
     {
-        return $this->applyTrashedRecordsConstraint(clone $this->getRecordStateTabsBaseQuery());
+        $tabs = $this->getTabs();
+        $defaultTab = array_key_first($tabs);
+
+        if ($defaultTab === null) {
+            return false;
+        }
+
+        $normalizedActiveTab = filled($this->activeTab) && array_key_exists($this->activeTab, $tabs)
+            ? $this->activeTab
+            : $defaultTab;
+
+        if ($this->activeTab === $normalizedActiveTab) {
+            return false;
+        }
+
+        $this->activeTab = $normalizedActiveTab;
+
+        return true;
     }
 
     private function applyStatusConstraint(Builder $query, EntryStatus $status): Builder
     {
-        return $this->applyVisibleRecordsConstraint($query)
-            ->where('status', $status->value);
-    }
-
-    private function applyVisibleRecordsConstraint(Builder $query): Builder
-    {
-        return $query->whereNull($query->getModel()->getQualifiedDeletedAtColumn());
+        return $query->where('status', $status->value);
     }
 
     private function applyTrashedRecordsConstraint(Builder $query): Builder
     {
-        return $query->whereNotNull($query->getModel()->getQualifiedDeletedAtColumn());
+        return $query->onlyTrashed();
     }
 }
