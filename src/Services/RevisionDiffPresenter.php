@@ -252,6 +252,7 @@ class RevisionDiffPresenter
 
         $grouped = collect($fieldChanges)
             ->groupBy('section')
+            ->map(fn ($items): array => $items->all())
             ->all();
 
         $orderedSectionNames = [];
