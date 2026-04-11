@@ -134,17 +134,20 @@ class EditSettings extends Page
 
         $state = $this->form->getState();
 
-        $payload = is_array($state['data'] ?? null)
-            ? $state['data']
-            : [];
+        $payload = $this->normalizeSettingsPayload(
+            is_array($state['data'] ?? null)
+                ? $state['data']
+                : [],
+        );
 
-        if ($payload === [] && is_array($this->data)) {
-            $payload = $this->data;
-        }
+        $boundPayload = $this->normalizeSettingsPayload(
+            is_array($this->data)
+                ? $this->data
+                : [],
+        );
 
-        // Blueprint sections currently use statePath('data'), which may nest once more on Page forms.
-        if (is_array($payload['data'] ?? null)) {
-            $payload = $payload['data'];
+        if ($boundPayload !== []) {
+            $payload = array_replace_recursive($payload, $boundPayload);
         }
 
         $setting->data = $payload;
@@ -157,6 +160,35 @@ class EditSettings extends Page
             ->title('Nastavení bylo uloženo')
             ->success()
             ->send();
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function normalizeSettingsPayload(array $payload): array
+    {
+        $normalized = [];
+
+        foreach ($payload as $key => $value) {
+            if (is_array($value)) {
+                $value = $this->normalizeSettingsPayload($value);
+            }
+
+            if (is_string($key) && str_contains($key, '.')) {
+                data_set($normalized, $key, $value);
+
+                continue;
+            }
+
+            $normalized[$key] = $value;
+        }
+
+        while (is_array($normalized['data'] ?? null)) {
+            $normalized = $normalized['data'];
+        }
+
+        return $normalized;
     }
 
     /**

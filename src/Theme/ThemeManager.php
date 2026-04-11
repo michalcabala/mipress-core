@@ -59,7 +59,7 @@ class ThemeManager
 
     public function getActive(): string
     {
-        if ($this->activeTheme !== null) {
+        if ($this->activeTheme !== null && Cache::has(self::CACHE_KEY)) {
             return $this->activeTheme;
         }
 
