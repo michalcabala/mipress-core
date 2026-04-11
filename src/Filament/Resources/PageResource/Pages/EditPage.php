@@ -5,24 +5,23 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
-use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
-use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
-use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\PageResource;
+use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditPage extends EditRecord
 {
-    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, HasWorkflowActions, UsesResourceLock {
+    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, UsesResourceLock {
         HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
     }
     use UsesCurrentPageSubNavigation;
@@ -35,6 +34,18 @@ class EditPage extends EditRecord
 
     protected Width|string|null $maxWidth = Width::Full;
 
+    protected ?EntryStatus $statusBeforeSave = null;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Aktualizovat')
+                ->formId('form'),
+            $this->getCancelFormAction(),
+        ];
+    }
+
     protected function getFormActions(): array
     {
         return [];
@@ -45,6 +56,7 @@ class EditPage extends EditRecord
         return Action::make('cancel')
             ->label('Zrušit')
             ->color('gray')
+            ->icon('far-xmark')
             ->url($this->getRedirectUrl());
     }
 
@@ -62,6 +74,10 @@ class EditPage extends EditRecord
         $record = $this->getRecord();
         $user = auth()->user();
 
+        if ($record instanceof Page) {
+            $this->statusBeforeSave = $record->status;
+        }
+
         if (
             $record instanceof Page
             && $user?->hasRole('contributor')
@@ -73,11 +89,43 @@ class EditPage extends EditRecord
 
         $data['parent_id'] = $this->resolveParentId($data);
 
-        if ($this->workflowIntent === 'review') {
-            $data = app(WorkflowTransitionService::class)->prepareReviewData($data);
+        return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
+            $data,
+            canPublish: (bool) $user?->can('publish', $record),
+            currentStatus: $record instanceof Page ? $record->status : null,
+        );
+    }
+
+    protected function afterSave(): void
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Page) {
+            return;
         }
 
-        return $data;
+        if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
+            AuditLog::logStatusChange(
+                $record,
+                $record->status,
+                $this->statusBeforeSave,
+                $record->status === EntryStatus::Rejected ? $record->review_note : null,
+            );
+
+            if ($record->status === EntryStatus::InReview) {
+                app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
+                    record: $record,
+                    permission: 'entry.publish',
+                    title: 'Nová stránka ke schválení',
+                    body: 'Stránka "'.$record->title.'" čeká na schválení publikace.',
+                    editUrl: PageResource::getUrl('edit', ['record' => $record]),
+                    previewRouteName: 'preview.page',
+                    previewRouteParameterName: 'page',
+                );
+            }
+        }
+
+        $this->statusBeforeSave = $record->status;
     }
 
     /**
@@ -95,73 +143,5 @@ class EditPage extends EditRecord
             $record,
             data_get($data, 'parent_id'),
         );
-    }
-
-    protected function workflowRecordClass(): string
-    {
-        return Page::class;
-    }
-
-    protected function workflowPublishActionName(): string
-    {
-        return 'publishPage';
-    }
-
-    protected function workflowRejectActionName(): string
-    {
-        return 'rejectPage';
-    }
-
-    protected function workflowUpdateActionName(): string
-    {
-        return 'updatePage';
-    }
-
-    protected function workflowPublishedNotificationTitle(): string
-    {
-        return 'Stránka publikována';
-    }
-
-    protected function workflowRejectedNotificationTitle(): string
-    {
-        return 'Stránka zamítnuta';
-    }
-
-    protected function workflowScheduledNotificationBody(CarbonInterface $scheduleAt): string
-    {
-        return 'Stránka bude automaticky publikována '.$scheduleAt->format('j. n. Y H:i').'.';
-    }
-
-    protected function workflowReviewNotificationTitle(): string
-    {
-        return 'Nová stránka ke schválení';
-    }
-
-    protected function workflowReviewNotificationBody(Model $record): string
-    {
-        if (! $record instanceof Page) {
-            return 'Stránka čeká na schválení publikace.';
-        }
-
-        return 'Stránka "'.$record->title.'" čeká na schválení publikace.';
-    }
-
-    protected function workflowPreviewRouteName(): string
-    {
-        return 'preview.page';
-    }
-
-    protected function workflowPreviewRouteParameterName(): string
-    {
-        return 'page';
-    }
-
-    protected function workflowEditUrl(Model $record): string
-    {
-        if (! $record instanceof Page) {
-            return PageResource::getUrl('index');
-        }
-
-        return PageResource::getUrl('edit', ['record' => $record]);
     }
 }

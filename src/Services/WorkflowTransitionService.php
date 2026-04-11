@@ -15,6 +15,32 @@ class WorkflowTransitionService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
+    public function prepareFormDataForStatus(array $data, bool $canPublish, ?EntryStatus $currentStatus = null): array
+    {
+        $selectedStatus = $this->normalizeStatus(data_get($data, 'status')) ?? $currentStatus ?? EntryStatus::Draft;
+
+        if (! $canPublish) {
+            if (in_array($currentStatus, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
+                return $this->prepareReviewData($data);
+            }
+
+            return $selectedStatus === EntryStatus::InReview
+                ? $this->prepareCreateReviewData($data)
+                : $this->prepareDraftData($data);
+        }
+
+        return match ($selectedStatus) {
+            EntryStatus::Published, EntryStatus::Scheduled => $this->preparePublishData($data),
+            EntryStatus::InReview => $this->prepareCreateReviewData($data),
+            EntryStatus::Rejected => $this->prepareRejectedData($data),
+            default => $this->prepareDraftData($data),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     public function prepareCreateDataForIntent(array $data, string $intent): array
     {
         $data['review_note'] = null;
@@ -134,6 +160,19 @@ class WorkflowTransitionService
     private function prepareDraftData(array $data): array
     {
         $data['status'] = EntryStatus::Draft;
+        $data['review_note'] = null;
+
+        return $data;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function prepareRejectedData(array $data): array
+    {
+        $data['status'] = EntryStatus::Rejected;
+        $data['scheduled_at'] = null;
 
         return $data;
     }
@@ -186,5 +225,18 @@ class WorkflowTransitionService
         }
 
         return Carbon::parse($value);
+    }
+
+    private function normalizeStatus(mixed $value): ?EntryStatus
+    {
+        if ($value instanceof EntryStatus) {
+            return $value;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return EntryStatus::tryFrom($value);
     }
 }

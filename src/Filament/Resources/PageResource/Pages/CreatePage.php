@@ -4,19 +4,34 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
+use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Resources\Concerns\HasCreateWorkflowActions;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\WorkflowNotificationService;
+use MiPress\Core\Services\WorkflowTransitionService;
 
 class CreatePage extends CreateRecord
 {
-    use HasCreateWorkflowActions;
-
     protected static string $resource = PageResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                ->label('Uložit')
+                ->formId('form'),
+            $this->getCancelAction(),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [];
+    }
 
     protected function getRedirectUrl(): string
     {
@@ -37,7 +52,10 @@ class CreatePage extends CreateRecord
 
         $data['parent_id'] = $this->resolveParentId($data);
 
-        return $this->workflowTransitions()->prepareCreateDataForIntent($data, $this->workflowCreateIntent());
+        return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
+            $data,
+            canPublish: (bool) auth()->user()?->hasPermissionTo('entry.publish'),
+        );
     }
 
     /**
@@ -63,7 +81,7 @@ class CreatePage extends CreateRecord
             return;
         }
 
-        $this->workflowNotifications()->sendReviewRequestedDatabaseNotifications(
+        app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
             record: $record,
             permission: 'entry.publish',
             title: 'Nová stránka ke schválení',
@@ -72,5 +90,14 @@ class CreatePage extends CreateRecord
             previewRouteName: 'preview.page',
             previewRouteParameterName: 'page',
         );
+    }
+
+    private function getCancelAction(): Action
+    {
+        return Action::make('cancel')
+            ->label('Zrušit')
+            ->color('gray')
+            ->icon('far-xmark')
+            ->url($this->getRedirectUrl());
     }
 }

@@ -4,19 +4,19 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
+use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Resources\Concerns\HasCreateWorkflowActions;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Services\EntryTaxonomySyncService;
 use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\WorkflowNotificationService;
+use MiPress\Core\Services\WorkflowTransitionService;
 
 class CreateEntry extends CreateRecord
 {
-    use HasCreateWorkflowActions;
-
     protected static string $resource = EntryResource::class;
 
     public string $collectionHandle = '';
@@ -28,6 +28,21 @@ class CreateEntry extends CreateRecord
         }
 
         parent::mount();
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getCreateFormAction()
+                ->label('Uložit')
+                ->formId('form'),
+            $this->getCancelAction(),
+        ];
+    }
+
+    protected function getFormActions(): array
+    {
+        return [];
     }
 
     protected function getRedirectUrl(): string
@@ -55,7 +70,10 @@ class CreateEntry extends CreateRecord
 
         $data['parent_id'] = $this->resolveParentId($data, $collection);
 
-        return $this->workflowTransitions()->prepareCreateDataForIntent($data, $this->workflowCreateIntent());
+        return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
+            $data,
+            canPublish: (bool) auth()->user()?->hasPermissionTo('entry.publish'),
+        );
     }
 
     /**
@@ -88,7 +106,7 @@ class CreateEntry extends CreateRecord
             return;
         }
 
-        $this->workflowNotifications()->sendReviewRequestedDatabaseNotifications(
+        app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
             record: $record,
             permission: 'entry.publish',
             title: 'Nový obsah ke schválení',
@@ -111,5 +129,14 @@ class CreateEntry extends CreateRecord
         }
 
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
+    }
+
+    private function getCancelAction(): Action
+    {
+        return Action::make('cancel')
+            ->label('Zrušit')
+            ->color('gray')
+            ->icon('far-xmark')
+            ->url($this->getRedirectUrl());
     }
 }

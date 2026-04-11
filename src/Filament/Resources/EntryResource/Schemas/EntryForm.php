@@ -14,6 +14,7 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -89,8 +90,7 @@ class EntryForm
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 3])
                         ->schema([
-                            Section::make('Obsah')
-                                ->icon('fal-file-lines')
+                            Section::make('Základ')
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('title')
@@ -117,6 +117,11 @@ class EntryForm
                                             ->helperText('Používá se v URL této položky.')
                                             ->rules(['alpha_dash']),
                                     ]),
+                                ]),
+
+                            Section::make('Obsah')
+                                ->icon('fal-file-lines')
+                                ->schema([
                                     Mason::make('data.content')
                                         ->label('Obsah')
                                         ->bricks(EditorialBrickCollection::make())
@@ -137,123 +142,64 @@ class EntryForm
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 1])
                         ->schema([
-                            Section::make('Workflow')
-                                ->visible(false)
+                            Section::make('Publikace')
+                                ->icon('fal-calendar')
                                 ->schema([
-                                    Actions::make([
-                                        Action::make('saveAndPublish')
-                                            ->label('Uložit a publikovat')
-                                            ->icon(EntryStatus::Published->getIcon())
-                                            ->color(EntryStatus::Published->getColor())
-                                            ->visible(fn (): bool => (bool) auth()->user()?->can('entry.publish'))
-                                            ->requiresConfirmation()
-                                            ->action(function (EditRecord $livewire, Entry $record): void {
-                                                $livewire->save(false, false);
-
-                                                $record->refresh();
-                                                $oldStatus = $record->status;
-                                                $record->status = EntryStatus::Published;
-                                                $record->published_at ??= now();
-                                                $record->review_note = null;
-                                                $record->save();
-
-                                                AuditLog::logStatusChange($record, EntryStatus::Published, $oldStatus);
-                                                Notification::make()->title('Položka publikována')->success()->send();
-                                            }),
-
-                                        Action::make('saveDraft')
-                                            ->label('Uložit koncept')
-                                            ->icon(EntryStatus::Draft->getIcon())
-                                            ->color(EntryStatus::Draft->getColor())
-                                            ->visible(fn (): bool => ! auth()->user()?->can('entry.publish'))
-                                            ->action(function (EditRecord $livewire, Entry $record): void {
-                                                $livewire->save(false, false);
-
-                                                $record->refresh();
-                                                $oldStatus = $record->status;
-                                                $record->status = EntryStatus::Draft;
-                                                $record->save();
-
-                                                AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
-                                                Notification::make()->title('Koncept uložen')->success()->send();
-                                            }),
-
-                                        Action::make('submitForReview')
-                                            ->label('Odeslat ke schválení')
-                                            ->icon(EntryStatus::InReview->getIcon())
-                                            ->color(EntryStatus::InReview->getColor())
-                                            ->visible(fn (Entry $record): bool => in_array($record->status, [EntryStatus::Draft, EntryStatus::Rejected], true)
-                                                && ! auth()->user()?->can('entry.publish'))
-                                            ->requiresConfirmation()
-                                            ->action(function (EditRecord $livewire, Entry $record): void {
-                                                $livewire->save(false, false);
-
-                                                $record->refresh();
-                                                $oldStatus = $record->status;
-                                                $record->status = EntryStatus::InReview;
-                                                $record->save();
-
-                                                AuditLog::logStatusChange($record, EntryStatus::InReview, $oldStatus);
-                                                Notification::make()->title('Odesláno ke schválení')->success()->send();
-                                            }),
-                                    ])->fullWidth(),
+                                    self::makePublicationStatusField($record),
+                                    DateTimePicker::make('published_at')
+                                        ->label('Datum publikace')
+                                        ->nullable()
+                                        ->disabled(fn (): bool => ! self::canPublish($record))
+                                        ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
+                                    Select::make('author_id')
+                                        ->label('Autor')
+                                        ->relationship('author', 'name')
+                                        ->searchable()
+                                        ->preload()
+                                        ->native(false)
+                                        ->required()
+                                        ->default(fn () => auth()->id()),
+                                    TextInput::make('sort_order')
+                                        ->label('Pořadí')
+                                        ->numeric()
+                                        ->default(0),
+                                    Select::make('parent_id')
+                                        ->label('Nadřazená položka')
+                                        ->options(fn (): array => self::getParentOptions($collection, $record))
+                                        ->searchable()
+                                        ->preload()
+                                        ->native(false)
+                                        ->nullable()
+                                        ->visible(fn (): bool => self::supportsHierarchy($collection, $record))
+                                        ->helperText('Použijte pro podstránky v hierarchických sekcích.'),
                                 ]),
+
+                            Section::make('Hlavní obrázek')
+                                ->icon('fal-image')
+                                ->schema([
+                                    CuratorPicker::make('featured_image_id')
+                                        ->relationship('featuredImage', 'id')
+                                        ->label('')
+                                        ->nullable(),
+                                ]),
+
+                            ...self::buildTaxonomySections($collection, $record),
 
                             Section::make('Stav')
                                 ->visible($isEdit)
                                 ->schema([
                                     TextEntry::make('status_badge')
-                                        ->label('Aktuální stav')
+                                        ->label('Stav publikace')
                                         ->state(fn (Entry $record): HtmlString => self::renderStatusBadge($record->status)),
 
-                                    TextEntry::make('published_status_at')
-                                        ->label('Datum publikování')
-                                        ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Published && filled($record->published_at))
-                                        ->state(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
+                                    TextEntry::make('status_meta')
+                                        ->label('Detail stavu')
+                                        ->visible(fn (Entry $record): bool => self::renderStatusMeta($record) !== '')
+                                        ->state(fn (Entry $record): HtmlString => new HtmlString(self::renderStatusMeta($record))),
 
-                                    TextEntry::make('review_note_notice')
-                                        ->label('Důvod zamítnutí')
-                                        ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Rejected && filled($record->review_note))
-                                        ->state(fn (Entry $record): string => $record->review_note ?? ''),
-
-                                    Actions::make([
-                                        Action::make('unpublish')
-                                            ->label('Unpublish')
-                                            ->icon(EntryStatus::Draft->getIcon())
-                                            ->color(EntryStatus::Draft->getColor())
-                                            ->visible(fn (Entry $record): bool => $record->status === EntryStatus::Published)
-                                            ->requiresConfirmation()
-                                            ->action(function (Entry $record): void {
-                                                $oldStatus = $record->status;
-                                                $record->status = EntryStatus::Draft;
-                                                $record->save();
-
-                                                AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
-                                                Notification::make()->title('Položka vrácena do konceptu')->success()->send();
-                                            }),
-
-                                        Action::make('reject')
-                                            ->label('Zamítnout')
-                                            ->icon(EntryStatus::Rejected->getIcon())
-                                            ->color(EntryStatus::Rejected->getColor())
-                                            ->visible(fn (Entry $record): bool => $record->status === EntryStatus::InReview
-                                                && auth()->user()?->can('entry.publish'))
-                                            ->schema([
-                                                Textarea::make('reason')
-                                                    ->label('Důvod zamítnutí')
-                                                    ->required()
-                                                    ->rows(3),
-                                            ])
-                                            ->action(function (array $data, Entry $record): void {
-                                                $oldStatus = $record->status;
-                                                $record->status = EntryStatus::Rejected;
-                                                $record->review_note = $data['reason'];
-                                                $record->save();
-
-                                                AuditLog::logStatusChange($record, EntryStatus::Rejected, $oldStatus, $data['reason']);
-                                                Notification::make()->title('Položka zamítnuta')->warning()->send();
-                                            }),
-                                    ])->fullWidth()->visible(false),
+                                    TextEntry::make('published_info')
+                                        ->label('Datum publikace')
+                                        ->state(fn (Entry $record): string => self::formatPublicationDate($record)),
 
                                     Actions::make([
                                         Action::make('moveToTrash')
@@ -302,13 +248,11 @@ class EntryForm
                                                 $copy->save();
 
                                                 Notification::make()->title('Kopie vytvořena')->success()->send();
-                                                $livewire->redirect(EntryResource::getUrl('edit', ['record' => $copy]));
+                                                $livewire->redirect(EntryResource::getUrl('edit', [
+                                                    'record' => $copy,
+                                                    'collection' => $copy->collection?->handle,
+                                                ]));
                                             }),
-
-                                        Action::make('history')
-                                            ->label('Revize')
-                                            ->icon('far-code-compare')
-                                            ->url(fn (Entry $record): string => EntryResource::getUrl('history', ['record' => $record])),
                                     ])->fullWidth(),
                                 ]),
 
@@ -327,54 +271,6 @@ class EntryForm
                                     TextEntry::make('published_info')
                                         ->label('Publikováno')
                                         ->state(fn (Entry $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
-                                ]),
-
-                            Section::make('Hlavní obrázek')
-                                ->icon('fal-image')
-                                ->schema([
-                                    CuratorPicker::make('featured_image_id')
-                                        ->relationship('featuredImage', 'id')
-                                        ->label('')
-                                        ->nullable(),
-                                ]),
-
-                            ...self::buildTaxonomySections($collection, $record),
-
-                            Section::make('Nastavení')
-                                ->icon('fal-gear')
-                                ->schema([
-                                    Select::make('parent_id')
-                                        ->label('Nadřazená položka')
-                                        ->options(fn (): array => self::getParentOptions($collection, $record))
-                                        ->searchable()
-                                        ->preload()
-                                        ->native(false)
-                                        ->nullable()
-                                        ->visible(fn (): bool => self::supportsHierarchy($collection, $record))
-                                        ->helperText('Použijte pro podstránky v hierarchických sekcích.'),
-                                    DateTimePicker::make('published_at')
-                                        ->label('Datum publikování')
-                                        ->nullable()
-                                        ->visible(fn (): bool => true)
-                                        ->disabled(fn (): bool => ! ((bool) auth()->user()?->can('entry.publish')))
-                                        ->helperText('Prázdné = publikovat ihned, budoucnost = naplánovat publikaci.'),
-                                    DateTimePicker::make('scheduled_at')
-                                        ->label('Naplánovat na')
-                                        ->nullable()
-                                        ->helperText('Datum a čas automatického zveřejnění.')
-                                        ->visible(fn (): bool => (bool) auth()->user()?->can('entry.publish')),
-                                    Select::make('author_id')
-                                        ->label('Autor')
-                                        ->relationship('author', 'name')
-                                        ->searchable()
-                                        ->preload()
-                                        ->native(false)
-                                        ->required()
-                                        ->default(fn () => auth()->id()),
-                                    TextInput::make('sort_order')
-                                        ->label('Pořadí')
-                                        ->numeric()
-                                        ->default(0),
                                 ]),
                         ]),
                 ]);
@@ -405,6 +301,98 @@ class EntryForm
         }
 
         return EntryResource::getCurrentCollection();
+    }
+
+    private static function makePublicationStatusField(?Entry $record): ToggleButtons
+    {
+        return ToggleButtons::make('status')
+            ->label('Stav publikování')
+            ->options(self::getPublicationStatusOptions($record))
+            ->colors(self::getPublicationStatusColors())
+            ->icons(self::getPublicationStatusIcons())
+            ->grouped()
+            ->inline()
+            ->required()
+            ->default(EntryStatus::Draft->value)
+            ->helperText(self::publicationStatusHelperText($record));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function getPublicationStatusOptions(?Entry $record): array
+    {
+        return collect(self::getVisiblePublicationStatuses($record))
+            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getLabel()])
+            ->all();
+    }
+
+    /**
+     * @return array<int, EntryStatus>
+     */
+    private static function getVisiblePublicationStatuses(?Entry $record): array
+    {
+        if (self::canPublish($record)) {
+            return EntryStatus::cases();
+        }
+
+        if (! $record instanceof Entry) {
+            return [EntryStatus::Draft, EntryStatus::InReview];
+        }
+
+        return match ($record->status) {
+            EntryStatus::Published, EntryStatus::Scheduled => [$record->status, EntryStatus::InReview],
+            EntryStatus::Rejected => [$record->status, EntryStatus::Draft, EntryStatus::InReview],
+            default => [EntryStatus::Draft, EntryStatus::InReview],
+        };
+    }
+
+    /**
+     * @return array<string, string|array|null>
+     */
+    private static function getPublicationStatusColors(): array
+    {
+        return collect(EntryStatus::cases())
+            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getColor()])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private static function getPublicationStatusIcons(): array
+    {
+        return collect(EntryStatus::cases())
+            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getIcon()])
+            ->all();
+    }
+
+    private static function publicationStatusHelperText(?Entry $record): string
+    {
+        if (self::canPublish($record)) {
+            return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
+        }
+
+        if ($record instanceof Entry && in_array($record->status, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
+            return 'Po uložení budou změny odeslány ke schválení.';
+        }
+
+        return 'Vyberte, zda obsah uložit jako koncept nebo odeslat ke schválení.';
+    }
+
+    private static function canPublish(?Entry $record): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($record instanceof Entry) {
+            return $user->can('publish', $record);
+        }
+
+        return $user->hasPermissionTo('entry.publish');
     }
 
     private static function supportsHierarchy(?Collection $collection, ?Entry $record): bool
@@ -445,17 +433,11 @@ class EntryForm
             ->all();
     }
 
-    private static function renderStatusOverview(Entry $record): HtmlString
+    private static function formatPublicationDate(Entry $record): string
     {
-        $badge = self::renderStatusBadge($record->status)->toHtml();
-        $meta = self::renderStatusMeta($record);
+        $publicationAt = $record->scheduled_at ?? $record->published_at;
 
-        return new HtmlString(
-            '<div style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;">'
-            .$badge
-            .'<div style="font-size:14px;line-height:1.5;color:#374151;">'.$meta.'</div>'
-            .'</div>'
-        );
+        return $publicationAt?->format('j. n. Y H:i') ?? '—';
     }
 
     private static function renderStatusBadge(EntryStatus $status): HtmlString

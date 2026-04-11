@@ -5,25 +5,24 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
-use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
-use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
-use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Services\EntryTaxonomySyncService;
 use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditEntry extends EditRecord
 {
-    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, HasWorkflowActions, UsesResourceLock {
+    use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, UsesResourceLock {
         HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
     }
     use UsesCurrentPageSubNavigation;
@@ -36,6 +35,18 @@ class EditEntry extends EditRecord
 
     protected Width|string|null $maxWidth = Width::Full;
 
+    protected ?EntryStatus $statusBeforeSave = null;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            $this->getSaveFormAction()
+                ->label('Aktualizovat')
+                ->formId('form'),
+            $this->getCancelFormAction(),
+        ];
+    }
+
     protected function getFormActions(): array
     {
         return [];
@@ -46,6 +57,7 @@ class EditEntry extends EditRecord
         return Action::make('cancel')
             ->label('Zrušit')
             ->color('gray')
+            ->icon('far-xmark')
             ->url($this->getRedirectUrl());
     }
 
@@ -67,6 +79,10 @@ class EditEntry extends EditRecord
         $record = $this->getRecord();
         $user = auth()->user();
 
+        if ($record instanceof Entry) {
+            $this->statusBeforeSave = $record->status;
+        }
+
         if (
             $record instanceof Entry
             && $user?->hasRole('contributor')
@@ -78,11 +94,11 @@ class EditEntry extends EditRecord
 
         $data['parent_id'] = $this->resolveParentId($data);
 
-        if ($this->workflowIntent === 'review') {
-            $data = app(WorkflowTransitionService::class)->prepareReviewData($data);
-        }
-
-        return $data;
+        return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
+            $data,
+            canPublish: (bool) $user?->can('publish', $record),
+            currentStatus: $record instanceof Entry ? $record->status : null,
+        );
     }
 
     protected function afterSave(): void
@@ -94,6 +110,32 @@ class EditEntry extends EditRecord
         }
 
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
+
+        if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
+            AuditLog::logStatusChange(
+                $record,
+                $record->status,
+                $this->statusBeforeSave,
+                $record->status === EntryStatus::Rejected ? $record->review_note : null,
+            );
+
+            if ($record->status === EntryStatus::InReview) {
+                app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
+                    record: $record,
+                    permission: 'entry.publish',
+                    title: 'Nový obsah ke schválení',
+                    body: 'Položka "'.$record->title.'" čeká na schválení publikace.',
+                    editUrl: EntryResource::getUrl('edit', [
+                        'record' => $record,
+                        'collection' => $record->collection?->handle,
+                    ]),
+                    previewRouteName: 'preview.entry',
+                    previewRouteParameterName: 'entry',
+                );
+            }
+        }
+
+        $this->statusBeforeSave = $record->status;
     }
 
     /**
@@ -111,76 +153,5 @@ class EditEntry extends EditRecord
             $record,
             data_get($data, 'parent_id'),
         );
-    }
-
-    protected function workflowRecordClass(): string
-    {
-        return Entry::class;
-    }
-
-    protected function workflowPublishActionName(): string
-    {
-        return 'publishEntry';
-    }
-
-    protected function workflowRejectActionName(): string
-    {
-        return 'rejectEntry';
-    }
-
-    protected function workflowUpdateActionName(): string
-    {
-        return 'updateEntry';
-    }
-
-    protected function workflowPublishedNotificationTitle(): string
-    {
-        return 'Položka publikována';
-    }
-
-    protected function workflowRejectedNotificationTitle(): string
-    {
-        return 'Položka zamítnuta';
-    }
-
-    protected function workflowScheduledNotificationBody(CarbonInterface $scheduleAt): string
-    {
-        return 'Záznam bude automaticky publikován '.$scheduleAt->format('j. n. Y H:i').'.';
-    }
-
-    protected function workflowReviewNotificationTitle(): string
-    {
-        return 'Nový obsah ke schválení';
-    }
-
-    protected function workflowReviewNotificationBody(Model $record): string
-    {
-        if (! $record instanceof Entry) {
-            return 'Položka čeká na schválení publikace.';
-        }
-
-        return 'Položka "'.$record->title.'" čeká na schválení publikace.';
-    }
-
-    protected function workflowPreviewRouteName(): string
-    {
-        return 'preview.entry';
-    }
-
-    protected function workflowPreviewRouteParameterName(): string
-    {
-        return 'entry';
-    }
-
-    protected function workflowEditUrl(Model $record): string
-    {
-        if (! $record instanceof Entry) {
-            return EntryResource::getUrl('index');
-        }
-
-        return EntryResource::getUrl('edit', [
-            'record' => $record,
-            'collection' => $record->collection?->handle,
-        ]);
     }
 }
