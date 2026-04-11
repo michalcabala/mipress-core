@@ -274,6 +274,7 @@ class GlobalSeoSettings extends Page
 
         Notification::make()
             ->title('Globální SEO nastavení bylo uloženo')
+            ->body('Výchozí SEO metadata a náhledy pro celý web byly úspěšně uloženy.')
             ->success()
             ->send();
     }

@@ -6,10 +6,13 @@ namespace MiPress\Core\Filament\Resources\GlobalSetResource\Pages;
 
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\GlobalSetResource;
 
 class EditGlobalSet extends EditRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = GlobalSetResource::class;
 
     protected function getHeaderActions(): array

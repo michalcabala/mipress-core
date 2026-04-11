@@ -6,6 +6,7 @@ namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Page;
@@ -15,6 +16,8 @@ use MiPress\Core\Services\WorkflowTransitionService;
 
 class CreatePage extends CreateRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = PageResource::class;
 
     protected function getHeaderActions(): array

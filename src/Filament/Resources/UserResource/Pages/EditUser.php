@@ -9,10 +9,13 @@ use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use MiPress\Core\Enums\UserRole;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\UserResource;
 
 class EditUser extends EditRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = UserResource::class;
 
     private ?string $pendingRole = null;
@@ -21,6 +24,9 @@ class EditUser extends EditRecord
     {
         return [
             DeleteAction::make()
+                ->modalHeading(fn (): string => 'Smazat uživatele "'.$this->record->name.'"?')
+                ->modalDescription('Účet uživatele "'.$this->record->name.'" bude přesunut do koše a půjde obnovit, pokud není trvale smazán.')
+                ->successNotificationTitle('Uživatel byl smazán')
                 ->hidden(fn (): bool => $this->record->isSuperAdmin()),
         ];
     }
@@ -50,8 +56,8 @@ class EditUser extends EditRecord
         // Prevent degrading SuperAdmin role
         if ($this->record->isSuperAdmin() && $this->pendingRole !== UserRole::SuperAdmin->value) {
             Notification::make()
-                ->title('Chyba zabezpečení')
-                ->body('Roli Superadministrátora nelze změnit.')
+                ->title('Roli superadministrátora nelze změnit')
+                ->body('Uživatel "'.$this->record->name.'" musí zůstat superadministrátorem.')
                 ->danger()
                 ->send();
 
@@ -66,8 +72,8 @@ class EditUser extends EditRecord
 
             if ($conflictExists) {
                 Notification::make()
-                    ->title('Nelze přiřadit')
-                    ->body('Superadministrátor již existuje. Může být pouze jeden.')
+                    ->title('Roli superadministrátora nelze přiřadit')
+                    ->body('Uživateli "'.$this->record->name.'" nelze roli přiřadit, protože jiný superadministrátor už existuje.')
                     ->danger()
                     ->send();
 

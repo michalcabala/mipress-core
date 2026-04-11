@@ -68,6 +68,7 @@ class ThemeSettings extends Page
 
             Notification::make()
                 ->title('Téma aktivováno')
+                ->body('Aktivní téma bylo změněno na "'.$slug.'".')
                 ->success()
                 ->send();
         } catch (InvalidArgumentException $e) {

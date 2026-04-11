@@ -207,9 +207,15 @@ class EntryForm
                                             ->icon('far-trash-can')
                                             ->color('warning')
                                             ->requiresConfirmation()
+                                            ->modalHeading(fn (Entry $record): string => 'Přesunout položku "'.$record->title.'" do koše?')
+                                            ->modalDescription('Položka nebude trvale smazána a bude ji možné obnovit z koše.')
                                             ->action(function (EditRecord $livewire, Entry $record): void {
                                                 $record->delete();
-                                                Notification::make()->title('Položka přesunuta do koše')->success()->send();
+                                                Notification::make()
+                                                    ->title('Položka byla přesunuta do koše')
+                                                    ->body('Položka "'.$record->title.'" byla přesunuta do koše.')
+                                                    ->success()
+                                                    ->send();
 
                                                 $livewire->redirect(EntryResource::getUrl('index', [
                                                     'collection' => $record->collection?->handle,
@@ -222,10 +228,17 @@ class EntryForm
                                             ->color('danger')
                                             ->visible(fn (): bool => auth()->user()?->isSuperAdmin() || auth()->user()?->isAdmin())
                                             ->requiresConfirmation()
+                                            ->modalHeading(fn (Entry $record): string => 'Trvale smazat položku "'.$record->title.'"?')
+                                            ->modalDescription('Tato akce položku nevratně odstraní ze systému včetně jejího aktuálního stavu.')
                                             ->action(function (EditRecord $livewire, Entry $record): void {
                                                 $collectionHandle = $record->collection?->handle;
+                                                $recordTitle = $record->title;
                                                 $record->forceDelete();
-                                                Notification::make()->title('Položka byla trvale smazána')->success()->send();
+                                                Notification::make()
+                                                    ->title('Položka byla trvale smazána')
+                                                    ->body('Položka "'.$recordTitle.'" byla ze systému odstraněna natrvalo.')
+                                                    ->success()
+                                                    ->send();
 
                                                 $livewire->redirect(EntryResource::getUrl('index', [
                                                     'collection' => $collectionHandle,
@@ -247,7 +260,11 @@ class EntryForm
                                                 $copy->review_note = null;
                                                 $copy->save();
 
-                                                Notification::make()->title('Kopie vytvořena')->success()->send();
+                                                Notification::make()
+                                                    ->title('Kopie položky byla vytvořena')
+                                                    ->body('Nová položka "'.$copy->title.'" vznikla z položky "'.$record->title.'".')
+                                                    ->success()
+                                                    ->send();
                                                 $livewire->redirect(EntryResource::getUrl('edit', [
                                                     'record' => $copy,
                                                     'collection' => $copy->collection?->handle,

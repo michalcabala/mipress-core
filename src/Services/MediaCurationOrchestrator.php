@@ -34,7 +34,8 @@ class MediaCurationOrchestrator
 
         if ($ids === []) {
             Notification::make()
-                ->title('Žádné obrázky k přegenerování')
+                ->title('Nebyl vybrán žádný obrázek k přegenerování')
+                ->body('Vyberte alespoň jeden rastrový obrázek, pro který chcete znovu vytvořit ořezy.')
                 ->warning()
                 ->send();
 
@@ -51,8 +52,8 @@ class MediaCurationOrchestrator
             });
 
             Notification::make()
-                ->title('Ořezy přegenerovány')
-                ->body("Zpracováno {$processed} z ".count($ids).' souborů.')
+                ->title('Ořezy vybraných souborů byly přegenerovány')
+                ->body('Vybráno '.count($ids).' souborů, přegenerováno '.$processed.'.')
                 ->success()
                 ->send();
 
@@ -62,8 +63,8 @@ class MediaCurationOrchestrator
         RegenerateCurationsJob::dispatch($ids, $userId);
 
         Notification::make()
-            ->title('Přegenerování zařazeno do fronty')
-            ->body('Ořezy budou přegenerovány na pozadí. Po dokončení obdržíte oznámení.')
+            ->title('Přegenerování vybraných ořezů bylo zařazeno do fronty')
+            ->body('Vybráno '.count($ids).' souborů. Ořezy budou přegenerovány na pozadí a po dokončení obdržíte oznámení.')
             ->info()
             ->send();
     }
@@ -76,7 +77,8 @@ class MediaCurationOrchestrator
 
         if ($total === 0) {
             Notification::make()
-                ->title('Žádné obrázky k přegenerování')
+                ->title('V knihovně nejsou žádné obrázky k přegenerování')
+                ->body('Knihovna médií momentálně neobsahuje žádný rastrový obrázek.')
                 ->warning()
                 ->send();
 
@@ -92,8 +94,8 @@ class MediaCurationOrchestrator
             });
 
             Notification::make()
-                ->title('Ořezy přegenerovány')
-                ->body("Zpracováno {$processed} obrázků.")
+                ->title('Ořezy knihovny médií byly přegenerovány')
+                ->body('Přegenerováno bylo '.$processed.' obrázků z knihovny médií.')
                 ->success()
                 ->send();
 
@@ -103,8 +105,8 @@ class MediaCurationOrchestrator
         RegenerateCurationsJob::dispatch(null, $userId);
 
         Notification::make()
-            ->title('Přegenerování zařazeno do fronty')
-            ->body('Ořezy budou přegenerovány na pozadí. Po dokončení obdržíte oznámení.')
+            ->title('Přegenerování ořezů knihovny bylo zařazeno do fronty')
+            ->body('Celá knihovna médií se zpracuje na pozadí. Po dokončení obdržíte oznámení.')
             ->info()
             ->send();
     }

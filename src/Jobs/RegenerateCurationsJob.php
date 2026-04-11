@@ -68,7 +68,9 @@ class RegenerateCurationsJob implements ShouldQueue
         }
 
         Notification::make()
-            ->title('Ořezy byly přegenerovány')
+            ->title($this->mediaIds === null
+                ? 'Přegenerování ořezů knihovny bylo dokončeno'
+                : 'Přegenerování vybraných ořezů bylo dokončeno')
             ->body($body)
             ->success()
             ->sendToDatabase($recipient);

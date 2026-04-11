@@ -157,6 +157,16 @@ class PagesTable
                             return ((string) $record->getKey()) === $homepageId ? 'danger' : 'gray';
                         })
                         ->requiresConfirmation()
+                        ->modalHeading(function (Page $record) use ($homepageId): string {
+                            return ((string) $record->getKey()) === $homepageId
+                                ? 'Zrušit stránce "'.$record->title.'" status homepage?'
+                                : 'Nastavit stránku "'.$record->title.'" jako homepage?';
+                        })
+                        ->modalDescription(function (Page $record) use ($homepageId): string {
+                            return ((string) $record->getKey()) === $homepageId
+                                ? 'Stránka přestane být domovskou stránkou webu.'
+                                : 'Tato stránka se nastaví jako výchozí domovská stránka webu.';
+                        })
                         ->action(function (Page $record): void {
                             $homepageId = static::getHomepagePageId();
                             $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;

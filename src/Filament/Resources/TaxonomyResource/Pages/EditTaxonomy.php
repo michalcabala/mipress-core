@@ -6,10 +6,13 @@ namespace MiPress\Core\Filament\Resources\TaxonomyResource\Pages;
 
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\TaxonomyResource;
 
 class EditTaxonomy extends EditRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = TaxonomyResource::class;
 
     protected function getHeaderActions(): array

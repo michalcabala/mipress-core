@@ -6,10 +6,13 @@ namespace MiPress\Core\Filament\Resources\CollectionResource\Pages;
 
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\CollectionResource;
 
 class EditCollection extends EditRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = CollectionResource::class;
 
     protected function getHeaderActions(): array

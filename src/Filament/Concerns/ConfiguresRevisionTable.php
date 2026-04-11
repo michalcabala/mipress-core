@@ -8,6 +8,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
@@ -94,8 +95,8 @@ trait ConfiguresRevisionTable
                     ->action(fn () => null)
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Zavřít')
-                    ->modalHeading('Porovnání dvou revizí')
-                    ->modalDescription('Vyberte dvě uložené verze a zobrazíme jen pole, která se mezi nimi změnila.'),
+                    ->modalHeading(fn (): string => 'Porovnání revizí: '.$this->resolveRevisionOwnerTitle($this->resolveRevisionOwner()))
+                    ->modalDescription('Vyberte dvě uložené verze záznamu a zobrazíme jen pole, která se mezi nimi změnila.'),
             ])
             ->recordActions([
                 Action::make('diff')
@@ -105,8 +106,8 @@ trait ConfiguresRevisionTable
                     ->slideOver()
                     ->stickyModalHeader()
                     ->modalWidth(Width::SevenExtraLarge)
-                    ->modalHeading('Porovnání s aktuálním stavem')
-                    ->modalDescription('Uvidíte jen pole, která se liší oproti aktuálně uložené verzi obsahu.')
+                    ->modalHeading(fn (Revision $record): string => 'Porovnání revize s aktuálním stavem: '.$this->resolveRevisionOwnerTitle($this->resolveRevisionOwner()))
+                    ->modalDescription(fn (Revision $record): string => 'Zobrazujeme rozdíly mezi revizí z '.$record->created_at?->format('j. n. Y H:i:s').' a aktuálně uloženou verzí záznamu.')
                     ->schema(fn (Revision $record): array => $this->buildRevisionDiffSchema($record))
                     ->action(fn () => null)
                     ->modalSubmitAction(false)
@@ -116,14 +117,20 @@ trait ConfiguresRevisionTable
                     ->icon('far-rotate-left')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->modalHeading('Obnovit vybranou revizi')
-                    ->modalDescription('Obsah záznamu bude nahrazen daty z této revize. Aktuální stav se předtím uloží jako nová revize, takže se k němu budete moci vrátit.')
+                    ->modalHeading(fn (Revision $record): string => 'Obnovit revizi z '.$record->created_at?->format('j. n. Y H:i:s').'?')
+                    ->modalDescription(fn (): string => 'Obsah záznamu „'.$this->resolveRevisionOwnerTitle($this->resolveRevisionOwner()).'“ bude nahrazen daty z této revize. Aktuální stav se předtím uloží jako nová revize, takže se k němu budete moci vrátit.')
                     ->visible(fn (): bool => method_exists($this->resolveRevisionOwner(), 'restoreRevision'))
                     ->action(function (Revision $record): void {
                         $owner = $this->resolveRevisionOwner();
 
                         if (method_exists($owner, 'restoreRevision')) {
                             $owner->restoreRevision($record->getKey());
+
+                            Notification::make()
+                                ->title('Revize byla obnovena')
+                                ->body('Záznam „'.$this->resolveRevisionOwnerTitle($owner).'“ byl obnoven podle verze z '.$record->created_at?->format('j. n. Y H:i:s').'.')
+                                ->success()
+                                ->send();
                         }
                     }),
             ]);
@@ -229,6 +236,19 @@ trait ConfiguresRevisionTable
             'Aktuální stav',
             'record_'.$record->getKey(),
         );
+    }
+
+    protected function resolveRevisionOwnerTitle(Model $owner): string
+    {
+        foreach (['title', 'name', 'handle', 'email', 'slug'] as $attribute) {
+            $value = $owner->getAttribute($attribute);
+
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return '#'.$owner->getKey();
     }
 
     /**

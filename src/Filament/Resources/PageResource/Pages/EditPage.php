@@ -8,6 +8,7 @@ use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
@@ -20,6 +21,7 @@ use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditPage extends EditRecord
 {
+    use HasContextualCrudNotifications;
     use HandlesResourceLockRenewal, HandlesWorkflowValidationErrors, UsesResourceLock {
         HandlesResourceLockRenewal::renewLock insteadof UsesResourceLock;
     }

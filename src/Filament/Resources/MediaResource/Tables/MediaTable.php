@@ -25,8 +25,8 @@ class MediaTable extends BaseMediaTable
                 ->color('gray')
                 ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateSelectedCurations', Media::class) ?? false)
                 ->requiresConfirmation()
-                ->modalHeading('Přegenerovat ořezy')
-                ->modalDescription('Přegeneruje miniaturní ořezy pro vybrané soubory. Rastrové obrázky budou přepsány novými ořezy.')
+                ->modalHeading('Přegenerovat ořezy vybraných souborů?')
+                ->modalDescription('Pro vybrané rastrové obrázky se znovu vytvoří miniaturní ořezy a původní varianty se přepíšou.')
                 ->modalSubmitActionLabel('Přegenerovat')
                 ->action(function (Collection $records): void {
                     app(MediaCurationOrchestrator::class)

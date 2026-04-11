@@ -29,8 +29,8 @@ class ListMedia extends BaseListMedia
                 ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateAllCurations', Media::class) ?? false)
                 ->authorize(fn (): bool => Filament::auth()->user()?->can('regenerateAllCurations', Media::class) ?? false)
                 ->requiresConfirmation()
-                ->modalHeading('Přegenerovat všechny ořezy')
-                ->modalDescription('Přegeneruje miniaturní ořezy pro všechny rastrové obrázky v knihovně médií. Pro velký počet souborů bude zpracování probíhat na pozadí.')
+                ->modalHeading('Přegenerovat ořezy celé knihovny médií?')
+                ->modalDescription('Pro všechny rastrové obrázky v knihovně se znovu vytvoří miniaturní ořezy. U většího objemu bude zpracování pokračovat na pozadí.')
                 ->modalSubmitActionLabel('Přegenerovat vše')
                 ->action(function (): void {
                     app(MediaCurationOrchestrator::class)

@@ -158,6 +158,7 @@ class EditSettings extends Page
 
         Notification::make()
             ->title('Nastavení bylo uloženo')
+            ->body('Sekce "'.$setting->name.'" byla úspěšně uložena.')
             ->success()
             ->send();
     }

@@ -63,6 +63,8 @@ class ResourceLockResource extends BaseLockResource
             ])
             ->recordActions([
                 DeleteAction::make()
+                    ->modalHeading(fn (ResourceLock $record): string => 'Zrušit zámek pro '.static::describeLock($record).'?')
+                    ->modalDescription(fn (ResourceLock $record): string => 'Záznam '.static::describeLock($record).' bude okamžitě odemknut a půjde znovu upravovat.')
                     ->before(function (ResourceLock $record): void {
                         if (config('filament-resource-lock.events.enabled', true)) {
                             ResourceLockForceUnlocked::dispatch(
@@ -73,7 +75,7 @@ class ResourceLockResource extends BaseLockResource
                         }
                     })
                     ->icon('heroicon-o-lock-open')
-                    ->successNotificationTitle(__('filament-resource-lock::manager.unlocked'))
+                    ->successNotificationTitle(fn (ResourceLock $record): string => 'Zámek byl zrušen pro '.static::describeLock($record))
                     ->label(__('filament-resource-lock::manager.unlock')),
             ])
             ->toolbarActions([
@@ -91,10 +93,29 @@ class ResourceLockResource extends BaseLockResource
                     })
                     ->deselectRecordsAfterCompletion()
                     ->requiresConfirmation()
+                    ->modalHeading('Zrušit vybrané zámky?')
+                    ->modalDescription('Vybrané zámky budou okamžitě odstraněny a odpovídající záznamy půjde znovu upravovat.')
                     ->icon('heroicon-o-lock-open')
-                    ->successNotificationTitle(__('filament-resource-lock::manager.unlocked_selected'))
+                    ->successNotificationTitle('Vybrané zámky byly zrušeny')
                     ->label(__('filament-resource-lock::manager.unlock')),
             ]);
+    }
+
+    private static function describeLock(ResourceLock $record): string
+    {
+        $lockable = $record->lockable;
+
+        if ($lockable !== null) {
+            foreach (['title', 'name', 'handle', 'email', 'slug'] as $attribute) {
+                $value = $lockable->getAttribute($attribute);
+
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    return 'záznam „'.trim((string) $value).'“';
+                }
+            }
+        }
+
+        return 'záznam #'.$record->lockable_id;
     }
 
     public static function getNavigationGroup(): ?string

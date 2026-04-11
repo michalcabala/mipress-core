@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\TermResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\TermResource;
 
 class CreateTerm extends CreateRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = TermResource::class;
 
     public string $taxonomyHandle = '';

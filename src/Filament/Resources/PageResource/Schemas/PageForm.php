@@ -178,9 +178,15 @@ class PageForm
                                             ->icon('far-trash-can')
                                             ->color('warning')
                                             ->requiresConfirmation()
+                                            ->modalHeading(fn (Page $record): string => 'Přesunout stránku "'.$record->title.'" do koše?')
+                                            ->modalDescription('Stránka nebude trvale smazána a bude ji možné obnovit z koše.')
                                             ->action(function (EditRecord $livewire, Page $record): void {
                                                 $record->delete();
-                                                Notification::make()->title('Stránka přesunuta do koše')->success()->send();
+                                                Notification::make()
+                                                    ->title('Stránka byla přesunuta do koše')
+                                                    ->body('Stránka "'.$record->title.'" byla přesunuta do koše.')
+                                                    ->success()
+                                                    ->send();
 
                                                 $livewire->redirect(PageResource::getUrl('index'));
                                             }),
@@ -191,9 +197,16 @@ class PageForm
                                             ->color('danger')
                                             ->visible(fn (): bool => auth()->user()?->isSuperAdmin() || auth()->user()?->isAdmin())
                                             ->requiresConfirmation()
+                                            ->modalHeading(fn (Page $record): string => 'Trvale smazat stránku "'.$record->title.'"?')
+                                            ->modalDescription('Tato akce stránku nevratně odstraní ze systému včetně jejího aktuálního stavu.')
                                             ->action(function (EditRecord $livewire, Page $record): void {
+                                                $recordTitle = $record->title;
                                                 $record->forceDelete();
-                                                Notification::make()->title('Stránka byla trvale smazána')->success()->send();
+                                                Notification::make()
+                                                    ->title('Stránka byla trvale smazána')
+                                                    ->body('Stránka "'.$recordTitle.'" byla ze systému odstraněna natrvalo.')
+                                                    ->success()
+                                                    ->send();
 
                                                 $livewire->redirect(PageResource::getUrl('index'));
                                             }),
@@ -213,7 +226,11 @@ class PageForm
                                                 $copy->review_note = null;
                                                 $copy->save();
 
-                                                Notification::make()->title('Kopie vytvořena')->success()->send();
+                                                Notification::make()
+                                                    ->title('Kopie stránky byla vytvořena')
+                                                    ->body('Nová stránka "'.$copy->title.'" vznikla ze stránky "'.$record->title.'".')
+                                                    ->success()
+                                                    ->send();
                                                 $livewire->redirect(PageResource::getUrl('edit', ['record' => $copy]));
                                             }),
                                     ])->fullWidth(),

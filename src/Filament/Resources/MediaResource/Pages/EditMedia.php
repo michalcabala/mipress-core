@@ -25,16 +25,16 @@ class EditMedia extends BaseEditMedia
                 ->color('gray')
                 ->visible(fn (): bool => Filament::auth()->user()?->can('regenerateSingleCuration', $this->getRecord()) ?? false)
                 ->requiresConfirmation()
-                ->modalHeading('Přegenerovat ořezy')
-                ->modalDescription('Přegeneruje všechny miniaturní ořezy pro tento soubor. Stávající ořezy budou přepsány.')
+                ->modalHeading(fn (): string => 'Přegenerovat ořezy souboru "'.$this->getRecord()->name.'"?')
+                ->modalDescription('Pro soubor "'.$this->getRecord()->name.'" se znovu vytvoří všechny miniaturní ořezy a původní varianty se přepíšou.')
                 ->modalSubmitActionLabel('Přegenerovat')
                 ->action(function (): void {
                     $media = $this->getRecord();
 
                     if (! app(MediaCurationOrchestrator::class)->regenerateSingle($media)) {
                         Notification::make()
-                            ->title('Přegenerování nelze provést')
-                            ->body('Soubor není rastrový obrázek.')
+                            ->title('Přegenerování souboru nelze provést')
+                            ->body('Soubor "'.$media->name.'" není rastrový obrázek.')
                             ->warning()
                             ->send();
 
@@ -42,7 +42,8 @@ class EditMedia extends BaseEditMedia
                     }
 
                     Notification::make()
-                        ->title('Ořezy přegenerovány')
+                        ->title('Ořezy souboru byly přegenerovány')
+                        ->body('Pro soubor "'.$media->name.'" byly úspěšně vytvořeny nové ořezy.')
                         ->success()
                         ->send();
                 }),

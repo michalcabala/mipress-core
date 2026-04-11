@@ -8,16 +8,18 @@ use App\Models\User;
 use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
-use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use MiPress\Core\Enums\UserRole;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\UserResource;
 use MiPress\Core\Notifications\WelcomeNotification;
 
 class CreateUser extends CreateRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = UserResource::class;
 
     private ?string $pendingRole = null;
@@ -39,8 +41,8 @@ class CreateUser extends CreateRecord
         if ($this->pendingRole === UserRole::SuperAdmin->value) {
             if (User::role(UserRole::SuperAdmin->value)->exists()) {
                 Notification::make()
-                    ->title('Nelze vytvořit')
-                    ->body('Superadministrátor již existuje. Může být pouze jeden.')
+                    ->title('Dalšího superadministrátora nelze vytvořit')
+                    ->body('Účet s rolí superadministrátora už v systému existuje. Povolena je pouze jedna taková role.')
                     ->danger()
                     ->send();
 
@@ -58,7 +60,7 @@ class CreateUser extends CreateRecord
         // Generate password reset token and send single onboarding email
         Password::broker(Filament::getAuthPasswordBroker())->sendResetLink(
             ['email' => $this->record->email],
-            function (CanResetPassword $user, string $token): void {
+            function (User $user, string $token): void {
                 $user->notify(new WelcomeNotification(
                     setPasswordUrl: Filament::getResetPasswordUrl($token, $user),
                     verifyEmailUrl: Filament::getVerifyEmailUrl($user),

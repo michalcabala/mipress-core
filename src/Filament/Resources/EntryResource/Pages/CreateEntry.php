@@ -6,6 +6,7 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
@@ -16,6 +17,8 @@ use MiPress\Core\Services\WorkflowTransitionService;
 
 class CreateEntry extends CreateRecord
 {
+    use HasContextualCrudNotifications;
+
     protected static string $resource = EntryResource::class;
 
     public string $collectionHandle = '';

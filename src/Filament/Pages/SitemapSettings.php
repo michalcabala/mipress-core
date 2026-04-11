@@ -152,6 +152,7 @@ class SitemapSettings extends Page
 
         Notification::make()
             ->title('Nastavení sitemapy uloženo')
+            ->body('Konfigurace generování sitemap.xml byla úspěšně uložena.')
             ->success()
             ->send();
     }
@@ -162,7 +163,7 @@ class SitemapSettings extends Page
 
         Notification::make()
             ->title('Generování sitemapy spuštěno')
-            ->body('Sitemap bude přegenerována na pozadí.')
+            ->body('Soubor sitemap.xml bude přegenerován na pozadí podle aktuální konfigurace.')
             ->success()
             ->send();
     }
