@@ -33,16 +33,24 @@ class CollectionsTable
                 TextColumn::make('handle')
                     ->label('Handle')
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->copyable()
+                    ->badge(),
                 TextColumn::make('blueprint.name')
                     ->label('Šablona')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
                 IconColumn::make('dated')
                     ->label('Datovaný')
                     ->boolean(),
                 IconColumn::make('hierarchical')
                     ->label('Hierarchie')
                     ->boolean(),
+                TextColumn::make('route')
+                    ->label('URL vzor')
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->default('—'),
                 TextColumn::make('entries_count')
                     ->label('Záznamů')
                     ->counts('entries')

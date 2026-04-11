@@ -88,6 +88,7 @@ class EntryForm
                                             ->label('Titulek')
                                             ->required()
                                             ->maxLength(255)
+                                            ->placeholder('Např. Novinka z redakce')
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state): void {
                                                 if (($get('slug') ?? '') !== Str::slug($old)) {
@@ -103,6 +104,8 @@ class EntryForm
                                             ->required($hasSlug)
                                             ->visible($hasSlug)
                                             ->maxLength(200)
+                                            ->placeholder('novinka-z-redakce')
+                                            ->helperText('Používá se v URL této položky.')
                                             ->rules(['alpha_dash']),
                                     ]),
                                     Mason::make('data.content')
@@ -126,11 +129,13 @@ class EntryForm
                                 ->schema([
                                     TextInput::make('meta_title')
                                         ->label('SEO titulek')
-                                        ->maxLength(60),
+                                        ->maxLength(60)
+                                        ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek položky.'),
                                     Textarea::make('meta_description')
                                         ->label('SEO popis')
                                         ->maxLength(160)
-                                        ->rows(3),
+                                        ->rows(3)
+                                        ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
                                     CuratorPicker::make('og_image_id')
                                         ->relationship('ogImage', 'id')
                                         ->label('OG obrázek')
@@ -373,6 +378,7 @@ class EntryForm
                                         ->relationship('author', 'name')
                                         ->searchable()
                                         ->preload()
+                                        ->native(false)
                                         ->required()
                                         ->default(fn () => auth()->id()),
                                     TextInput::make('sort_order')

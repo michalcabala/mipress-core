@@ -9,13 +9,15 @@ use Carbon\CarbonInterface;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Services\EntryTaxonomySyncService;
+use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditEntry extends EditRecord
 {
@@ -24,6 +26,8 @@ class EditEntry extends EditRecord
     }
 
     protected static string $resource = EntryResource::class;
+
+    protected static ?string $navigationLabel = 'Editace';
 
     protected Width|string|null $maxWidth = Width::Full;
 
@@ -41,6 +45,10 @@ class EditEntry extends EditRecord
         ]);
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $record = $this->getRecord();
@@ -58,8 +66,7 @@ class EditEntry extends EditRecord
         $data['parent_id'] = $this->resolveParentId($data);
 
         if ($this->workflowIntent === 'review') {
-            $data['status'] = EntryStatus::InReview;
-            $data['review_note'] = null;
+            $data = app(WorkflowTransitionService::class)->prepareReviewData($data);
         }
 
         return $data;
@@ -67,47 +74,18 @@ class EditEntry extends EditRecord
 
     protected function afterSave(): void
     {
-        $this->syncTaxonomyTerms();
-    }
-
-    private function syncTaxonomyTerms(): void
-    {
         $record = $this->getRecord();
 
         if (! $record instanceof Entry) {
             return;
         }
 
-        $formState = $this->form->getRawState();
-
-        $incomingTermIds = collect($formState)
-            ->filter(fn ($value, string $key): bool => str_starts_with($key, 'taxonomy__'))
-            ->flatten()
-            ->filter()
-            ->map(fn ($id): int => (int) $id)
-            ->values()
-            ->all();
-
-        // Obtain taxonomy IDs from the form keys to scope the sync
-        $taxonomyIds = collect($formState)
-            ->keys()
-            ->filter(fn (string $key): bool => str_starts_with($key, 'taxonomy__'))
-            ->map(fn (string $key): int => (int) str_replace('taxonomy__', '', $key))
-            ->values()
-            ->all();
-
-        // Remove old terms that belong to the collection's taxonomies
-        if (! empty($taxonomyIds)) {
-            $record->terms()->wherePivot('term_id', '!=', 0)
-                ->whereIn('taxonomy_id', $taxonomyIds)
-                ->detach();
-        }
-
-        if (! empty($incomingTermIds)) {
-            $record->terms()->attach($incomingTermIds);
-        }
+        app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function resolveParentId(array $data): ?int
     {
         $record = $this->getRecord();
@@ -116,65 +94,10 @@ class EditEntry extends EditRecord
             return null;
         }
 
-        $parentId = data_get($data, 'parent_id');
-
-        if (! is_numeric($parentId)) {
-            return null;
-        }
-
-        $resolvedParentId = Entry::query()
-            ->where('collection_id', $record->collection_id)
-            ->whereKey((int) $parentId)
-            ->value('id');
-
-        if (! is_numeric($resolvedParentId)) {
-            return null;
-        }
-
-        $resolvedParentId = (int) $resolvedParentId;
-
-        if ($resolvedParentId === (int) $record->getKey()) {
-            return null;
-        }
-
-        if ($this->wouldCreateHierarchyCycle($record, $resolvedParentId)) {
-            throw ValidationException::withMessages([
-                'parent_id' => 'Nelze vybrat podřízenou položku jako nadřazenou.',
-            ]);
-        }
-
-        return $resolvedParentId;
-    }
-
-    private function wouldCreateHierarchyCycle(Entry $record, int $candidateParentId): bool
-    {
-        $currentId = $candidateParentId;
-        $visited = [];
-
-        while ($currentId > 0) {
-            if ($currentId === (int) $record->getKey()) {
-                return true;
-            }
-
-            if (isset($visited[$currentId])) {
-                return true;
-            }
-
-            $visited[$currentId] = true;
-
-            $parentId = Entry::query()
-                ->where('collection_id', $record->collection_id)
-                ->whereKey($currentId)
-                ->value('parent_id');
-
-            if (! is_numeric($parentId)) {
-                return false;
-            }
-
-            $currentId = (int) $parentId;
-        }
-
-        return false;
+        return app(HierarchyParentResolver::class)->resolveEntryParentForEdit(
+            $record,
+            data_get($data, 'parent_id'),
+        );
     }
 
     protected function workflowRecordClass(): string

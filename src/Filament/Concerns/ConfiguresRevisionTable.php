@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Concerns;
 
 use Filament\Actions\Action;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
+use Filament\Support\Enums\Width;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\Revision;
+use MiPress\Core\Services\RevisionDiffPresenter;
 
 trait ConfiguresRevisionTable
 {
@@ -28,52 +33,88 @@ trait ConfiguresRevisionTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('Datum')
+                    ->label('Uloženo')
                     ->isoDateTime('LLL')
+                    ->description(fn (Revision $record): ?string => $record->created_at?->diffForHumans())
                     ->sortable(),
+                TextColumn::make('status_snapshot')
+                    ->label('Stav obsahu')
+                    ->state(fn (Revision $record): ?EntryStatus => $this->resolveRevisionStatus($record))
+                    ->formatStateUsing(fn (?EntryStatus $state): string => $state?->getLabel() ?? 'Bez stavu')
+                    ->badge()
+                    ->icon(fn (?EntryStatus $state): ?string => $state?->getIcon())
+                    ->color(fn (?EntryStatus $state): string|array|null => $state?->getColor() ?? 'gray')
+                    ->toggleable(),
                 TextColumn::make('user.name')
                     ->label('Uložil')
-                    ->default('Systém'),
+                    ->default('Systém')
+                    ->badge()
+                    ->color('gray')
+                    ->toggleable(),
                 TextColumn::make('note')
                     ->label('Poznámka')
-                    ->limit(80)
-                    ->default('—'),
-                TextColumn::make('data_preview')
-                    ->label('Obsah')
-                    ->state(function (Revision $record): string {
-                        $keys = array_keys($record->data ?? []);
-
-                        return implode(', ', array_slice($keys, 0, 5)).(count($keys) > 5 ? '…' : '');
-                    })
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->default('Bez poznámky')
+                    ->limit(110)
+                    ->toggleable(),
+                TextColumn::make('snapshot_summary')
+                    ->label('Zachycený obsah')
+                    ->state(fn (Revision $record): string => $this->revisionDiffPresenter()->summarizeSnapshot($record->data ?? []))
+                    ->description(fn (Revision $record): string => $this->revisionDiffPresenter()->summarizeSnapshotMeta($record->data ?? []))
+                    ->limit(110),
             ])
             ->defaultSort('created_at', 'desc')
+            ->recordAction('diff')
+            ->recordActionsAlignment('end')
+            ->recordActionsColumnLabel('Akce')
             ->paginated([10, 25, 50])
             ->emptyStateHeading('Zatím nejsou dostupné žádné revize')
-            ->emptyStateDescription('Revize se vytváří automaticky při změně obsahu.')
+            ->emptyStateDescription('Revize se vytváří automaticky při změně obsahu nebo při workflow přechodech.')
+            ->filters([
+                SelectFilter::make('user_id')
+                    ->label('Uložil')
+                    ->relationship('user', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->native(false),
+            ])
             ->headerActions([
                 Action::make('compareRevisions')
-                    ->label('Porovnat revize')
+                    ->label('Porovnat dvě revize')
                     ->icon('far-left-right')
                     ->color('info')
+                    ->slideOver()
+                    ->stickyModalHeader()
+                    ->modalWidth(Width::SevenExtraLarge)
                     ->schema(fn (): array => $this->getCompareRevisionSchema())
                     ->action(fn () => null)
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Zavřít')
                     ->modalHeading('Porovnání dvou revizí')
-                    ->modalContent(fn (?array $data): HtmlString => new HtmlString(
-                        '<div x-data="{ show: false }" class="text-sm text-gray-500 dark:text-gray-400">Vyberte dvě revize k porovnání pomocí formuláře výše.</div>'
-                    ))
-                    ->after(fn () => null),
+                    ->modalDescription('Vyberte dvě uložené verze a zobrazíme jen pole, která se mezi nimi změnila.'),
             ])
             ->recordActions([
+                Action::make('diff')
+                    ->label('Detail změn')
+                    ->icon('far-code-compare')
+                    ->color('info')
+                    ->slideOver()
+                    ->stickyModalHeader()
+                    ->modalWidth(Width::SevenExtraLarge)
+                    ->modalHeading('Porovnání s aktuálním stavem')
+                    ->modalDescription('Uvidíte jen pole, která se liší oproti aktuálně uložené verzi obsahu.')
+                    ->modalContent(function (Revision $record): HtmlString {
+                        return $this->buildRevisionDiffHtml($record);
+                    })
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Zavřít'),
                 Action::make('restore')
-                    ->label('Obnovit')
+                    ->label('Obnovit verzi')
                     ->icon('far-rotate-left')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->modalHeading('Obnovit revizi')
-                    ->modalDescription('Obsah záznamu bude nahrazen daty z této revize. Aktuální stav bude uložen jako nová revize. Pokračovat?')
+                    ->modalHeading('Obnovit vybranou revizi')
+                    ->modalDescription('Obsah záznamu bude nahrazen daty z této revize. Aktuální stav se předtím uloží jako nová revize, takže se k němu budete moci vrátit.')
+                    ->visible(fn (): bool => method_exists($this->resolveRevisionOwner(), 'restoreRevision'))
                     ->action(function (Revision $record): void {
                         $owner = $this->resolveRevisionOwner();
 
@@ -81,16 +122,6 @@ trait ConfiguresRevisionTable
                             $owner->restoreRevision($record->getKey());
                         }
                     }),
-                Action::make('diff')
-                    ->label('Porovnat')
-                    ->icon('far-left-right')
-                    ->color('info')
-                    ->modalHeading('Porovnání s aktuálním stavem')
-                    ->modalContent(function (Revision $record): HtmlString {
-                        return $this->buildRevisionDiffHtml($record);
-                    })
-                    ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Zavřít'),
             ]);
     }
 
@@ -115,23 +146,24 @@ trait ConfiguresRevisionTable
                 ->options($options)
                 ->required()
                 ->live()
-                ->searchable(),
+                ->searchable()
+                ->native(false),
             Select::make('revision_b')
                 ->label('Novější revize (vpravo)')
                 ->options(['__current__' => $currentLabel] + $options)
                 ->required()
                 ->default('__current__')
                 ->live()
-                ->searchable(),
-            \Filament\Infolists\Components\TextEntry::make('comparison_result')
-                ->label('')
-                ->state(fn (\Filament\Schemas\Components\Utilities\Get $get): string => 'diff_placeholder')
-                ->formatStateUsing(function (string $state, \Filament\Schemas\Components\Utilities\Get $get): HtmlString {
+                ->searchable()
+                ->native(false),
+            Placeholder::make('comparison_result')
+                ->label('Rozdíly')
+                ->content(function (\Filament\Schemas\Components\Utilities\Get $get): HtmlString {
                     $revisionAId = $get('revision_a');
                     $revisionBId = $get('revision_b');
 
                     if (! $revisionAId || ! $revisionBId) {
-                        return new HtmlString('<p class="text-sm text-gray-500">Vyberte obě revize k porovnání.</p>');
+                        return new HtmlString('<p class="text-sm text-gray-500 dark:text-gray-400">Vyberte obě revize k porovnání.</p>');
                     }
 
                     return $this->buildTwoRevisionDiffHtml((int) $revisionAId, $revisionBId === '__current__' ? null : (int) $revisionBId);
@@ -146,7 +178,7 @@ trait ConfiguresRevisionTable
         $revisionA = Revision::find($revisionAId);
 
         if (! $revisionA) {
-            return new HtmlString('<p>Revize nenalezena.</p>');
+            return new HtmlString('<p class="text-sm text-danger-600">Revize nebyla nalezena.</p>');
         }
 
         $leftData = $revisionA->data ?? [];
@@ -161,14 +193,14 @@ trait ConfiguresRevisionTable
             $revisionB = Revision::find($revisionBId);
 
             if (! $revisionB) {
-                return new HtmlString('<p>Revize nenalezena.</p>');
+                return new HtmlString('<p class="text-sm text-danger-600">Revize nebyla nalezena.</p>');
             }
 
             $rightData = $revisionB->data ?? [];
             $rightLabel = $revisionB->created_at->format('j. n. Y H:i:s');
         }
 
-        return $this->renderDiffTable($leftData, $rightData, $leftLabel, $rightLabel);
+        return $this->revisionDiffPresenter()->renderComparison($leftData, $rightData, $leftLabel, $rightLabel);
     }
 
     protected function buildRevisionDiffHtml(Revision $record): HtmlString
@@ -179,7 +211,7 @@ trait ConfiguresRevisionTable
             ->except(['id', 'created_at', 'updated_at', 'deleted_at'])
             ->toArray();
 
-        return $this->renderDiffTable(
+        return $this->revisionDiffPresenter()->renderComparison(
             $leftData,
             $rightData,
             $record->created_at->format('j. n. Y H:i:s'),
@@ -187,43 +219,23 @@ trait ConfiguresRevisionTable
         );
     }
 
-    protected function renderDiffTable(array $leftData, array $rightData, string $leftLabel, string $rightLabel): HtmlString
+    protected function resolveRevisionStatus(Revision $record): ?EntryStatus
     {
-        $rows = '';
-        $allKeys = array_unique(array_merge(array_keys($leftData), array_keys($rightData)));
-        sort($allKeys);
+        $status = data_get($record->data, 'status');
 
-        foreach ($allKeys as $key) {
-            $old = $leftData[$key] ?? null;
-            $cur = $rightData[$key] ?? null;
-
-            if ($old === $cur) {
-                continue;
-            }
-
-            $oldDisplay = is_array($old) ? json_encode($old, JSON_UNESCAPED_UNICODE) : (string) ($old ?? '—');
-            $curDisplay = is_array($cur) ? json_encode($cur, JSON_UNESCAPED_UNICODE) : (string) ($cur ?? '—');
-
-            $rows .= '<tr>'
-                .'<td style="padding:4px 8px;font-weight:600;vertical-align:top;white-space:nowrap;">'.e($key).'</td>'
-                .'<td style="padding:4px 8px;background:#fef9c3;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;">'.e(mb_substr($oldDisplay, 0, 300)).'</td>'
-                .'<td style="padding:4px 8px;background:#dcfce7;vertical-align:top;max-width:300px;overflow:hidden;text-overflow:ellipsis;">'.e(mb_substr($curDisplay, 0, 300)).'</td>'
-                .'</tr>';
+        if ($status instanceof EntryStatus) {
+            return $status;
         }
 
-        if ($rows === '') {
-            return new HtmlString('<p>Žádné rozdíly.</p>');
+        if (! is_string($status)) {
+            return null;
         }
 
-        $html = '<table style="width:100%;border-collapse:collapse;font-size:13px;">'
-            .'<thead><tr>'
-            .'<th style="padding:4px 8px;text-align:left;">Pole</th>'
-            .'<th style="padding:4px 8px;text-align:left;background:#fef9c3;">'.e($leftLabel).'</th>'
-            .'<th style="padding:4px 8px;text-align:left;background:#dcfce7;">'.e($rightLabel).'</th>'
-            .'</tr></thead>'
-            .'<tbody>'.$rows.'</tbody>'
-            .'</table>';
+        return EntryStatus::tryFrom(trim($status));
+    }
 
-        return new HtmlString($html);
+    protected function revisionDiffPresenter(): RevisionDiffPresenter
+    {
+        return app(RevisionDiffPresenter::class);
     }
 }

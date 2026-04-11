@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\Concerns;
 
-use App\Models\User;
 use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -12,10 +11,11 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Models\AuditLog;
+use MiPress\Core\Services\WorkflowNotificationService;
+use MiPress\Core\Services\WorkflowTransitionService;
 
 trait HasWorkflowActions
 {
@@ -214,12 +214,9 @@ trait HasWorkflowActions
                 }
 
                 $record->refresh();
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::Draft;
-                $record->review_note = null;
-                $record->save();
+                $transition = $this->workflowTransitions()->saveDraft($record);
 
-                AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title('Koncept uložen')
@@ -252,7 +249,15 @@ trait HasWorkflowActions
 
                 AuditLog::logStatusChange($record, EntryStatus::InReview, $oldStatus);
 
-                $this->sendReviewRequestedDatabaseNotifications($record);
+                $this->workflowNotifications()->sendReviewRequestedDatabaseNotifications(
+                    record: $record,
+                    permission: $this->workflowReviewPermission(),
+                    title: $this->workflowReviewNotificationTitle(),
+                    body: $this->workflowReviewNotificationBody($record),
+                    editUrl: $this->workflowEditUrl($record),
+                    previewRouteName: $this->workflowPreviewRouteName(),
+                    previewRouteParameterName: $this->workflowPreviewRouteParameterName(),
+                );
 
                 Notification::make()
                     ->title('Odesláno ke schválení')
@@ -278,22 +283,14 @@ trait HasWorkflowActions
                 }
 
                 $record->refresh();
-                $oldStatus = $record->status;
+                $transition = $this->workflowTransitions()->publish($record);
 
-                $scheduleAt = $record->scheduled_at ?? $record->published_at;
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
-                if ($scheduleAt?->isFuture()) {
-                    $record->status = EntryStatus::Scheduled;
-                    $record->scheduled_at = $scheduleAt;
-                    $record->published_at = $scheduleAt;
-                    $record->review_note = null;
-                    $record->save();
-
-                    AuditLog::logStatusChange($record, EntryStatus::Scheduled, $oldStatus);
-
+                if ($transition->isScheduled()) {
                     Notification::make()
                         ->title('Publikace naplánována')
-                        ->body($this->workflowScheduledNotificationBody($scheduleAt))
+                        ->body($this->workflowScheduledNotificationBody($transition->scheduledFor ?? now()))
                         ->success()
                         ->send();
 
@@ -301,14 +298,6 @@ trait HasWorkflowActions
 
                     return;
                 }
-
-                $record->status = EntryStatus::Published;
-                $record->published_at ??= now();
-                $record->scheduled_at = null;
-                $record->review_note = null;
-                $record->save();
-
-                AuditLog::logStatusChange($record, EntryStatus::Published, $oldStatus);
 
                 Notification::make()
                     ->title($this->workflowPublishedNotificationTitle())
@@ -351,12 +340,9 @@ trait HasWorkflowActions
                     return;
                 }
 
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::Rejected;
-                $record->review_note = $data['reason'];
-                $record->save();
+                $transition = $this->workflowTransitions()->reject($record, $data['reason']);
 
-                AuditLog::logStatusChange($record, EntryStatus::Rejected, $oldStatus, $data['reason']);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus, $data['reason']);
 
                 Notification::make()
                     ->title($this->workflowRejectedNotificationTitle())
@@ -379,12 +365,9 @@ trait HasWorkflowActions
                     return;
                 }
 
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::Draft;
-                $record->review_note = null;
-                $record->save();
+                $transition = $this->workflowTransitions()->saveDraft($record);
 
-                AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title('Vráceno do konceptu')
@@ -407,12 +390,9 @@ trait HasWorkflowActions
                     abort(403);
                 }
 
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::Draft;
-                $record->review_note = null;
-                $record->save();
+                $transition = $this->workflowTransitions()->unpublish($record);
 
-                AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title('Publikace zrušena')
@@ -435,14 +415,9 @@ trait HasWorkflowActions
                     return;
                 }
 
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::Draft;
-                $record->review_note = null;
-                $record->published_at = null;
-                $record->scheduled_at = null;
-                $record->save();
+                $transition = $this->workflowTransitions()->cancelSchedule($record);
 
-                AuditLog::logStatusChange($record, EntryStatus::Draft, $oldStatus);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title('Plánování zrušeno')
@@ -465,14 +440,9 @@ trait HasWorkflowActions
                     abort(403);
                 }
 
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::Published;
-                $record->published_at = now();
-                $record->scheduled_at = null;
-                $record->review_note = null;
-                $record->save();
+                $transition = $this->workflowTransitions()->publishNow($record);
 
-                AuditLog::logStatusChange($record, EntryStatus::Published, $oldStatus);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title($this->workflowPublishedNotificationTitle())
@@ -498,14 +468,19 @@ trait HasWorkflowActions
                 }
 
                 $record->refresh();
-                $oldStatus = $record->status;
-                $record->status = EntryStatus::InReview;
-                $record->review_note = null;
-                $record->save();
+                $transition = $this->workflowTransitions()->transitionToReview($record);
 
-                AuditLog::logStatusChange($record, EntryStatus::InReview, $oldStatus);
+                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
-                $this->sendReviewRequestedDatabaseNotifications($record);
+                $this->workflowNotifications()->sendReviewRequestedDatabaseNotifications(
+                    record: $record,
+                    permission: $this->workflowReviewPermission(),
+                    title: $this->workflowReviewNotificationTitle(),
+                    body: $this->workflowReviewNotificationBody($record),
+                    editUrl: $this->workflowEditUrl($record),
+                    previewRouteName: $this->workflowPreviewRouteName(),
+                    previewRouteParameterName: $this->workflowPreviewRouteParameterName(),
+                );
 
                 Notification::make()
                     ->title('Odesláno ke schválení')
@@ -514,59 +489,14 @@ trait HasWorkflowActions
             });
     }
 
-    private function sendReviewRequestedDatabaseNotifications(Model $record): void
+    private function workflowTransitions(): WorkflowTransitionService
     {
-        if (! Schema::hasTable('notifications')) {
-            return;
-        }
+        return app(WorkflowTransitionService::class);
+    }
 
-        $approvers = User::query()
-            ->permission($this->workflowReviewPermission())
-            ->whereKeyNot(auth()->id())
-            ->get();
-
-        if ($approvers->isEmpty()) {
-            return;
-        }
-
-        Notification::make()
-            ->title($this->workflowReviewNotificationTitle())
-            ->body($this->workflowReviewNotificationBody($record))
-            ->warning()
-            ->actions([
-                Action::make('approve')
-                    ->label('Schválit')
-                    ->button()
-                    ->color('success')
-                    ->url(
-                        $this->workflowEditUrl($record),
-                        shouldOpenInNewTab: true,
-                    )
-                    ->markAsRead(),
-                Action::make('view')
-                    ->label('Zobrazit')
-                    ->button()
-                    ->color('gray')
-                    ->url(
-                        URL::temporarySignedRoute(
-                            $this->workflowPreviewRouteName(),
-                            now()->addHour(),
-                            [$this->workflowPreviewRouteParameterName() => $record->getKey()],
-                        ),
-                        shouldOpenInNewTab: true,
-                    )
-                    ->markAsRead(),
-                Action::make('edit')
-                    ->label('Upravit')
-                    ->button()
-                    ->color('primary')
-                    ->url(
-                        $this->workflowEditUrl($record),
-                        shouldOpenInNewTab: true,
-                    )
-                    ->markAsRead(),
-            ])
-            ->sendToDatabase($approvers);
+    private function workflowNotifications(): WorkflowNotificationService
+    {
+        return app(WorkflowNotificationService::class);
     }
 
     private function getWorkflowRecord(): ?Model

@@ -21,9 +21,20 @@ class PageHistory extends ManageRelatedRecords
 
     protected static ?string $breadcrumb = 'Revize';
 
+    protected static ?string $navigationLabel = 'Revize';
+
     public function getHeading(): string
     {
         return 'Revize: '.$this->getRecord()->title;
+    }
+
+    public function getSubheading(): ?string
+    {
+        $revisionCount = $this->getRecord()->revisions()->count();
+
+        return $revisionCount === 0
+            ? 'Revize se vytvoří při první úpravě obsahu nebo při workflow změně.'
+            : 'K dispozici je '.$revisionCount.' uložených verzí. Kliknutím na řádek otevřete detail změn, případně můžete starší verzi obnovit.';
     }
 
     public function table(Table $table): Table

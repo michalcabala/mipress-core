@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources;
 
 use Filament\Navigation\NavigationItem;
+use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
+use Filament\Resources\Pages\Page as FilamentPage;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\RelationManagers\RevisionsRelationManager;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EntryHistory;
@@ -35,6 +36,8 @@ class EntryResource extends Resource
     protected static ?string $pluralModelLabel = 'Položky';
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
 
     public static function getNavigationItems(): array
     {
@@ -162,11 +165,12 @@ class EntryResource extends Resource
         return EntriesTable::table($table);
     }
 
-    public static function getRelations(): array
+    public static function getRecordSubNavigation(FilamentPage $page): array
     {
-        return [
-            RevisionsRelationManager::class,
-        ];
+        return $page->generateNavigationItems([
+            EditEntry::class,
+            EntryHistory::class,
+        ]);
     }
 
     public static function getPages(): array

@@ -31,7 +31,7 @@ class CollectionResource extends Resource
 
     public static function form(Schema $schema): Schema
     {
-        return CollectionForm::form($schema);
+        return CollectionForm::configure($schema);
     }
 
     public static function table(Table $table): Table

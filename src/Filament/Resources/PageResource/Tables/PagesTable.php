@@ -66,8 +66,25 @@ class PagesTable
                     ->sortable()
                     ->formatStateUsing(fn (Page $record): string => static::formatHierarchyTitle($record->title, static::getPageDepth($record)))
                     ->description(function (Page $record) use ($homepageId): ?string {
-                        return ((string) $record->getKey()) === $homepageId ? 'Domovská stránka' : null;
+                        $parts = [];
+
+                        if (((string) $record->getKey()) === $homepageId) {
+                            $parts[] = 'Domovská stránka';
+                        }
+
+                        if (filled($record->slug)) {
+                            $parts[] = '/'.$record->slug;
+                        }
+
+                        return $parts === [] ? null : implode(' · ', $parts);
                     }),
+                TextColumn::make('slug')
+                    ->label('Slug')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->default('—'),
                 TextColumn::make('parent.title')
                     ->label('Nadřazená')
                     ->sortable()
@@ -81,7 +98,9 @@ class PagesTable
                     ->sortable(),
                 TextColumn::make('author.name')
                     ->label('Autor')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable()
+                    ->default('—'),
                 TextColumn::make('updated_at')
                     ->label('Datum')
                     ->isoDateTime('LLL')

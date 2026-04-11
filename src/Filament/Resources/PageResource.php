@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources;
 
+use Filament\Pages\Enums\SubNavigationPosition;
 use Filament\Resources\Resource;
+use Filament\Resources\Pages\Page as FilamentPage;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use MiPress\Core\Filament\RelationManagers\RevisionsRelationManager;
 use MiPress\Core\Filament\Resources\PageResource\Pages\CreatePage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\EditPage;
 use MiPress\Core\Filament\Resources\PageResource\Pages\ListPages;
@@ -36,6 +37,8 @@ class PageResource extends Resource
 
     protected static ?string $slug = 'pages';
 
+    protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
@@ -52,11 +55,12 @@ class PageResource extends Resource
         return PagesTable::table($table);
     }
 
-    public static function getRelations(): array
+    public static function getRecordSubNavigation(FilamentPage $page): array
     {
-        return [
-            RevisionsRelationManager::class,
-        ];
+        return $page->generateNavigationItems([
+            EditPage::class,
+            PageHistory::class,
+        ]);
     }
 
     public static function getPages(): array

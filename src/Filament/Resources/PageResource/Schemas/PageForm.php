@@ -69,6 +69,7 @@ class PageForm
                                             ->label('Titulek')
                                             ->required()
                                             ->maxLength(255)
+                                            ->placeholder('Např. O nás')
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state): void {
                                                 if (($get('slug') ?? '') !== Str::slug($old)) {
@@ -82,6 +83,8 @@ class PageForm
                                             ->label('Slug')
                                             ->required()
                                             ->maxLength(200)
+                                            ->placeholder('o-nas')
+                                            ->helperText('Používá se v URL stránky.')
                                             ->rules(['alpha_dash']),
                                     ]),
                                     Mason::make('content')
@@ -104,11 +107,13 @@ class PageForm
                                 ->schema([
                                     TextInput::make('meta_title')
                                         ->label('SEO titulek')
-                                        ->maxLength(60),
+                                        ->maxLength(60)
+                                        ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek stránky.'),
                                     Textarea::make('meta_description')
                                         ->label('SEO popis')
                                         ->maxLength(160)
-                                        ->rows(3),
+                                        ->rows(3)
+                                        ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
                                 ]),
                         ]),
 
@@ -227,6 +232,7 @@ class PageForm
                                         ->relationship('author', 'name')
                                         ->searchable()
                                         ->preload()
+                                        ->native(false)
                                         ->required()
                                         ->default(fn () => auth()->id()),
                                     TextInput::make('sort_order')

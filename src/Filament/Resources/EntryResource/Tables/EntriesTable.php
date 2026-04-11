@@ -65,7 +65,15 @@ class EntriesTable
                     })
                     ->tooltip(fn (Entry $record): ?string => static::getResourceLockTooltip($record, static::getResourceLockState($record)))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->description(fn (Entry $record): ?string => filled($record->slug) ? '/'.$record->slug : null),
+                TextColumn::make('slug')
+                    ->label('Slug')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->default('—'),
                 TextColumn::make('status')
                     ->label('Stav')
                     ->badge()
@@ -84,7 +92,9 @@ class EntriesTable
                     ->toggleable(),
                 TextColumn::make('author.name')
                     ->label('Autor')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable()
+                    ->default('—'),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')

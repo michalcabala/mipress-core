@@ -9,13 +9,14 @@ use Carbon\CarbonInterface;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesResourceLockRenewal;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Page;
+use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\WorkflowTransitionService;
 
 class EditPage extends EditRecord
 {
@@ -24,6 +25,8 @@ class EditPage extends EditRecord
     }
 
     protected static string $resource = PageResource::class;
+
+    protected static ?string $navigationLabel = 'Editace';
 
     protected Width|string|null $maxWidth = Width::Full;
 
@@ -37,6 +40,10 @@ class EditPage extends EditRecord
         return static::$resource::getUrl('index');
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $record = $this->getRecord();
@@ -54,13 +61,15 @@ class EditPage extends EditRecord
         $data['parent_id'] = $this->resolveParentId($data);
 
         if ($this->workflowIntent === 'review') {
-            $data['status'] = EntryStatus::InReview;
-            $data['review_note'] = null;
+            $data = app(WorkflowTransitionService::class)->prepareReviewData($data);
         }
 
         return $data;
     }
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
     private function resolveParentId(array $data): ?int
     {
         $record = $this->getRecord();
@@ -69,63 +78,10 @@ class EditPage extends EditRecord
             return null;
         }
 
-        $parentId = data_get($data, 'parent_id');
-
-        if (! is_numeric($parentId)) {
-            return null;
-        }
-
-        $resolvedParentId = Page::query()
-            ->whereKey((int) $parentId)
-            ->value('id');
-
-        if (! is_numeric($resolvedParentId)) {
-            return null;
-        }
-
-        $resolvedParentId = (int) $resolvedParentId;
-
-        if ($resolvedParentId === (int) $record->getKey()) {
-            return null;
-        }
-
-        if ($this->wouldCreateHierarchyCycle($record, $resolvedParentId)) {
-            throw ValidationException::withMessages([
-                'parent_id' => 'Nelze vybrat podřízenou stránku jako nadřazenou.',
-            ]);
-        }
-
-        return $resolvedParentId;
-    }
-
-    private function wouldCreateHierarchyCycle(Page $record, int $candidateParentId): bool
-    {
-        $currentId = $candidateParentId;
-        $visited = [];
-
-        while ($currentId > 0) {
-            if ($currentId === (int) $record->getKey()) {
-                return true;
-            }
-
-            if (isset($visited[$currentId])) {
-                return true;
-            }
-
-            $visited[$currentId] = true;
-
-            $parentId = Page::query()
-                ->whereKey($currentId)
-                ->value('parent_id');
-
-            if (! is_numeric($parentId)) {
-                return false;
-            }
-
-            $currentId = (int) $parentId;
-        }
-
-        return false;
+        return app(HierarchyParentResolver::class)->resolvePageParentForEdit(
+            $record,
+            data_get($data, 'parent_id'),
+        );
     }
 
     protected function workflowRecordClass(): string
