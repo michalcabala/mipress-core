@@ -93,6 +93,52 @@ class BlueprintForm
                                     ->compact()
                                     ->collapsible()
                                     ->collapsed(),
+                                Section::make('Podmíněné zobrazení')
+                                    ->schema([
+                                        Select::make('config.visibility_mode')
+                                            ->label('Vyhodnocení podmínek')
+                                            ->options([
+                                                'all' => 'Všechny podmínky (AND)',
+                                                'any' => 'Alespoň jedna podmínka (OR)',
+                                            ])
+                                            ->default('all')
+                                            ->native(false),
+                                        Repeater::make('config.visibility_conditions')
+                                            ->label('Podmínky')
+                                            ->schema([
+                                                Grid::make(2)->schema([
+                                                    TextInput::make('field')
+                                                        ->label('Handle pole')
+                                                        ->required()
+                                                        ->maxLength(255)
+                                                        ->helperText('Např. title, category nebo data.nested.value.'),
+                                                    Select::make('operator')
+                                                        ->label('Operátor')
+                                                        ->required()
+                                                        ->options([
+                                                            'equals' => 'Rovná se',
+                                                            'not_equals' => 'Nerovná se',
+                                                            'contains' => 'Obsahuje',
+                                                            'not_contains' => 'Neobsahuje',
+                                                            'filled' => 'Je vyplněno',
+                                                            'blank' => 'Je prázdné',
+                                                        ])
+                                                        ->default('equals')
+                                                        ->native(false)
+                                                        ->live(),
+                                                ]),
+                                                TextInput::make('value')
+                                                    ->label('Hodnota')
+                                                    ->visible(fn (Get $get): bool => in_array((string) $get('operator'), ['equals', 'not_equals', 'contains', 'not_contains'], true)),
+                                            ])
+                                            ->reorderable()
+                                            ->collapsible()
+                                            ->defaultItems(0)
+                                            ->addActionLabel('Přidat podmínku'),
+                                    ])
+                                    ->compact()
+                                    ->collapsible()
+                                    ->collapsed(),
                             ])
                             ->reorderable()
                             ->collapsible()

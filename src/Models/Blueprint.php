@@ -47,7 +47,6 @@ class Blueprint extends Model
     }
 
     /**
-     * @param  mixed  $fields
      * @return array<int, array<string, mixed>>
      */
     private static function normalizeFieldsPayload(mixed $fields): array
@@ -105,7 +104,6 @@ class Blueprint extends Model
     }
 
     /**
-     * @param  mixed  $fieldDefinitions
      * @return array<int, array<string, mixed>>
      */
     private static function normalizeFieldDefinitions(mixed $fieldDefinitions): array
@@ -138,14 +136,80 @@ class Blueprint extends Model
             $normalizedField['order'] = is_numeric($fieldDefinition['order'] ?? null)
                 ? (int) $fieldDefinition['order']
                 : $index;
-            $normalizedField['config'] = is_array($fieldDefinition['config'] ?? null)
-                ? $fieldDefinition['config']
-                : [];
+            $normalizedField['config'] = static::normalizeFieldConfig($fieldDefinition['config'] ?? null);
 
             $normalized[] = $normalizedField;
         }
 
         return $normalized;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private static function normalizeFieldConfig(mixed $config): array
+    {
+        if (! is_array($config)) {
+            return [];
+        }
+
+        $normalized = $config;
+        $normalized['visibility_mode'] = mb_strtolower((string) ($config['visibility_mode'] ?? 'all')) === 'any'
+            ? 'any'
+            : 'all';
+        $normalized['visibility_conditions'] = static::normalizeVisibilityConditions($config['visibility_conditions'] ?? []);
+
+        return $normalized;
+    }
+
+    /**
+     * @return array<int, array{field: string, operator: string, value?: mixed}>
+     */
+    private static function normalizeVisibilityConditions(mixed $conditions): array
+    {
+        if (! is_array($conditions) || $conditions === []) {
+            return [];
+        }
+
+        $supportedOperators = ['equals', 'not_equals', 'contains', 'not_contains', 'filled', 'blank'];
+
+        return collect($conditions)
+            ->filter(fn (mixed $condition): bool => is_array($condition))
+            ->map(function (array $condition) use ($supportedOperators): ?array {
+                $field = trim((string) ($condition['field'] ?? ''));
+
+                if ($field === '') {
+                    return null;
+                }
+
+                $operator = mb_strtolower((string) ($condition['operator'] ?? 'equals'));
+
+                if (! in_array($operator, $supportedOperators, true)) {
+                    $operator = 'equals';
+                }
+
+                $normalizedCondition = [
+                    'field' => $field,
+                    'operator' => $operator,
+                ];
+
+                if (in_array($operator, ['equals', 'not_equals', 'contains', 'not_contains'], true)) {
+                    $value = $condition['value'] ?? null;
+
+                    if (is_string($value)) {
+                        $value = trim($value);
+                    } elseif (! is_scalar($value) && $value !== null) {
+                        $value = null;
+                    }
+
+                    $normalizedCondition['value'] = $value;
+                }
+
+                return $normalizedCondition;
+            })
+            ->filter(fn (?array $condition): bool => $condition !== null)
+            ->values()
+            ->all();
     }
 
     private static function normalizeBoolean(mixed $value): bool
