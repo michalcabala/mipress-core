@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
+use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
+use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
@@ -36,14 +38,26 @@ class EditEntry extends EditRecord
 
     protected function getHeaderActions(): array
     {
-        return [
-            $this->getSaveFormAction()
-                ->label('Aktualizovat')
-                ->icon('far-floppy-disk')
-                ->formId('form'),
-            $this->getCancelFormAction()
-                ->icon('far-xmark'),
-        ];
+        $actions = [];
+
+        if ($viewOnWebAction = $this->getViewOnWebHeaderAction()) {
+            $actions[] = $viewOnWebAction;
+        }
+
+        if ($previewAction = $this->getPreviewHeaderAction()) {
+            $actions[] = $previewAction;
+        }
+
+        $actions[] = $this->getSaveFormAction()
+            ->label('Uložit')
+            ->icon('far-floppy-disk')
+            ->formId('form');
+
+        $actions[] = $this->getCancelFormAction()
+            ->label('Zrušit')
+            ->icon('far-xmark');
+
+        return $actions;
     }
 
     protected function getFormActions(): array
@@ -159,6 +173,47 @@ class EditEntry extends EditRecord
         }
 
         $this->statusBeforeSave = $record->status;
+    }
+
+    private function getViewOnWebHeaderAction(): ?Action
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Entry || auth()->user()?->can('view', $record) !== true) {
+            return null;
+        }
+
+        if ($record->status !== EntryStatus::Published || blank($record->getPublicUrl())) {
+            return null;
+        }
+
+        return Action::make('viewLive')
+            ->label('Zobrazit na webu')
+            ->icon('far-arrow-up-right-from-square')
+            ->color('gray')
+            ->url($record->getPublicUrl(), shouldOpenInNewTab: true);
+    }
+
+    private function getPreviewHeaderAction(): ?Action
+    {
+        $record = $this->getRecord();
+
+        if (! $record instanceof Entry || auth()->user()?->can('view', $record) !== true) {
+            return null;
+        }
+
+        return Action::make('preview')
+            ->label('Náhled')
+            ->icon('far-eye')
+            ->color('gray')
+            ->url(
+                URL::temporarySignedRoute(
+                    'preview.entry',
+                    now()->addHour(),
+                    ['entry' => $record->getKey()],
+                ),
+                shouldOpenInNewTab: true,
+            );
     }
 
     /**
