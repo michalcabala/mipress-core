@@ -29,6 +29,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Models\AuditLog;
@@ -42,6 +43,8 @@ use function Filament\Support\generate_icon_html;
 
 class EntryForm
 {
+    use HasReactivePublicationFields;
+
     public static function configure(Schema $schema): Schema
     {
         $collection = self::resolveCollection($schema);
@@ -146,11 +149,7 @@ class EntryForm
                                 ->icon('fal-calendar')
                                 ->schema([
                                     self::makePublicationStatusField($record),
-                                    DateTimePicker::make('published_at')
-                                        ->label('Datum publikace')
-                                        ->nullable()
-                                        ->disabled(fn (): bool => ! self::canPublish($record))
-                                        ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
+                                    self::makePublicationDateField($record),
                                     Select::make('author_id')
                                         ->label('Autor')
                                         ->relationship('author', 'name')
@@ -322,15 +321,30 @@ class EntryForm
 
     private static function makePublicationStatusField(?Entry $record): ToggleButtons
     {
-        return ToggleButtons::make('status')
-            ->label('Stav publikování')
-            ->options(self::getPublicationStatusOptions($record))
-            ->colors(self::getPublicationStatusColors())
-            ->icons(self::getPublicationStatusIcons())
-            ->inline()
-            ->required()
-            ->default(EntryStatus::Draft->value)
-            ->helperText(self::publicationStatusHelperText($record));
+        return self::configureReactivePublicationStatusField(
+            ToggleButtons::make('status')
+                ->label('Stav publikování')
+                ->options(self::getPublicationStatusOptions($record))
+                ->colors(self::getPublicationStatusColors())
+                ->icons(self::getPublicationStatusIcons())
+                ->inline()
+                ->required()
+                ->default(EntryStatus::Draft->value)
+                ->helperText(self::publicationStatusHelperText($record)),
+            self::canPublish($record),
+        );
+    }
+
+    private static function makePublicationDateField(?Entry $record): DateTimePicker
+    {
+        return self::configureReactivePublicationDateField(
+            DateTimePicker::make('published_at')
+                ->label('Datum publikace')
+                ->nullable()
+                ->disabled(fn (): bool => ! self::canPublish($record))
+                ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
+            self::canPublish($record),
+        );
     }
 
     /**
