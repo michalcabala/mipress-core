@@ -26,6 +26,7 @@ use Filament\Tables\Table;
 use Filament\Support\Enums\IconPosition;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
@@ -259,20 +260,59 @@ class EntriesTable
             return [];
         }
 
-        $taxonomies = $collection->taxonomies;
+        $taxonomies = $collection->taxonomies
+            ->filter(fn (Taxonomy $taxonomy): bool => (bool) ($taxonomy->show_in_entries_table ?? true))
+            ->values();
 
         if ($taxonomies->isEmpty()) {
             return [];
         }
 
-        return $taxonomies->map(fn (Taxonomy $taxonomy): TextColumn => TextColumn::make("taxonomy_{$taxonomy->getKey()}")
-            ->label($taxonomy->title)
-            ->state(fn (Entry $record): string => static::formatTaxonomyBadges($record, $taxonomy))
-            ->html()
-            ->toggleable()
-            ->searchable(false)
-            ->sortable(false)
-        )->toArray();
+        return $taxonomies->map(function (Taxonomy $taxonomy): TextColumn {
+            $taxonomyId = $taxonomy->getKey();
+
+            return TextColumn::make("taxonomy_{$taxonomyId}")
+                ->label($taxonomy->title)
+                ->state(fn (Entry $record): string => static::formatTaxonomyBadges($record, $taxonomy))
+                ->html()
+                ->toggleable()
+                ->searchable(
+                    (bool) ($taxonomy->searchable_in_entries_table ?? false),
+                    fn (Builder $query, string $search): Builder => static::applyTaxonomySearch($query, $taxonomyId, $search),
+                )
+                ->sortable(
+                    (bool) ($taxonomy->sortable_in_entries_table ?? false),
+                    fn (Builder $query, string $direction): Builder => static::applyTaxonomySort($query, $taxonomyId, $direction),
+                );
+        })->toArray();
+    }
+
+    private static function applyTaxonomySearch(Builder $query, int $taxonomyId, string $search): Builder
+    {
+        if (trim($search) === '') {
+            return $query;
+        }
+
+        return $query->whereHas(
+            'terms',
+            fn (Builder $termsQuery): Builder => $termsQuery
+                ->where('terms.taxonomy_id', $taxonomyId)
+                ->where('terms.title', 'like', '%'.$search.'%'),
+        );
+    }
+
+    private static function applyTaxonomySort(Builder $query, int $taxonomyId, string $direction): Builder
+    {
+        $direction = mb_strtolower($direction) === 'desc' ? 'desc' : 'asc';
+        $entryTable = $query->getModel()->getTable();
+
+        $sortSubQuery = DB::table('entry_term')
+            ->join('terms', 'terms.id', '=', 'entry_term.term_id')
+            ->selectRaw('MIN(terms.title)')
+            ->whereColumn('entry_term.entry_id', $entryTable.'.id')
+            ->where('terms.taxonomy_id', $taxonomyId);
+
+        return $query->orderBy($sortSubQuery, $direction);
     }
 
     private static function formatTaxonomyBadges(Entry $record, Taxonomy $taxonomy): string
@@ -376,7 +416,9 @@ class EntriesTable
             return [];
         }
 
-        $taxonomies = $collection->taxonomies;
+        $taxonomies = $collection->taxonomies
+            ->filter(fn (Taxonomy $taxonomy): bool => (bool) ($taxonomy->show_in_entries_filter ?? true))
+            ->values();
 
         if ($taxonomies->isEmpty()) {
             return [];
@@ -476,6 +518,7 @@ class EntriesTable
         }
 
         return $collection->taxonomies
+            ->filter(fn (Taxonomy $taxonomy): bool => (bool) ($taxonomy->show_in_entries_filter ?? true))
             ->map(fn (Taxonomy $taxonomy): mixed => $filters["taxonomy_{$taxonomy->getKey()}"] ?? null)
             ->filter()
             ->values()

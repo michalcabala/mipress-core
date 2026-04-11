@@ -84,6 +84,33 @@ class Entry extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $entry): void {
+            if (! $entry->collection_id) {
+                $entry->blueprint_id = null;
+
+                return;
+            }
+
+            $resolvedCollectionId = (int) $entry->collection_id;
+            $collectionBlueprintId = null;
+
+            if (
+                $entry->relationLoaded('collection')
+                && $entry->collection !== null
+                && (int) $entry->collection->getKey() === $resolvedCollectionId
+            ) {
+                $collectionBlueprintId = $entry->collection->blueprint_id;
+            } else {
+                $collectionBlueprintId = Collection::query()
+                    ->whereKey($resolvedCollectionId)
+                    ->value('blueprint_id');
+            }
+
+            $entry->blueprint_id = is_numeric($collectionBlueprintId)
+                ? (int) $collectionBlueprintId
+                : null;
+        });
+
         static::saved(function (self $entry): void {
             if (! $entry->og_image_id) {
                 return;

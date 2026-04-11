@@ -25,12 +25,20 @@ class Taxonomy extends Model
         'blueprint_id',
         'description',
         'collection_id',
+        'show_in_entries_table',
+        'show_in_entries_filter',
+        'searchable_in_entries_table',
+        'sortable_in_entries_table',
     ];
 
     protected $casts = [
         'blueprint_id' => 'integer',
         'collection_id' => 'integer',
         'is_hierarchical' => 'boolean',
+        'show_in_entries_table' => 'boolean',
+        'show_in_entries_filter' => 'boolean',
+        'searchable_in_entries_table' => 'boolean',
+        'sortable_in_entries_table' => 'boolean',
     ];
 
     public function getSlugOptions(): SlugOptions

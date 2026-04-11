@@ -141,7 +141,7 @@ class ListEntries extends ListRecords
             return null;
         }
 
-        $this->resolvedCollection = Collection::where('handle', $this->collectionHandle)->first();
+        $this->resolvedCollection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         return $this->resolvedCollection;
     }

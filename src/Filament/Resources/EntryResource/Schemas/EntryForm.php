@@ -404,9 +404,7 @@ class EntryForm
             $handle = $livewire->collectionHandle;
 
             if (filled($handle)) {
-                return Collection::where('handle', $handle)
-                    ->with('blueprint')
-                    ->first();
+                return EntryResource::resolveCollectionByHandle((string) $handle);
             }
         }
 

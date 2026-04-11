@@ -43,15 +43,13 @@ class CreateEntry extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        $collection = filled($this->collectionHandle)
-            ? Collection::where('handle', $this->collectionHandle)->first()
-            : null;
+        $collection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         if ($collection && empty($data['collection_id'])) {
             $data['collection_id'] = $collection->id;
         }
 
-        if ($collection?->blueprint_id) {
+        if ($collection) {
             $data['blueprint_id'] = $collection->blueprint_id;
         }
 
@@ -159,9 +157,7 @@ class CreateEntry extends CreateRecord
 
     public function getTitle(): string
     {
-        $collection = filled($this->collectionHandle)
-            ? Collection::where('handle', $this->collectionHandle)->first()
-            : null;
+        $collection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         return $collection
             ? 'Nová položka — '.$collection->name

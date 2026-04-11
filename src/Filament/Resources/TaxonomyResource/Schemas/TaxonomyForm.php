@@ -61,6 +61,25 @@ class TaxonomyForm
                     ->nullable()
                     ->helperText('Vyberte kolekci, ve které se tato taxonomie zobrazí'),
             ]),
+
+            Section::make('Zobrazení v Entries tabulce')->schema([
+                Grid::make(2)->schema([
+                    Toggle::make('show_in_entries_table')
+                        ->label('Zobrazit sloupec')
+                        ->default(true),
+                    Toggle::make('show_in_entries_filter')
+                        ->label('Zobrazit filtr')
+                        ->default(true),
+                ]),
+                Grid::make(2)->schema([
+                    Toggle::make('searchable_in_entries_table')
+                        ->label('Sloupec je prohledávatelný')
+                        ->default(false),
+                    Toggle::make('sortable_in_entries_table')
+                        ->label('Sloupec je řaditelný')
+                        ->default(false),
+                ]),
+            ]),
         ]);
     }
 }

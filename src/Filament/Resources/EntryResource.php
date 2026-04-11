@@ -74,6 +74,32 @@ class EntryResource extends Resource
         return auth()->user()?->hasPermissionTo('entry.publish') === true;
     }
 
+    public static function resolveCollectionByHandle(?string $handle): ?Collection
+    {
+        if (! is_string($handle) || blank($handle)) {
+            return null;
+        }
+
+        $request = request();
+        $cacheKey = 'mipress.current_collection.'.$handle;
+
+        if ($request->attributes->has($cacheKey)) {
+            /** @var Collection|null $cachedCollection */
+            $cachedCollection = $request->attributes->get($cacheKey);
+
+            return $cachedCollection;
+        }
+
+        $collection = Collection::query()
+            ->where('handle', $handle)
+            ->with(['blueprint', 'taxonomies'])
+            ->first();
+
+        $request->attributes->set($cacheKey, $collection);
+
+        return $collection;
+    }
+
     public static function getCurrentCollection(): ?Collection
     {
         $routeHandle = request()->route('collection');
@@ -86,23 +112,7 @@ class EntryResource extends Resource
             return null;
         }
 
-        $request = request();
-        $cacheKey = 'mipress.current_collection.' . $handle;
-
-        if ($request->attributes->has($cacheKey)) {
-            /** @var Collection|null $cachedCollection */
-            $cachedCollection = $request->attributes->get($cacheKey);
-
-            return $cachedCollection;
-        }
-
-        $collection = Collection::where('handle', $handle)
-            ->with('blueprint')
-            ->first();
-
-        $request->attributes->set($cacheKey, $collection);
-
-        return $collection;
+        return static::resolveCollectionByHandle($handle);
     }
 
     public static function getEloquentQuery(): Builder
