@@ -24,6 +24,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
 
@@ -77,11 +78,12 @@ class PagesTable
                     ->icon(fn (EntryStatus $state): ?string => $state->getIcon())
                     ->color(fn (EntryStatus $state) => $state->getColor())
                     ->sortable(),
-                TextColumn::make('author.name')
+                UserColumn::make('author.name')
                     ->label('Autor')
+                    ->state(fn (Page $record): ?User => $record->author)
                     ->sortable()
                     ->toggleable()
-                    ->default('—'),
+                    ->wrapped(),
                 TextColumn::make('updated_at')
                     ->label('Datum')
                     ->isoDateTime('LLL')

@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
@@ -82,11 +83,12 @@ class EntriesTable
                         : null)
                     ->sortable()
                     ->toggleable(),
-                TextColumn::make('author.name')
+                UserColumn::make('author.name')
                     ->label('Autor')
+                    ->state(fn (Entry $record): ?User => $record->author)
                     ->sortable()
                     ->toggleable()
-                    ->default('—'),
+                    ->wrapped(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
