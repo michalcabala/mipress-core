@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
-use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use MiPress\Core\Enums\EntryStatus;
@@ -41,23 +40,16 @@ class EditPage extends EditRecord
         return [
             $this->getSaveFormAction()
                 ->label('Aktualizovat')
+                ->icon('far-floppy-disk')
                 ->formId('form'),
-            $this->getCancelFormAction(),
+            $this->getCancelFormAction()
+                ->icon('far-xmark'),
         ];
     }
 
     protected function getFormActions(): array
     {
         return [];
-    }
-
-    protected function getCancelFormAction(): Action
-    {
-        return Action::make('cancel')
-            ->label('Zrušit')
-            ->color('gray')
-            ->icon('far-xmark')
-            ->url($this->getRedirectUrl());
     }
 
     protected function getRedirectUrl(): string

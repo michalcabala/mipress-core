@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
-use Filament\Actions\Action;
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
@@ -35,8 +34,10 @@ class CreateEntry extends CreateRecord
         return [
             $this->getCreateFormAction()
                 ->label('Uložit')
+                ->icon('far-floppy-disk')
                 ->formId('form'),
-            $this->getCancelAction(),
+            $this->getCancelFormAction()
+                ->icon('far-xmark'),
         ];
     }
 
@@ -129,14 +130,5 @@ class CreateEntry extends CreateRecord
         }
 
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
-    }
-
-    private function getCancelAction(): Action
-    {
-        return Action::make('cancel')
-            ->label('Zrušit')
-            ->color('gray')
-            ->icon('far-xmark')
-            ->url($this->getRedirectUrl());
     }
 }
