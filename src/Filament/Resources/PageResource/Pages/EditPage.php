@@ -6,6 +6,7 @@ namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Blendbyte\FilamentResourceLock\Resources\Pages\Concerns\UsesResourceLock;
 use Carbon\CarbonInterface;
+use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
@@ -33,6 +34,14 @@ class EditPage extends EditRecord
     protected function getFormActions(): array
     {
         return [];
+    }
+
+    protected function getCancelFormAction(): Action
+    {
+        return Action::make('cancel')
+            ->label('Zrušit')
+            ->color('gray')
+            ->url($this->getRedirectUrl());
     }
 
     protected function getRedirectUrl(): string

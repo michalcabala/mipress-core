@@ -196,9 +196,7 @@ trait ConfiguresRevisionTable
         $leftLabel = $revisionA->created_at->format('j. n. Y H:i:s');
 
         if ($revisionBId === null) {
-            $rightData = collect($owner->getAttributes())
-                ->except(['id', 'created_at', 'updated_at', 'deleted_at'])
-                ->toArray();
+            $rightData = $this->resolveCurrentOwnerData($owner);
             $rightLabel = 'Aktuální stav';
         } else {
             $revisionB = Revision::find($revisionBId);
@@ -222,9 +220,7 @@ trait ConfiguresRevisionTable
     {
         $owner = $this->resolveRevisionOwner();
         $leftData = $record->data ?? [];
-        $rightData = collect($owner->getAttributes())
-            ->except(['id', 'created_at', 'updated_at', 'deleted_at'])
-            ->toArray();
+        $rightData = $this->resolveCurrentOwnerData($owner);
 
         return $this->buildComparisonSchema(
             $leftData,
@@ -389,5 +385,14 @@ trait ConfiguresRevisionTable
     protected function revisionDiffPresenter(): RevisionDiffPresenter
     {
         return app(RevisionDiffPresenter::class);
+    }
+
+    private function resolveCurrentOwnerData(Model $owner): array
+    {
+        $raw = collect($owner->getOriginal())
+            ->except(['id', 'created_at', 'updated_at', 'deleted_at'])
+            ->toArray();
+
+        return json_decode((string) json_encode($raw), true) ?? [];
     }
 }
