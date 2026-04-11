@@ -16,6 +16,11 @@ class ResourceLockResource extends BaseLockResource
 
     protected static ?int $navigationSort = 90;
 
+    public static function getNavigationGroup(): ?string
+    {
+        return null;
+    }
+
     public static function getNavigationLabel(): string
     {
         return 'Správa zámků';
