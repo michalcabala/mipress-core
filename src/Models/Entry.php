@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MiPress\Core\Models;
 
 use App\Models\User;
-use Awcodes\Curator\Models\Media;
 use Awcodes\Mason\Support\MasonRenderer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -16,18 +15,31 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Media\MediaConfig;
+use MiPress\Core\Media\RegistersMiPressMediaConversions;
 use MiPress\Core\Mason\EditorialBrickCollection;
-use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Traits\Auditable;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
 use MiPress\Core\Traits\HasWorkflow;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
-class Entry extends Model
+class Entry extends Model implements HasMedia
 {
-    use Auditable, HasFactory, HasRevisions, HasSeo, HasSlug, HasWorkflow, SoftDeletes;
+    use Auditable;
+    use HasFactory;
+    use HasRevisions;
+    use HasSeo;
+    use HasSlug;
+    use HasWorkflow;
+    use InteractsWithMedia;
+    use RegistersMiPressMediaConversions {
+        RegistersMiPressMediaConversions::registerMediaConversions insteadof InteractsWithMedia;
+    }
+    use SoftDeletes;
 
     protected $table = 'entries';
 
@@ -110,21 +122,6 @@ class Entry extends Model
                 : null;
         });
 
-        static::saved(function (self $entry): void {
-            if (! $entry->og_image_id) {
-                return;
-            }
-
-            if (! $entry->wasChanged('og_image_id') && ! $entry->wasRecentlyCreated) {
-                return;
-            }
-
-            $media = $entry->ogImage()->first();
-
-            if ($media) {
-                app(CurationGenerator::class)->generateOg($media);
-            }
-        });
     }
 
     public function getSlugOptions(): SlugOptions
@@ -143,6 +140,18 @@ class Entry extends Model
     public function blueprint(): BelongsTo
     {
         return $this->belongsTo(Blueprint::class);
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection(MediaConfig::featuredCollection())
+            ->singleFile()
+            ->useDisk(MediaConfig::disk())
+            ->acceptsMimeTypes(MediaConfig::allowedMimeTypes());
+
+        $this->addMediaCollection(MediaConfig::galleryCollection())
+            ->useDisk(MediaConfig::disk())
+            ->acceptsMimeTypes(MediaConfig::allowedMimeTypes());
     }
 
     public function author(): BelongsTo

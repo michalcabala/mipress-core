@@ -104,6 +104,7 @@ class PagesTable
                 UserSelectFilter::make('author_id')
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions())
+                    ->multiple()
                     ->searchable(),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')

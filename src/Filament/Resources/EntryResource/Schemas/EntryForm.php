@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Schemas;
 
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Mason\Enums\SidebarPosition;
 use Awcodes\Mason\Mason;
 use CodeWithDennis\FilamentSelectTree\SelectTree;
@@ -29,6 +28,8 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use MiPress\Core\Filament\Forms\Components\UserSelect;
 use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
@@ -76,8 +77,7 @@ class EntryForm
                     ->maxLength(160)
                     ->rows(3)
                     ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
-                CuratorPicker::make('og_image_id')
-                    ->relationship('ogImage', 'id')
+                MediaPicker::make('og_image_id')
                     ->label('OG obrázek')
                     ->nullable()
                     ->helperText('Obrázek pro sdílení na sociálních sítích.'),
@@ -150,7 +150,7 @@ class EntryForm
                                 ->schema([
                                     self::makePublicationStatusField($record),
                                     self::makePublicationDateField($record),
-                                    Select::make('author_id')
+                                    UserSelect::make('author_id')
                                         ->label('Autor')
                                         ->relationship('author', 'name')
                                         ->searchable()
@@ -176,8 +176,7 @@ class EntryForm
                             Section::make('Hlavní obrázek')
                                 ->icon('fal-image')
                                 ->schema([
-                                    CuratorPicker::make('featured_image_id')
-                                        ->relationship('featuredImage', 'id')
+                                    MediaPicker::make('featured_image_id')
                                         ->label('')
                                         ->nullable(),
                                 ]),

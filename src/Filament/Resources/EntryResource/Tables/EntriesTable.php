@@ -27,13 +27,14 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Tables\Columns\UserColumn;
-use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
-use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\Filament\Resources\EntryResource;
+use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
+use MiPress\Core\Filament\Tables\Columns\UserColumn;
+use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Models\Media;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Services\BlueprintFieldResolver;
@@ -44,6 +45,11 @@ class EntriesTable
      * @var array<int, array<int, string>>
      */
     private static array $taxonomyTermOptionsCache = [];
+
+    /**
+     * @var array<int, Media|null>
+     */
+    private static array $libraryMediaCache = [];
 
     public static function table(Table $table, ?Collection $collection = null): Table
     {
@@ -56,7 +62,7 @@ class EntriesTable
                     ->height(40)
                     ->width(40)
                     ->checkFileExistence(false)
-                    ->state(fn (Entry $record): ?string => mipress_media_url($record->featuredImage, 'thumbnail')),
+                    ->state(fn (Entry $record): ?string => mipress_media_url(static::resolveFeaturedThumbnailMedia($record), 'thumbnail')),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -101,6 +107,7 @@ class EntriesTable
                 UserSelectFilter::make('author_id')
                     ->label('Autor')
                     ->options(fn (): array => static::getAuthorFilterOptions($currentCollection))
+                    ->multiple()
                     ->searchable(),
                 SelectFilter::make('created_month')
                     ->label('Měsíc')
@@ -142,6 +149,31 @@ class EntriesTable
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
+    }
+
+    private static function resolveFeaturedThumbnailMedia(Entry $record): ?Media
+    {
+        $featuredMedia = $record->featuredImage;
+
+        if (! $featuredMedia instanceof Media) {
+            return null;
+        }
+
+        $libraryMediaId = $featuredMedia->getCustomProperty('library_media_id');
+
+        if (! is_numeric($libraryMediaId)) {
+            return $featuredMedia;
+        }
+
+        $libraryMediaId = (int) $libraryMediaId;
+
+        if (! array_key_exists($libraryMediaId, static::$libraryMediaCache)) {
+            static::$libraryMediaCache[$libraryMediaId] = Media::query()->find($libraryMediaId);
+        }
+
+        $libraryMedia = static::$libraryMediaCache[$libraryMediaId];
+
+        return $libraryMedia instanceof Media ? $libraryMedia : $featuredMedia;
     }
 
     /**

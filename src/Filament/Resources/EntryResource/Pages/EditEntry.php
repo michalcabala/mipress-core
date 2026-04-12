@@ -17,6 +17,7 @@ use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Services\EntryTaxonomySyncService;
 use MiPress\Core\Services\HierarchyParentResolver;
+use MiPress\Core\Services\ModelMediaSyncService;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -67,10 +68,8 @@ class EditEntry extends EditRecord
 
     protected function getRedirectUrl(): string
     {
-        $collection = $this->getRecord()->collection;
-
-        return static::$resource::getUrl('index', [
-            'collection' => $collection?->handle,
+        return static::$resource::getUrl('edit', [
+            'record' => $this->getRecord(),
         ]);
     }
 
@@ -83,6 +82,22 @@ class EditEntry extends EditRecord
             ...parent::getSubNavigationParameters(),
             'currentPageClass' => static::class,
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    protected function mutateFormDataBeforeFill(array $data): array
+    {
+        $record = $this->getRecord();
+
+        if ($record instanceof Entry && $record->featuredImage !== null) {
+            $data['featured_image_id'] = $record->featuredImage->getCustomProperty('library_media_id')
+                ?? $record->featured_image_id;
+        }
+
+        return $data;
     }
 
     /**
@@ -147,6 +162,10 @@ class EditEntry extends EditRecord
         }
 
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
+        app(ModelMediaSyncService::class)->syncFeaturedImage(
+            $record,
+            data_get($this->form->getRawState(), 'featured_image_id'),
+        );
 
         if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
             AuditLog::logStatusChange(

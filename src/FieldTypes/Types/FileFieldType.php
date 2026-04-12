@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MiPress\Core\FieldTypes\Types;
 
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\FieldTypes\AbstractFieldType;
 use MiPress\Core\FieldTypes\FieldCategory;
+use MiPress\Core\Filament\Forms\Components\MediaPicker;
 
 class FileFieldType extends AbstractFieldType
 {
@@ -32,7 +32,7 @@ class FileFieldType extends AbstractFieldType
 
     public function toFormComponent(string $handle, string $label, bool $required, array $config): mixed
     {
-        return CuratorPicker::make($handle)
+        return MediaPicker::make($handle)
             ->label($label)
             ->required($required);
     }

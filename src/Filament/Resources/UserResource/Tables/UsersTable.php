@@ -15,7 +15,6 @@ use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -23,6 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Filament\Resources\UserResource;
+use MiPress\Core\Filament\Tables\Columns\UserColumn;
 
 class UsersTable
 {
@@ -31,16 +31,9 @@ class UsersTable
         return $table
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['roles']))
             ->columns([
-                ImageColumn::make('avatar')
-                    ->label('Avatar')
-                    ->height(40)
-                    ->width(40)
-                    ->circular()
-                    ->checkFileExistence(false)
-                    ->state(fn (User $record): ?string => $record->getFilamentAvatarUrl()),
-
-                TextColumn::make('name')
-                    ->label('Jméno')
+                UserColumn::make('name')
+                    ->label('Uživatel')
+                    ->state(fn (User $record): User => $record)
                     ->searchable()
                     ->sortable(),
 

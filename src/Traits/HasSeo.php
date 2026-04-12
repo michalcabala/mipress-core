@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Traits;
 
-use Awcodes\Curator\Models\Media;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
+use MiPress\Core\Models\Media;
 
 trait HasSeo
 {

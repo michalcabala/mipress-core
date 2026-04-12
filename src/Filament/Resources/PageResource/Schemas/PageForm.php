@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\PageResource\Schemas;
 
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Awcodes\Mason\Enums\SidebarPosition;
 use Awcodes\Mason\Mason;
 use Filament\Actions\Action;
@@ -29,6 +28,8 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use MiPress\Core\Filament\Forms\Components\UserSelect;
 use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
@@ -126,7 +127,7 @@ class PageForm
                                 ->schema([
                                     self::makePublicationStatusField($record),
                                     self::makePublicationDateField($record),
-                                    Select::make('author_id')
+                                    UserSelect::make('author_id')
                                         ->label('Autor')
                                         ->relationship('author', 'name')
                                         ->searchable()
@@ -151,8 +152,7 @@ class PageForm
                             Section::make('Hlavní obrázek')
                                 ->icon('fal-image')
                                 ->schema([
-                                    CuratorPicker::make('featured_image_id')
-                                        ->relationship('featuredImage', 'id')
+                                    MediaPicker::make('featured_image_id')
                                         ->label('')
                                         ->nullable(),
                                 ]),

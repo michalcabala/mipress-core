@@ -4,24 +4,23 @@ declare(strict_types=1);
 
 namespace MiPress\Core;
 
-use Awcodes\Curator\Config\CurationManager;
-use Awcodes\Curator\Curations\CurationPreset;
-use Awcodes\Curator\Models\Media;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
 use MiPress\Core\Console\Commands\GenerateSitemap;
 use MiPress\Core\Console\Commands\PublishScheduledEntries;
 use MiPress\Core\Console\Commands\PublishThemeAssets;
+use MiPress\Core\Console\Commands\RegenerateMediaConversions;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\GlobalSet;
+use MiPress\Core\Models\Media;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Observers\ContentObserver;
-use MiPress\Core\Observers\MediaObserver;
 use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
 use MiPress\Core\Policies\EntryPolicy;
@@ -33,10 +32,7 @@ use MiPress\Core\Policies\TermPolicy;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\FieldTypes\Types;
 use MiPress\Core\Services\BlueprintFieldResolver;
-use MiPress\Core\Services\CurationGenerator;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
-use MiPress\Core\Services\MediaCurationOrchestrator;
-use MiPress\Core\Services\MediaPathGenerator;
 use MiPress\Core\Services\MediaUrlGenerator;
 use MiPress\Core\Services\SeoResolver;
 use MiPress\Core\Services\SettingsManager;
@@ -57,7 +53,8 @@ class MiPressServiceProvider extends ServiceProvider
         $this->app->singleton(SeoResolver::class);
         $this->app->singleton(SettingsManager::class);
         $this->app->singleton(BlueprintFieldResolver::class);
-        $this->app->singleton(CurationGenerator::class);
+        $this->app->singleton(MediaUrlGenerator::class);
+        $this->app->singleton(SitemapGenerator::class);
 
         $this->app->singleton(FieldTypeRegistry::class, function (): FieldTypeRegistry {
             $registry = new FieldTypeRegistry;
@@ -89,10 +86,6 @@ class MiPressServiceProvider extends ServiceProvider
 
             return $registry;
         });
-        $this->app->singleton(MediaCurationOrchestrator::class);
-        $this->app->singleton(MediaPathGenerator::class);
-        $this->app->singleton(MediaUrlGenerator::class);
-        $this->app->singleton(SitemapGenerator::class);
     }
 
     public function boot(): void
@@ -100,6 +93,7 @@ class MiPressServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'mipress');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'mipress');
 
         $this->app->make(ThemeManager::class)->registerViews();
 
@@ -111,16 +105,8 @@ class MiPressServiceProvider extends ServiceProvider
             });
         });
 
-        Media::observe(MediaObserver::class);
         Entry::observe(ContentObserver::class);
         Page::observe(ContentObserver::class);
-
-        app(CurationManager::class)->presets([
-            new CurationPreset(key: 'thumbnail', label: 'Miniatura', width: 200, height: 200, format: 'webp', quality: 85),
-            new CurationPreset(key: 'medium', label: 'Střední', width: 600, height: null, format: 'webp', quality: 85),
-            new CurationPreset(key: 'large', label: 'Velký', width: 1200, height: null, format: 'webp', quality: 85),
-            new CurationPreset(key: 'og', label: 'OG Image', width: 1200, height: 630, format: 'webp', quality: 85),
-        ]);
 
         Gate::policy(Media::class, MediaPolicy::class);
         Gate::policy(Entry::class, EntryPolicy::class);
@@ -140,6 +126,7 @@ class MiPressServiceProvider extends ServiceProvider
                 GenerateSitemap::class,
                 PublishScheduledEntries::class,
                 PublishThemeAssets::class,
+                RegenerateMediaConversions::class,
             ]);
         }
     }
