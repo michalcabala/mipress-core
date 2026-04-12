@@ -23,6 +23,8 @@
     }
 @endphp
 
+{{-- DEBUG: record class = {{ $record ? get_class($record) : 'NULL' }}, isImage = {{ ($record instanceof \MiPress\Core\Models\Media && $record->isImage()) ? 'YES' : 'NO' }}, conversions = {{ count($conversions) }} --}}
+
 @if ($record instanceof \MiPress\Core\Models\Media && $record->isImage())
     <x-mipress::focal-point-picker
         :media="$record"

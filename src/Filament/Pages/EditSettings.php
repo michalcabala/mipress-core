@@ -40,7 +40,7 @@ class EditSettings extends Page
     protected static ?int $navigationSort = 10;
 
     /** @var list<string> */
-    private const HIDDEN_NAVIGATION_HANDLES = ['scripts', 'seo', 'site', 'sitemap'];
+    private const HIDDEN_NAVIGATION_HANDLES = ['scripts', 'seo', 'site', 'sitemap', 'media_conversions'];
 
     /** @var array<string, list<string>> */
     private const HIDDEN_FIELD_HANDLES = [
@@ -230,6 +230,7 @@ class EditSettings extends Page
         return match ($handle) {
             GlobalSeoSettingsManager::HANDLE => GlobalSeoSettings::getUrl(),
             'sitemap' => SitemapSettings::getUrl(),
+            'media_conversions' => MediaConversionSettings::getUrl(),
             default => null,
         };
     }
