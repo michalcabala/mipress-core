@@ -94,29 +94,25 @@
         </p>
     </div>
 
-    {{-- Right: live conversion previews (1/3 width) --}}
+    {{-- Right: live conversion previews (1/3 width), tiled grid --}}
     <div class="space-y-3">
         <div>
             <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Náhledy konverzí</h3>
             <p class="text-xs text-gray-500">Živá simulace výřezů podle focal pointu.</p>
         </div>
 
-        <div class="space-y-3">
+        <div class="grid grid-cols-2 gap-3">
             <template x-for="conversion in conversions" :key="conversion.name">
-                <div class="rounded-xl border border-gray-200 bg-white p-3 space-y-2 shadow-xs dark:border-gray-700 dark:bg-gray-900">
-                    <div class="flex items-center justify-between gap-2">
-                        <div>
-                            <p class="text-sm font-semibold text-gray-950 dark:text-white" x-text="conversion.label"></p>
-                            <p class="text-xs text-gray-500" x-text="conversion.h ? `${conversion.w} × ${conversion.h}` : `šířka ${conversion.w} px`"></p>
-                        </div>
+                <div class="rounded-xl border border-gray-200 bg-white p-2 space-y-1.5 shadow-xs dark:border-gray-700 dark:bg-gray-900">
+                    <div class="flex items-center justify-between gap-1">
+                        <p class="text-xs font-semibold text-gray-950 truncate dark:text-white" x-text="conversion.label"></p>
                         <span
-                            class="shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium"
+                            class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
                             :class="conversion.mode === 'crop' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
                             x-text="conversion.mode"
                         ></span>
                     </div>
 
-                    {{-- Always show original image with live focal‑point simulation --}}
                     <div
                         class="overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
                         :style="`aspect-ratio:${aspectRatio(conversion)};`"
@@ -130,19 +126,19 @@
                         >
                     </div>
 
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-1">
                         <span
-                            class="text-[11px] font-medium"
+                            class="text-[10px] font-medium truncate"
                             :class="isGenerated(conversion) ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'"
-                            x-text="isGenerated(conversion) ? '✓ vygenerováno' : '○ čeká na generování'"
+                            x-text="isGenerated(conversion) ? '✓ hotovo' : '○ čeká'"
                         ></span>
                         <button
                             type="button"
-                            class="text-xs font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                            class="shrink-0 text-[10px] font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
                             x-show="conversion.edit_action"
                             x-on:click="if (conversion.edit_action && $wire?.mountAction) $wire.mountAction(conversion.edit_action)"
                         >
-                            Upravit ořez
+                            Ořez
                         </button>
                     </div>
                 </div>
