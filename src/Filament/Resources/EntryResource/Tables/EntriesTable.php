@@ -59,7 +59,7 @@ class EntriesTable
                     ->height(40)
                     ->width(40)
                     ->checkFileExistence(false)
-                    ->state(fn (Entry $record): ?string => mipress_media_url(static::resolveFeaturedThumbnailMedia($record), 'thumbnail')),
+                    ->state(fn (Entry $record): ?string => mipress_media_url(static::resolveFeaturedThumbnailMedia($record), 'miniatura')),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
