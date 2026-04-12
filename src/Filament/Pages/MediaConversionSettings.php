@@ -480,7 +480,7 @@ class MediaConversionSettings extends Page
      */
     private function defaultConversions(): array
     {
-        return collect(MediaConfig::conversions())
+        return collect(MediaConfig::builtInConversions())
             ->values()
             ->map(fn (array $conversion, int $index): array => $this->normalizeConversion([
                 'name' => $conversion['name'] ?? 'conversion_'.$index,

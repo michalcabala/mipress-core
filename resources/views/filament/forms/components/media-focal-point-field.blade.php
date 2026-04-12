@@ -12,7 +12,7 @@
 
                 $conversion['url'] = $hasGeneratedConversion ? $record->getFullUrl($name) : null;
                 $conversion['version'] = (int) ($record->updated_at?->timestamp ?? 0);
-                $conversion['edit_action'] = (($conversion['mode'] ?? null) === 'crop' && $name !== '')
+                $conversion['edit_action'] = (\MiPress\Core\Media\MediaConfig::usesCropMode((string) ($conversion['mode'] ?? null)) && $name !== '')
                     ? 'editConversion_'.$name
                     : null;
 
@@ -22,8 +22,6 @@
             ->all();
     }
 @endphp
-
-{{-- DEBUG: record class = {{ $record ? get_class($record) : 'NULL' }}, isImage = {{ ($record instanceof \MiPress\Core\Models\Media && $record->isImage()) ? 'YES' : 'NO' }}, conversions = {{ count($conversions) }} --}}
 
 @if ($record instanceof \MiPress\Core\Models\Media && $record->isImage())
     <x-mipress::focal-point-picker

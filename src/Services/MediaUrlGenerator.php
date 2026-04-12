@@ -46,16 +46,7 @@ class MediaUrlGenerator
 
     private function resolveConversionName(string $variant): ?string
     {
-        $conversionNames = array_fill_keys(MediaConfig::conversionNames(), true);
-
-        return match ($variant) {
-            'default' => null,
-            'avatar', 'thumbnail' => isset($conversionNames['thumbnail']) ? 'thumbnail' : null,
-            'card', 'medium' => isset($conversionNames['medium']) ? 'medium' : null,
-            'hero', 'large' => isset($conversionNames['large']) ? 'large' : null,
-            'og' => isset($conversionNames['og']) ? 'og' : null,
-            default => null,
-        };
+        return MediaConfig::resolveVariantName($variant);
     }
 
     private function normalizePath(?string $path): ?string

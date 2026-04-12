@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Media;
 
+use MiPress\Core\Services\SettingsManager;
+
 final class MediaConfig
 {
     public const DISK = 'local_uploads';
+
+    public const SETTINGS_HANDLE = 'media_conversions';
 
     public const MAX_UPLOAD_SIZE = 20 * 1024 * 1024;
 
@@ -99,11 +103,54 @@ final class MediaConfig
     }
 
     /**
+    * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}>
+     */
+    public static function builtInConversions(): array
+    {
+        $conversions = [];
+
+        foreach (self::CONVERSIONS as $index => $conversion) {
+            $conversions[] = [
+                'name' => (string) ($conversion['name'] ?? 'conversion_'.$index),
+                'label' => (string) ($conversion['label'] ?? 'Konverze '.($index + 1)),
+                'w' => (int) ($conversion['w'] ?? 0),
+                'h' => is_numeric($conversion['h'] ?? null) ? (int) $conversion['h'] : null,
+                'mode' => ($conversion['name'] ?? null) === 'thumbnail'
+                    ? 'crop_resize'
+                    : (self::usesCropMode($conversion['mode'] ?? null) ? 'crop' : 'resize'),
+                'is_active' => true,
+                'show_in_editor' => true,
+                'sort_order' => $index + 1,
+                'group' => match ((string) ($conversion['name'] ?? '')) {
+                    'thumbnail' => 'thumbnails',
+                    'og' => 'social',
+                    default => 'content',
+                },
+                'editor_badge' => match ((string) ($conversion['name'] ?? '')) {
+                    'thumbnail' => 'thumbnail',
+                    'og' => 'social',
+                    default => 'content',
+                },
+            ];
+        }
+
+        return $conversions;
+    }
+
+    /**
      * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'crop'|'resize'}>
      */
     public static function conversions(): array
     {
-        return self::CONVERSIONS;
+        return array_map(static function (array $conversion): array {
+            return [
+                'name' => $conversion['name'],
+                'label' => $conversion['label'],
+                'w' => $conversion['w'],
+                'h' => $conversion['h'],
+                'mode' => self::usesCropMode($conversion['mode'] ?? null) ? 'crop' : 'resize',
+            ];
+        }, self::configuredConversions());
     }
 
     /**
@@ -118,11 +165,33 @@ final class MediaConfig
     }
 
     /**
-     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'crop'|'resize'}>
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int}>
+     */
+    public static function editorConversions(): array
+    {
+        return array_values(array_filter(
+            self::configuredConversions(),
+            static fn (array $conversion): bool => (bool) ($conversion['show_in_editor'] ?? true),
+        ));
+    }
+
+    /**
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int}>
+     */
+    public static function editorCropConversions(): array
+    {
+        return array_values(array_filter(
+            self::editorConversions(),
+            static fn (array $conversion): bool => self::usesCropMode($conversion['mode'] ?? null),
+        ));
+    }
+
+    /**
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int}>
      */
     public static function conversionsForJs(): array
     {
-        return self::CONVERSIONS;
+        return self::editorConversions();
     }
 
     /**
@@ -132,8 +201,30 @@ final class MediaConfig
     {
         return array_map(
             static fn (array $conversion): string => $conversion['name'],
-            self::CONVERSIONS,
+            self::conversions(),
         );
+    }
+
+    public static function usesCropMode(?string $mode): bool
+    {
+        return in_array((string) $mode, ['crop', 'crop_resize'], true);
+    }
+
+    public static function usesResizeOutputMode(?string $mode): bool
+    {
+        return in_array((string) $mode, ['resize', 'crop_resize'], true);
+    }
+
+    public static function resolveVariantName(string $variant): ?string
+    {
+        return match ($variant) {
+            'default' => null,
+            'avatar', 'thumbnail' => self::findConversionName('thumbnail', ['thumbnail'], ['thumbnails']),
+            'card', 'medium' => self::findConversionName('medium', ['content'], ['content']),
+            'hero', 'large' => self::findConversionName('large', ['hero'], ['hero']),
+            'og' => self::findConversionName('og', ['social'], ['social']),
+            default => null,
+        };
     }
 
     /**
@@ -173,5 +264,127 @@ final class MediaConfig
     public static function libraryCollection(): string
     {
         return self::COLLECTION_LIBRARY;
+    }
+
+    /**
+    * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}>
+     */
+    private static function configuredConversions(): array
+    {
+        $configured = self::configuredConversionsFromSettings();
+
+        return $configured !== [] ? $configured : self::builtInConversions();
+    }
+
+    /**
+    * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}>
+     */
+    private static function configuredConversionsFromSettings(): array
+    {
+        if (! app()->bound(SettingsManager::class)) {
+            return [];
+        }
+
+        $storedConversions = app(SettingsManager::class)->get(self::SETTINGS_HANDLE, 'conversions', []);
+
+        if (! is_array($storedConversions)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach (array_values($storedConversions) as $index => $conversion) {
+            if (! is_array($conversion)) {
+                continue;
+            }
+
+            $normalizedConversion = self::normalizeConfiguredConversion($conversion, $index);
+
+            if ($normalizedConversion === null || ! $normalizedConversion['is_active']) {
+                continue;
+            }
+
+            $normalized[] = $normalizedConversion;
+        }
+
+        usort($normalized, static function (array $left, array $right): int {
+            $sortComparison = $left['sort_order'] <=> $right['sort_order'];
+
+            if ($sortComparison !== 0) {
+                return $sortComparison;
+            }
+
+            return $left['name'] <=> $right['name'];
+        });
+
+        return array_values($normalized);
+    }
+
+    /**
+     * @param  array<string, mixed>  $conversion
+    * @return array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}|null
+     */
+    private static function normalizeConfiguredConversion(array $conversion, int $index): ?array
+    {
+        $name = trim((string) ($conversion['name'] ?? ''));
+
+        if ($name === '' || ! preg_match('/^[a-z0-9_]+$/', $name)) {
+            return null;
+        }
+
+        $width = $conversion['width'] ?? $conversion['w'] ?? null;
+
+        if (! is_numeric($width) || (int) $width <= 0) {
+            return null;
+        }
+
+        $height = $conversion['height'] ?? $conversion['h'] ?? null;
+        $normalizedHeight = (is_numeric($height) && ((int) $height > 0)) ? (int) $height : null;
+
+        $mode = (string) ($conversion['mode'] ?? 'resize');
+
+        if (! in_array($mode, ['resize', 'crop', 'crop_resize'], true)) {
+            $mode = 'resize';
+        }
+
+        return [
+            'name' => $name,
+            'label' => trim((string) ($conversion['label'] ?? '')) ?: $name,
+            'w' => (int) $width,
+            'h' => $normalizedHeight,
+            'mode' => $mode,
+            'is_active' => (bool) ($conversion['is_active'] ?? true),
+            'show_in_editor' => (bool) ($conversion['show_in_editor'] ?? true),
+            'sort_order' => (int) ($conversion['sort_order'] ?? ($index + 1)),
+            'group' => filled($conversion['group'] ?? null) ? (string) $conversion['group'] : null,
+            'editor_badge' => filled($conversion['editor_badge'] ?? null) ? (string) $conversion['editor_badge'] : null,
+        ];
+    }
+
+    /**
+     * @param  array<int, string>  $preferredBadges
+     * @param  array<int, string>  $preferredGroups
+     */
+    private static function findConversionName(string $preferredName, array $preferredBadges = [], array $preferredGroups = []): ?string
+    {
+        foreach (self::configuredConversions() as $conversion) {
+            if (($conversion['name'] ?? null) === $preferredName) {
+                return $conversion['name'];
+            }
+        }
+
+        foreach (self::configuredConversions() as $conversion) {
+            if (in_array((string) ($conversion['editor_badge'] ?? ''), $preferredBadges, true)) {
+                return $conversion['name'];
+            }
+        }
+
+        foreach (self::configuredConversions() as $conversion) {
+            if (in_array((string) ($conversion['group'] ?? ''), $preferredGroups, true)) {
+                return $conversion['name'];
+            }
+        }
+
+        return null;
     }
 }

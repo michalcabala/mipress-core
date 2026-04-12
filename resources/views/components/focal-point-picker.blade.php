@@ -47,6 +47,14 @@
             if (! this.imgW || ! this.imgH) return `${c.w} / ${c.w}`
             return `${c.w} / ${Math.max(1, Math.round((this.imgH / Math.max(this.imgW, 1)) * c.w))}`
         },
+        usesCropMode(c) {
+            return ['crop', 'crop_resize'].includes(String(c.mode ?? 'resize'))
+        },
+        modeLabel(c) {
+            if (String(c.mode ?? '') === 'crop_resize') return 'thumbnail'
+            if (String(c.mode ?? '') === 'crop') return 'crop'
+            return 'resize'
+        },
         isGenerated(c) {
             return typeof c.url === 'string' && c.url.length > 0
         },
@@ -108,8 +116,8 @@
                         <p class="text-xs font-semibold text-gray-950 truncate dark:text-white" x-text="conversion.label"></p>
                         <span
                             class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                            :class="conversion.mode === 'crop' ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
-                            x-text="conversion.mode"
+                            :class="usesCropMode(conversion) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                            x-text="modeLabel(conversion)"
                         ></span>
                     </div>
 
@@ -120,8 +128,8 @@
                         <img
                             :src="imageUrl"
                             class="h-full w-full"
-                            :class="conversion.mode === 'crop' ? 'object-cover' : 'object-contain'"
-                            :style="conversion.mode === 'crop' ? `object-position:${x}% ${y}%;` : 'object-position:center;'"
+                            :class="usesCropMode(conversion) ? 'object-cover' : 'object-contain'"
+                            :style="usesCropMode(conversion) ? `object-position:${x}% ${y}%;` : 'object-position:center;'"
                             alt=""
                         >
                     </div>
