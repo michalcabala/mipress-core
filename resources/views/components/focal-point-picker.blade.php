@@ -110,6 +110,16 @@
                 return '1 / 1'
             },
 
+            ratioLabel(c) {
+                if (!c.w || !c.h) return 'variabilní'
+                const gcd = (a, b) => b === 0 ? a : gcd(b, a % b)
+                const d = gcd(c.w, c.h)
+                const sw = c.w / d, sh = c.h / d
+                const known = { '1:1': true, '4:3': true, '3:4': true, '16:9': true, '9:16': true, '3:2': true, '2:3': true }
+                const key = `${sw}:${sh}`
+                return known[key] ? key : `${c.w}:${c.h}`
+            },
+
             reset() {
                 this.setPoint(50, 50)
             },
@@ -205,11 +215,18 @@
                                     <p class="truncate text-sm font-semibold text-gray-950 dark:text-white" x-text="c.label"></p>
                                     <p class="truncate text-xs text-gray-500 dark:text-gray-400" x-text="`${c.w} × ${c.h ?? 'auto'} px`"></p>
                                 </div>
-                                <span
-                                    class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium"
-                                    :class="usesCropMode(c) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
-                                    x-text="usesCropMode(c) ? (String(c.mode) === 'crop_resize' ? 'thumbnail' : 'crop') : 'resize'"
-                                ></span>
+                                <div class="flex shrink-0 items-center gap-1.5">
+                                    <span
+                                        x-show="c.w && c.h"
+                                        class="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                                        x-text="ratioLabel(c)"
+                                    ></span>
+                                    <span
+                                        class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                                        :class="usesCropMode(c) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                                        x-text="usesCropMode(c) ? (String(c.mode) === 'crop_resize' ? 'thumbnail' : 'crop') : 'resize'"
+                                    ></span>
+                                </div>
                             </div>
 
                             <div class="flex flex-wrap gap-1.5">
@@ -231,8 +248,10 @@
                             </div>
 
                             <div
-                                class="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
+                                class="group/preview relative overflow-hidden rounded-lg border border-gray-200 bg-gray-100 transition dark:border-gray-700 dark:bg-gray-800"
+                                :class="c.edit_action ? 'cursor-pointer ring-primary-500/0 hover:ring-2 hover:ring-primary-500/50' : ''"
                                 :style="`aspect-ratio:${aspectRatio(c)};`"
+                                x-on:click="c.edit_action && $wire.mountAction(c.edit_action)"
                             >
                                 <img
                                     :src="previewSource(c)"
@@ -241,6 +260,14 @@
                                     :style="usesCropMode(c) ? `object-position:${previewObjectPosition(c)};` : 'object-position:center;'"
                                     alt=""
                                 >
+                                <div
+                                    x-show="c.edit_action"
+                                    class="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover/preview:bg-black/30"
+                                >
+                                    <span class="rounded-lg bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-900 opacity-0 shadow-sm transition group-hover/preview:opacity-100 dark:bg-gray-800/90 dark:text-white">
+                                        Upravit ořez
+                                    </span>
+                                </div>
                                 <div
                                     x-show="usesCropMode(c) && ['manual', 'none'].includes(cropStrategy(c)) && ! isGenerated(c)"
                                     class="absolute inset-0 flex items-end bg-linear-to-t from-black/55 via-black/15 to-transparent p-2"
@@ -255,14 +282,12 @@
                                     :class="isGenerated(c) ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'"
                                     x-text="isGenerated(c) ? '✓ hotovo' : '○ čeká'"
                                 ></span>
-                                <button
-                                    type="button"
-                                    class="text-[10px] font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                                <span
                                     x-show="c.edit_action"
-                                    x-on:click="$wire.mountAction(c.edit_action)"
+                                    class="text-[10px] font-medium text-primary-600 dark:text-primary-400"
                                 >
-                                    Ořez
-                                </button>
+                                    Klikněte na náhled pro ořez
+                                </span>
                             </div>
                         </div>
                     </template>
