@@ -103,7 +103,7 @@ final class MediaConfig
     }
 
     /**
-    * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}>
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string, description?: string, supports_focal_point?: bool, supports_manual_crop?: bool, manual_crop_required?: bool, default_crop_strategy?: string, important?: bool, priority?: string, editor_help_text?: string, usage_context?: string}>
      */
     public static function builtInConversions(): array
     {
@@ -130,6 +130,31 @@ final class MediaConfig
                     'thumbnail' => 'thumbnail',
                     'og' => 'social',
                     default => 'content',
+                },
+                'description' => match ((string) ($conversion['name'] ?? '')) {
+                    'thumbnail' => 'Kompaktní výstup pro výpisy a karty obsahu.',
+                    'og' => 'Sdílecí výstup pro Open Graph a sociální sítě.',
+                    default => 'Běžná výstupní varianta obrázku.',
+                },
+                'supports_focal_point' => self::usesCropMode(($conversion['name'] ?? null) === 'thumbnail' ? 'crop_resize' : ($conversion['mode'] ?? null)),
+                'supports_manual_crop' => self::usesCropMode(($conversion['name'] ?? null) === 'thumbnail' ? 'crop_resize' : ($conversion['mode'] ?? null)),
+                'manual_crop_required' => false,
+                'default_crop_strategy' => self::usesCropMode(($conversion['name'] ?? null) === 'thumbnail' ? 'crop_resize' : ($conversion['mode'] ?? null))
+                    ? 'focal_point'
+                    : 'none',
+                'important' => in_array((string) ($conversion['name'] ?? ''), ['thumbnail', 'og'], true),
+                'priority' => in_array((string) ($conversion['name'] ?? ''), ['thumbnail', 'og'], true) ? 'high' : 'normal',
+                'editor_help_text' => match ((string) ($conversion['name'] ?? '')) {
+                    'thumbnail' => 'Použijte tam, kde je důležitá kontrola výřezu a čitelnost kompozice.',
+                    'og' => 'Hlídejte bezpečný výřez pro sdílení a titulkové overlaye.',
+                    default => 'Standardní systémová varianta bez speciálního zásahu.',
+                },
+                'usage_context' => match ((string) ($conversion['name'] ?? '')) {
+                    'thumbnail' => 'Výpis článků, karty obsahu, menší přehledové bloky.',
+                    'medium' => 'Běžný obsah stránky a průběžné ilustrační obrázky.',
+                    'large' => 'Větší layouty a výraznější obsahové bloky.',
+                    'og' => 'OG image při sdílení stránek a obsahu.',
+                    default => 'Použití v systému doplňte podle potřeby.',
                 },
             ];
         }
@@ -183,6 +208,17 @@ final class MediaConfig
         return array_values(array_filter(
             self::editorConversions(),
             static fn (array $conversion): bool => self::usesCropMode($conversion['mode'] ?? null),
+        ));
+    }
+
+    /**
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int}>
+     */
+    public static function editorManualCropConversions(): array
+    {
+        return array_values(array_filter(
+            self::editorCropConversions(),
+            static fn (array $conversion): bool => (bool) ($conversion['supports_manual_crop'] ?? false),
         ));
     }
 
@@ -267,7 +303,7 @@ final class MediaConfig
     }
 
     /**
-    * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}>
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string, description?: string, supports_focal_point?: bool, supports_manual_crop?: bool, manual_crop_required?: bool, default_crop_strategy?: string, important?: bool, priority?: string, editor_help_text?: string, usage_context?: string}>
      */
     private static function configuredConversions(): array
     {
@@ -277,7 +313,7 @@ final class MediaConfig
     }
 
     /**
-    * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}>
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string, description?: string, supports_focal_point?: bool, supports_manual_crop?: bool, manual_crop_required?: bool, default_crop_strategy?: string, important?: bool, priority?: string, editor_help_text?: string, usage_context?: string}>
      */
     private static function configuredConversionsFromSettings(): array
     {
@@ -322,7 +358,7 @@ final class MediaConfig
 
     /**
      * @param  array<string, mixed>  $conversion
-    * @return array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string}|null
+     * @return array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string, description?: string, supports_focal_point?: bool, supports_manual_crop?: bool, manual_crop_required?: bool, default_crop_strategy?: string, important?: bool, priority?: string, editor_help_text?: string, usage_context?: string}|null
      */
     private static function normalizeConfiguredConversion(array $conversion, int $index): ?array
     {
@@ -358,6 +394,17 @@ final class MediaConfig
             'sort_order' => (int) ($conversion['sort_order'] ?? ($index + 1)),
             'group' => filled($conversion['group'] ?? null) ? (string) $conversion['group'] : null,
             'editor_badge' => filled($conversion['editor_badge'] ?? null) ? (string) $conversion['editor_badge'] : null,
+            'description' => filled($conversion['description'] ?? null) ? (string) $conversion['description'] : null,
+            'supports_focal_point' => self::usesCropMode($mode) ? (bool) ($conversion['supports_focal_point'] ?? true) : false,
+            'supports_manual_crop' => self::usesCropMode($mode) ? (bool) ($conversion['supports_manual_crop'] ?? false) : false,
+            'manual_crop_required' => self::usesCropMode($mode) ? (bool) ($conversion['manual_crop_required'] ?? false) : false,
+            'default_crop_strategy' => self::usesCropMode($mode)
+                ? (string) ($conversion['default_crop_strategy'] ?? 'focal_point')
+                : 'none',
+            'important' => (bool) ($conversion['important'] ?? false),
+            'priority' => filled($conversion['priority'] ?? null) ? (string) $conversion['priority'] : 'normal',
+            'editor_help_text' => filled($conversion['editor_help_text'] ?? null) ? (string) $conversion['editor_help_text'] : null,
+            'usage_context' => filled($conversion['usage_context'] ?? null) ? (string) $conversion['usage_context'] : null,
         ];
     }
 

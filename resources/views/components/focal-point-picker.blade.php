@@ -50,6 +50,18 @@
         usesCropMode(c) {
             return ['crop', 'crop_resize'].includes(String(c.mode ?? 'resize'))
         },
+        supportsFocalPoint(c) {
+            return Boolean(c.supports_focal_point)
+        },
+        supportsManualCrop(c) {
+            return Boolean(c.supports_manual_crop)
+        },
+        manualCropRequired(c) {
+            return Boolean(c.manual_crop_required)
+        },
+        isImportant(c) {
+            return Boolean(c.important)
+        },
         modeLabel(c) {
             if (String(c.mode ?? '') === 'crop_resize') return 'thumbnail'
             if (String(c.mode ?? '') === 'crop') return 'crop'
@@ -111,7 +123,10 @@
 
         <div class="grid grid-cols-2 gap-3">
             <template x-for="conversion in conversions" :key="conversion.name">
-                <div class="rounded-xl border border-gray-200 bg-white p-2 space-y-1.5 shadow-xs dark:border-gray-700 dark:bg-gray-900">
+                <div
+                    class="rounded-xl border bg-white p-2 space-y-1.5 shadow-xs dark:bg-gray-900"
+                    :class="isImportant(conversion) ? 'border-primary-200 ring-1 ring-primary-100 dark:border-primary-700/60 dark:ring-primary-900/40' : 'border-gray-200 dark:border-gray-700'"
+                >
                     <div class="flex items-center justify-between gap-1">
                         <p class="text-xs font-semibold text-gray-950 truncate dark:text-white" x-text="conversion.label"></p>
                         <span
@@ -119,6 +134,25 @@
                             :class="usesCropMode(conversion) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
                             x-text="modeLabel(conversion)"
                         ></span>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-1">
+                        <span
+                            x-show="supportsFocalPoint(conversion)"
+                            class="inline-flex items-center rounded-full bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+                        >FP</span>
+                        <span
+                            x-show="supportsManualCrop(conversion)"
+                            class="inline-flex items-center rounded-full bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        >MC</span>
+                        <span
+                            x-show="manualCropRequired(conversion)"
+                            class="inline-flex items-center rounded-full bg-rose-50 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-300"
+                        >Required</span>
+                        <span
+                            x-show="isImportant(conversion)"
+                            class="inline-flex items-center rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                        >Důležitá</span>
                     </div>
 
                     <div
@@ -133,6 +167,19 @@
                             alt=""
                         >
                     </div>
+
+                    <p
+                        class="text-[10px] leading-4 text-gray-500 dark:text-gray-400"
+                        x-show="conversion.editor_help_text"
+                        x-text="conversion.editor_help_text"
+                    ></p>
+
+                    <p
+                        class="text-[10px] leading-4 text-rose-600 dark:text-rose-400"
+                        x-show="manualCropRequired(conversion) && ! isGenerated(conversion)"
+                    >
+                        Tato konverze vyžaduje ruční crop.
+                    </p>
 
                     <div class="flex items-center justify-between gap-1">
                         <span

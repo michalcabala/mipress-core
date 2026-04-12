@@ -12,7 +12,11 @@
 
                 $conversion['url'] = $hasGeneratedConversion ? $record->getFullUrl($name) : null;
                 $conversion['version'] = (int) ($record->updated_at?->timestamp ?? 0);
-                $conversion['edit_action'] = (\MiPress\Core\Media\MediaConfig::usesCropMode((string) ($conversion['mode'] ?? null)) && $name !== '')
+                $conversion['edit_action'] = (
+                    \MiPress\Core\Media\MediaConfig::usesCropMode((string) ($conversion['mode'] ?? null))
+                    && (bool) ($conversion['supports_manual_crop'] ?? false)
+                    && $name !== ''
+                )
                     ? 'editConversion_'.$name
                     : null;
 
