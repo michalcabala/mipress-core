@@ -36,23 +36,14 @@ trait RegistersMiPressMediaConversions
      */
     private function applyCropManipulations(Conversion $conversion, array $conversionConfig, Media $media): void
     {
-        $dimensions = $this->resolveImageDimensions($media);
+        $focalX = is_numeric($media->focal_point_x) ? (int) $media->focal_point_x : 50;
+        $focalY = is_numeric($media->focal_point_y) ? (int) $media->focal_point_y : 50;
 
-        if ($dimensions !== null) {
-            $conversion->focalCropAndResize(
-                $conversionConfig['w'],
-                $conversionConfig['h'] ?? $conversionConfig['w'],
-                (int) round($dimensions['width'] * ($media->focal_point_x / 100)),
-                (int) round($dimensions['height'] * ($media->focal_point_y / 100)),
-            );
-
-            return;
-        }
-
-        $conversion->fit(
-            Fit::Crop,
+        $conversion->focalCropAndResize(
             $conversionConfig['w'],
             $conversionConfig['h'] ?? $conversionConfig['w'],
+            $focalX,
+            $focalY,
         );
     }
 
@@ -70,43 +61,5 @@ trait RegistersMiPressMediaConversions
         }
 
         $conversion->width($conversionConfig['w']);
-    }
-
-    /**
-     * @return array{width: int, height: int}|null
-     */
-    private function resolveImageDimensions(Media $media): ?array
-    {
-        $width = $media->getCustomProperty('width');
-        $height = $media->getCustomProperty('height');
-
-        if (is_numeric($width) && is_numeric($height) && (int) $width > 0 && (int) $height > 0) {
-            return [
-                'width' => (int) $width,
-                'height' => (int) $height,
-            ];
-        }
-
-        $dimensions = @getimagesize($media->getPath());
-
-        if (! is_array($dimensions) || ! isset($dimensions[0], $dimensions[1])) {
-            return null;
-        }
-
-        $resolvedWidth = (int) $dimensions[0];
-        $resolvedHeight = (int) $dimensions[1];
-
-        if ($resolvedWidth <= 0 || $resolvedHeight <= 0) {
-            return null;
-        }
-
-        $media->setCustomProperty('width', $resolvedWidth);
-        $media->setCustomProperty('height', $resolvedHeight);
-        $media->saveQuietly();
-
-        return [
-            'width' => $resolvedWidth,
-            'height' => $resolvedHeight,
-        ];
     }
 }
