@@ -91,13 +91,13 @@
             },
 
             pendingPreviewLabel(c) {
-                if (this.cropStrategy(c) === 'manual' && ! this.isGenerated(c)) return 'Čeká na ruční crop'
+                if (this.cropStrategy(c) === 'manual' && ! this.isGenerated(c)) return 'Čeká na ruční ořez'
                 if (this.cropStrategy(c) === 'none' && ! this.isGenerated(c)) return 'Bez fallbacku'
                 return ''
             },
 
             strategyLabel(c) {
-                return { center: 'střed', manual: 'ruční', none: 'bez fallbacku', focal_point: 'focal point' }[this.cropStrategy(c)] ?? 'focal point'
+                return { center: 'střed', manual: 'ruční', none: 'bez fallbacku', focal_point: 'ohniskový bod' }[this.cropStrategy(c)] ?? 'ohniskový bod'
             },
 
             isGenerated(c) {
@@ -135,7 +135,7 @@
             {{-- Left: FP picker --}}
             <div class="w-full shrink-0 space-y-4 lg:w-72">
                 <div>
-                    <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Focal Point</h3>
+                    <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Ohniskový bod</h3>
                     <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">Klikněte nebo táhněte na obrázku pro nastavení bodu kompozice.</p>
                 </div>
 
@@ -199,7 +199,7 @@
                 </div>
 
                 <p class="rounded-xl bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                    Focal point ovlivňuje crop konverze se strategií <span class="font-semibold">focal point</span>.
+                    Ohniskový bod ovlivňuje ořezové konverze se strategií <span class="font-semibold">ohniskový bod</span>.
                     Změny se uloží se zbytkem formuláře.
                 </p>
             </div>
@@ -244,7 +244,7 @@
                                 <span
                                     x-show="c.has_manual_override"
                                     class="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                                >Override</span>
+                                >Přepsáno</span>
                             </div>
 
                             <div
@@ -297,6 +297,6 @@
     </div>
 @else
     <div class="rounded-xl border border-gray-200 bg-gray-50 p-6 text-center dark:border-white/10 dark:bg-gray-900">
-        <p class="text-sm text-gray-500 dark:text-gray-400">Focal point je k dispozici pouze pro obrázky.</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Ohniskový bod je k dispozici pouze pro obrázky.</p>
     </div>
 @endif
