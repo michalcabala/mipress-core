@@ -37,4 +37,3 @@
     :x-value="$record instanceof \MiPress\Core\Models\Media && is_numeric($record->focal_point_x) ? (int) $record->focal_point_x : 50"
     :y-value="$record instanceof \MiPress\Core\Models\Media && is_numeric($record->focal_point_y) ? (int) $record->focal_point_y : 50"
 />
-@endif
