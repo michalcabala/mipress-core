@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('author_id')->constrained('users')->cascadeOnDelete();
             $table->unsignedInteger('sort_order')->default(0);
             $table->foreignId('parent_id')->nullable()->constrained('pages')->nullOnDelete();
-            $table->foreignId('featured_image_id')->nullable()->constrained('media')->nullOnDelete();
+            $table->foreignId('featured_image_id')->nullable()->constrained('curator')->nullOnDelete();
             $table->string('locale')->default('cs');
             $table->text('review_note')->nullable();
             $table->timestamps();

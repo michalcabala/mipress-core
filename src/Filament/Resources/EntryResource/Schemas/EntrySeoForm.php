@@ -10,7 +10,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Models\Entry;
 
 class EntrySeoForm
@@ -37,9 +37,8 @@ class EntrySeoForm
                                 ->maxLength(160)
                                 ->rows(3)
                                 ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
-                            MediaPicker::make('og_image_id')
+                            CuratorPicker::make('og_image_id')
                                 ->label('OG obrázek')
-                                ->nullable()
                                 ->helperText('Obrázek pro sdílení na sociálních sítích.'),
                         ]),
                 ]),

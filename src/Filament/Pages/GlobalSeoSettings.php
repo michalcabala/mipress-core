@@ -18,7 +18,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\HtmlString;
 use MiPress\Core\Filament\Clusters\SeoCluster;
-use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
 use MiPress\Core\Services\SeoResolver;
 
@@ -140,7 +140,7 @@ class GlobalSeoSettings extends Page
                                 'summary' => 'summary',
                             ])
                             ->default('summary_large_image'),
-                        MediaPicker::make('open_graph.default_image_id')
+                        CuratorPicker::make('open_graph.default_image_id')
                             ->label('Výchozí OG obrázek')
                             ->helperText('Použije se tam, kde položka nebo stránka nemá vlastní OG nebo featured image.')
                             ->columnSpanFull(),
@@ -183,7 +183,7 @@ class GlobalSeoSettings extends Page
                             ->placeholder('https://www.example.cz')
                             ->url()
                             ->live(onBlur: true),
-                        MediaPicker::make('structured_data.logo_id')
+                        CuratorPicker::make('structured_data.logo_id')
                             ->label('Logo pro JSON-LD')
                             ->columnSpanFull(),
                         TextInput::make('structured_data.phone')

@@ -28,7 +28,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Filament\Forms\Components\UserSelect;
 use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\PageResource;
@@ -152,9 +152,8 @@ class PageForm
                             Section::make('Hlavní obrázek')
                                 ->icon('fal-image')
                                 ->schema([
-                                    MediaPicker::make('featured_image_id')
-                                        ->label('')
-                                        ->nullable(),
+                                    CuratorPicker::make('featured_image_id')
+                                        ->label(''),
                                 ]),
 
                             Section::make('Stav')

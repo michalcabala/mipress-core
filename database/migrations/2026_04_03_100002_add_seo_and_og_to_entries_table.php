@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('entries', function (Blueprint $table): void {
             $table->string('meta_title')->nullable()->after('review_note');
             $table->text('meta_description')->nullable()->after('meta_title');
-            $table->foreignId('og_image_id')->nullable()->after('meta_description')->constrained('media')->nullOnDelete();
+            $table->foreignId('og_image_id')->nullable()->after('meta_description')->constrained('curator')->nullOnDelete();
             $table->timestamp('scheduled_at')->nullable()->after('published_at');
         });
 

@@ -6,7 +6,7 @@ namespace MiPress\Core\FieldTypes\Types;
 
 use MiPress\Core\FieldTypes\AbstractFieldType;
 use MiPress\Core\FieldTypes\FieldCategory;
-use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 
 class ImageFieldType extends AbstractFieldType
 {
@@ -32,7 +32,7 @@ class ImageFieldType extends AbstractFieldType
 
     public function toFormComponent(string $handle, string $label, bool $required, array $config): mixed
     {
-        return MediaPicker::make($handle)
+        return CuratorPicker::make($handle)
             ->label($label)
             ->required($required);
     }

@@ -28,7 +28,7 @@ use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Forms\Components\MediaPicker;
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Filament\Forms\Components\UserSelect;
 use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\EntryResource;
@@ -77,9 +77,8 @@ class EntryForm
                     ->maxLength(160)
                     ->rows(3)
                     ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
-                MediaPicker::make('og_image_id')
+                CuratorPicker::make('og_image_id')
                     ->label('OG obrázek')
-                    ->nullable()
                     ->helperText('Obrázek pro sdílení na sociálních sítích.'),
             ]);
 
@@ -176,9 +175,8 @@ class EntryForm
                             Section::make('Hlavní obrázek')
                                 ->icon('fal-image')
                                 ->schema([
-                                    MediaPicker::make('featured_image_id')
-                                        ->label('')
-                                        ->nullable(),
+                                    CuratorPicker::make('featured_image_id')
+                                        ->label(''),
                                 ]),
 
                             ...self::buildTaxonomySections($collection, $record),
