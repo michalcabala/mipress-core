@@ -19,6 +19,7 @@
                 )
                     ? 'editConversion_'.$name
                     : null;
+                $conversion['has_manual_override'] = $name !== '' && $record->hasManualConversionOverride($name);
 
                 return $conversion;
             })
@@ -27,10 +28,13 @@
     }
 @endphp
 
-@if ($record instanceof \MiPress\Core\Models\Media && $record->isImage())
-    <x-mipress::focal-point-picker
-        :media="$record"
-        :image-url="mipress_media_url($record)"
-        :conversions="$conversions"
-    />
+<x-mipress::focal-point-picker
+    :media="$record"
+    :image-url="$record instanceof \MiPress\Core\Models\Media ? mipress_media_url($record) : null"
+    :conversions="$conversions"
+    x-state-path="data.focal_point_x"
+    y-state-path="data.focal_point_y"
+    :x-value="$record instanceof \MiPress\Core\Models\Media && is_numeric($record->focal_point_x) ? (int) $record->focal_point_x : 50"
+    :y-value="$record instanceof \MiPress\Core\Models\Media && is_numeric($record->focal_point_y) ? (int) $record->focal_point_y : 50"
+/>
 @endif

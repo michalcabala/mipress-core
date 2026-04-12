@@ -126,7 +126,7 @@ class MediaConversionSettings extends Page
         return $form
             ->schema([
                 Section::make('Image konverze')
-                    ->description('Každá konverze má vlastní režim, rozměry a editor metadata. Přehled zůstává čitelný i při větším počtu variant.')
+                    ->description('Každá konverze má vlastní identitu, výstupní režim a editor metadata. Přehled nahoře ukazuje nejdůležitější informace ještě před rozkliknutím detailu.')
                     ->schema([
                         Repeater::make('conversions')
                             ->label('')
@@ -154,196 +154,252 @@ class MediaConversionSettings extends Page
                                         'group' => $get('group'),
                                         'show_in_editor' => $get('show_in_editor'),
                                         'important' => $get('important'),
+                                        'priority' => $get('priority'),
+                                        'editor_badge' => $get('editor_badge'),
+                                        'description' => $get('description'),
+                                        'usage_context' => $get('usage_context'),
                                     ]))
                                     ->columnSpanFull(),
                                 Tabs::make('conversion_tabs')
+                                    ->contained(false)
                                     ->tabs([
                                         Tab::make('Základ')
                                             ->schema([
-                                                Grid::make([
-                                                    'default' => 1,
-                                                    'md' => 2,
-                                                ])->schema([
-                                                    TextInput::make('name')
-                                                        ->label('Interní klíč')
-                                                        ->required()
-                                                        ->maxLength(100)
-                                                        ->placeholder('thumbnail_square')
-                                                        ->helperText('Interní identifikátor bez mezer, ideálně malá písmena a podtržítka.')
-                                                        ->rule('regex:/^[a-z0-9_]+$/')
-                                                        ->live(onBlur: true),
-                                                    TextInput::make('label')
-                                                        ->label('Název pro admin')
-                                                        ->required()
-                                                        ->maxLength(120)
-                                                        ->placeholder('Miniatura článku')
-                                                        ->live(onBlur: true),
-                                                    Textarea::make('description')
-                                                        ->label('Krátký popis použití')
-                                                        ->rows(2)
-                                                        ->placeholder('Kde se konverze používá a co od ní editor čeká.')
-                                                        ->columnSpanFull(),
-                                                    ToggleButtons::make('mode')
-                                                        ->label('Režim konverze')
-                                                        ->options(self::MODE_OPTIONS)
-                                                        ->colors([
-                                                            'resize' => 'gray',
-                                                            'crop' => 'warning',
-                                                            'crop_resize' => 'primary',
-                                                        ])
-                                                        ->inline()
-                                                        ->grouped()
-                                                        ->required()
-                                                        ->live()
-                                                        ->helperText(fn (Get $get): string => $this->modeHelperText($get('mode')))
-                                                        ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
-                                                            if ($state === 'resize') {
-                                                                $set('supports_focal_point', false);
-                                                                $set('supports_manual_crop', false);
-                                                                $set('manual_crop_required', false);
-                                                                $set('default_crop_strategy', 'none');
-
-                                                                return;
-                                                            }
-
-                                                            if (blank($get('aspect_ratio')) && filled($ratio = $this->deriveAspectRatio($get('width'), $get('height')))) {
-                                                                $set('aspect_ratio', $ratio);
-                                                            }
-
-                                                            if (($get('default_crop_strategy') ?? 'none') === 'none') {
-                                                                $set('default_crop_strategy', 'focal_point');
-                                                            }
-                                                        })
-                                                        ->columnSpanFull(),
-                                                    Toggle::make('is_active')
-                                                        ->label('Aktivní')
-                                                        ->default(true)
-                                                        ->live(),
-                                                    TextInput::make('sort_order')
-                                                        ->label('Pořadí')
-                                                        ->numeric()
-                                                        ->default(0)
-                                                        ->helperText('Nižší číslo = výše v editoru.')
-                                                        ->live(onBlur: true),
-                                                    Select::make('group')
-                                                        ->label('Skupina')
-                                                        ->options(self::GROUP_OPTIONS)
-                                                        ->native(false)
-                                                        ->searchable()
-                                                        ->default('content')
-                                                        ->live(),
-                                                ]),
-                                            ])
-                                            ->columns(2),
+                                                Section::make('Identita konverze')
+                                                    ->description('Krátké a srozumitelné informace, podle kterých editor pozná, k čemu daná varianta slouží.')
+                                                    ->schema([
+                                                        Grid::make([
+                                                            'default' => 1,
+                                                            'md' => 2,
+                                                        ])->schema([
+                                                            TextInput::make('label')
+                                                                ->label('Název pro admin')
+                                                                ->required()
+                                                                ->maxLength(120)
+                                                                ->placeholder('Miniatura článku')
+                                                                ->helperText('Krátký název, který bude dobře čitelný i v přehledu více konverzí.')
+                                                                ->live(onBlur: true),
+                                                            TextInput::make('name')
+                                                                ->label('Interní klíč')
+                                                                ->required()
+                                                                ->maxLength(100)
+                                                                ->placeholder('thumbnail_square')
+                                                                ->helperText('Bez mezer, ideálně malá písmena a podtržítka.')
+                                                                ->rule('regex:/^[a-z0-9_]+$/')
+                                                                ->live(onBlur: true),
+                                                            Select::make('group')
+                                                                ->label('Skupina')
+                                                                ->options(self::GROUP_OPTIONS)
+                                                                ->native(false)
+                                                                ->searchable()
+                                                                ->default('content')
+                                                                ->helperText('Pomáhá držet pořádek mezi thumbnails, obsahem, sociálními sítěmi nebo hero výstupy.')
+                                                                ->live(),
+                                                            TextInput::make('sort_order')
+                                                                ->label('Pořadí')
+                                                                ->numeric()
+                                                                ->default(0)
+                                                                ->helperText('Nižší číslo = výše v editoru.')
+                                                                ->live(onBlur: true),
+                                                            Toggle::make('is_active')
+                                                                ->label('Aktivní')
+                                                                ->helperText('Neaktivní konverze zůstane v nastavení, ale nepoužije se v aktivních definicích.')
+                                                                ->default(true)
+                                                                ->live()
+                                                                ->columnSpanFull(),
+                                                            Textarea::make('description')
+                                                                ->label('Krátký popis použití')
+                                                                ->rows(2)
+                                                                ->placeholder('Např. menší výstup pro výpisy článků nebo důležitý social share formát.')
+                                                                ->columnSpanFull(),
+                                                        ]),
+                                                    ]),
+                                            ]),
                                         Tab::make('Výstup / Rozměry')
                                             ->schema([
-                                                Fieldset::make('Výstupní parametry')
+                                                Section::make('Režim konverze')
                                                     ->schema([
-                                                        TextInput::make('width')
-                                                            ->label('Šířka')
-                                                            ->numeric()
+                                                        ToggleButtons::make('mode')
+                                                            ->label('Režim výstupu')
+                                                            ->options(self::MODE_OPTIONS)
+                                                            ->colors([
+                                                                'resize' => 'gray',
+                                                                'crop' => 'warning',
+                                                                'crop_resize' => 'primary',
+                                                            ])
+                                                            ->inline()
+                                                            ->grouped()
                                                             ->required()
-                                                            ->minValue(1)
-                                                            ->suffix('px')
-                                                            ->live(onBlur: true),
-                                                        TextInput::make('height')
-                                                            ->label('Výška')
-                                                            ->numeric()
-                                                            ->minValue(1)
-                                                            ->required(fn (Get $get): bool => $this->usesCropMode($get('mode')))
-                                                            ->helperText(fn (Get $get): string => $this->usesCropMode($get('mode'))
-                                                                ? 'U režimů s ořezem je výška součástí pevného výstupu.'
-                                                                : 'Volitelné. U resize může zůstat prázdná pro proporční přizpůsobení.')
-                                                            ->suffix('px')
-                                                            ->live(onBlur: true),
-                                                        Placeholder::make('ratio_preview')
-                                                            ->label(fn (Get $get): string => $this->usesCropMode($get('mode'))
-                                                                ? 'Aktivní poměr stran'
-                                                                : 'Odvozený poměr stran')
-                                                            ->content(fn (Get $get): string => $this->presentAspectRatio(
-                                                                $get('mode'),
-                                                                $get('aspect_ratio'),
-                                                                $get('width'),
-                                                                $get('height'),
-                                                            )),
-                                                        TextInput::make('aspect_ratio')
-                                                            ->label('Poměr stran')
-                                                            ->placeholder('např. 16:9')
-                                                            ->helperText('Klíčové pro crop a crop + resize. Cropper se podle něj zamkne.')
-                                                            ->required(fn (Get $get): bool => $this->usesCropMode($get('mode')))
-                                                            ->rule('regex:/^\d+:\d+$/')
-                                                            ->visible(fn (Get $get): bool => $this->usesCropMode($get('mode')))
-                                                            ->live(onBlur: true),
-                                                    ])
-                                                    ->columns([
-                                                        'default' => 1,
-                                                        'md' => 3,
+                                                            ->live()
+                                                            ->helperText(fn (Get $get): string => $this->modeHelperText($get('mode')))
+                                                            ->afterStateUpdated(function (?string $state, Set $set, Get $get): void {
+                                                                if ($state === 'resize') {
+                                                                    $this->resetCropSettings($set);
+
+                                                                    return;
+                                                                }
+
+                                                                $this->syncAspectRatio($set, $get);
+
+                                                                if (($get('default_crop_strategy') ?? 'none') === 'none') {
+                                                                    $set('default_crop_strategy', 'focal_point');
+                                                                }
+                                                            })
+                                                            ->columnSpanFull(),
+                                                        Placeholder::make('output_note')
+                                                            ->hiddenLabel()
+                                                            ->content(fn (Get $get): Htmlable => new HtmlString($this->outputNote($get('mode'))))
+                                                            ->columnSpanFull(),
+                                                    ]),
+                                                Section::make('Rozměry a poměr stran')
+                                                    ->description(fn (Get $get): string => $this->dimensionsSectionDescription($get('mode')))
+                                                    ->schema([
+                                                        Grid::make([
+                                                            'default' => 1,
+                                                            'md' => 3,
+                                                        ])->schema([
+                                                            TextInput::make('width')
+                                                                ->label('Šířka')
+                                                                ->numeric()
+                                                                ->required()
+                                                                ->minValue(1)
+                                                                ->suffix('px')
+                                                                ->live(onBlur: true)
+                                                                ->afterStateUpdated(fn (Set $set, Get $get): bool => $this->syncAspectRatio($set, $get)),
+                                                            TextInput::make('height')
+                                                                ->label('Výška')
+                                                                ->numeric()
+                                                                ->minValue(1)
+                                                                ->required(fn (Get $get): bool => $this->usesCropMode($get('mode')))
+                                                                ->helperText(fn (Get $get): string => $this->heightHelperText($get('mode')))
+                                                                ->suffix('px')
+                                                                ->live(onBlur: true)
+                                                                ->afterStateUpdated(fn (Set $set, Get $get): bool => $this->syncAspectRatio($set, $get)),
+                                                            Placeholder::make('ratio_preview')
+                                                                ->label(fn (Get $get): string => $this->usesCropMode($get('mode'))
+                                                                    ? 'Aktivní poměr stran'
+                                                                    : 'Odvozený poměr stran')
+                                                                ->content(fn (Get $get): string => $this->presentAspectRatio(
+                                                                    $get('mode'),
+                                                                    $get('aspect_ratio'),
+                                                                    $get('width'),
+                                                                    $get('height'),
+                                                                )),
+                                                            TextInput::make('aspect_ratio')
+                                                                ->label('Poměr stran')
+                                                                ->placeholder('např. 16:9')
+                                                                ->helperText('U crop a thumbnail režimu je poměr stran součást definice výstupu.')
+                                                                ->required(fn (Get $get): bool => $this->usesCropMode($get('mode')))
+                                                                ->rule('regex:/^\d+:\d+$/')
+                                                                ->visible(fn (Get $get): bool => $this->usesCropMode($get('mode')))
+                                                                ->live(onBlur: true),
+                                                            Placeholder::make('ratio_lock_note')
+                                                                ->hiddenLabel()
+                                                                ->visible(fn (Get $get): bool => $this->usesCropMode($get('mode')))
+                                                                ->content(fn (Get $get): Htmlable => new HtmlString($this->ratioLockNote(
+                                                                    $get('mode'),
+                                                                    $get('aspect_ratio'),
+                                                                    $get('width'),
+                                                                    $get('height'),
+                                                                )))
+                                                                ->columnSpan([
+                                                                    'default' => 1,
+                                                                    'md' => 2,
+                                                                ]),
+                                                        ]),
                                                     ]),
                                                 Fieldset::make('Resize nastavení')
                                                     ->visible(fn (Get $get): bool => $this->usesResizeOutputMode($get('mode')))
                                                     ->schema([
                                                         Toggle::make('allow_upscale')
                                                             ->label('Povolit zvětšení menší předlohy')
-                                                            ->helperText('Nechte vypnuté, pokud má být výstup vždy bezpečně bez umělého zvětšování.')
+                                                            ->helperText('Nechte vypnuté, pokud má být výstup bezpečně bez umělého zvětšování.')
                                                             ->default(false),
                                                     ]),
-                                                Placeholder::make('output_note')
-                                                    ->hiddenLabel()
-                                                    ->content(fn (Get $get): Htmlable => new HtmlString($this->outputNote($get('mode')))
-                                                    )
-                                                    ->columnSpanFull(),
                                             ]),
                                         Tab::make('Ořez a kompozice')
                                             ->visible(fn (Get $get): bool => $this->usesCropMode($get('mode')))
                                             ->schema([
-                                                Placeholder::make('crop_intro')
-                                                    ->hiddenLabel()
-                                                    ->content(fn (Get $get): Htmlable => new HtmlString($this->cropIntro($get('mode'))))
-                                                    ->columnSpanFull(),
-                                                Fieldset::make('Focal point a ruční crop')
+                                                Section::make('Kompozice výřezu')
+                                                    ->description(fn (Get $get): string => $this->cropIntro($get('mode')))
                                                     ->schema([
-                                                        Toggle::make('supports_focal_point')
-                                                            ->label('Používá focal point')
-                                                            ->helperText('Konverze počítá s řízením kompozice přes focal point.')
-                                                            ->default(true)
-                                                            ->live()
-                                                            ->afterStateUpdated(function (?bool $state, Set $set, Get $get): void {
-                                                                if (($state === false) && (($get('default_crop_strategy') ?? null) === 'focal_point')) {
-                                                                    $set('default_crop_strategy', 'center');
-                                                                }
-                                                            }),
-                                                        Toggle::make('supports_manual_crop')
-                                                            ->label('Umožňuje ruční crop')
-                                                            ->helperText('Editor může pro tuto konverzi upravit výřez ručně.')
-                                                            ->default(false)
-                                                            ->live()
-                                                            ->afterStateUpdated(function (?bool $state, Set $set, Get $get): void {
-                                                                if ($state === false) {
-                                                                    $set('manual_crop_required', false);
-
-                                                                    if (($get('default_crop_strategy') ?? null) === 'manual') {
+                                                        Grid::make([
+                                                            'default' => 1,
+                                                            'md' => 2,
+                                                        ])->schema([
+                                                            Toggle::make('supports_focal_point')
+                                                                ->label('Používá focal point')
+                                                                ->helperText('Konverze počítá s řízením kompozice přes focal point.')
+                                                                ->default(true)
+                                                                ->live()
+                                                                ->afterStateUpdated(function (?bool $state, Set $set, Get $get): void {
+                                                                    if (($state === false) && (($get('default_crop_strategy') ?? null) === 'focal_point')) {
                                                                         $set('default_crop_strategy', 'center');
                                                                     }
-                                                                }
-                                                            }),
-                                                        Toggle::make('manual_crop_required')
-                                                            ->label('Vyžaduje ruční crop')
-                                                            ->helperText('Bez ručního ořezu nebude konverze považována za připravenou.')
-                                                            ->default(false)
-                                                            ->visible(fn (Get $get): bool => (bool) $get('supports_manual_crop'))
-                                                            ->live()
-                                                            ->afterStateUpdated(function (?bool $state, Set $set): void {
-                                                                if ($state) {
-                                                                    $set('supports_manual_crop', true);
-                                                                }
-                                                            }),
-                                                        Select::make('default_crop_strategy')
+                                                                }),
+                                                            Toggle::make('supports_manual_crop')
+                                                                ->label('Umožňuje ruční crop')
+                                                                ->helperText('Editor může pro tuto konverzi upravit výřez ručně.')
+                                                                ->default(false)
+                                                                ->live()
+                                                                ->afterStateUpdated(function (?bool $state, Set $set, Get $get): void {
+                                                                    if ($state === false) {
+                                                                        $set('manual_crop_required', false);
+
+                                                                        if (($get('default_crop_strategy') ?? null) === 'manual') {
+                                                                            $set('default_crop_strategy', 'center');
+                                                                        }
+                                                                    }
+                                                                }),
+                                                            Toggle::make('manual_crop_required')
+                                                                ->label('Vyžaduje ruční crop')
+                                                                ->helperText('Bez ručního ořezu nebude tato konverze považována za připravenou.')
+                                                                ->default(false)
+                                                                ->visible(fn (Get $get): bool => (bool) $get('supports_manual_crop'))
+                                                                ->live()
+                                                                ->afterStateUpdated(function (?bool $state, Set $set): void {
+                                                                    if ($state) {
+                                                                        $set('supports_manual_crop', true);
+                                                                        $set('default_crop_strategy', 'manual');
+                                                                    }
+                                                                }),
+                                                            Placeholder::make('crop_tools_note')
+                                                                ->hiddenLabel()
+                                                                ->content(fn (Get $get): Htmlable => new HtmlString($this->cropToolsNote([
+                                                                    'mode' => $get('mode'),
+                                                                    'supports_focal_point' => $get('supports_focal_point'),
+                                                                    'supports_manual_crop' => $get('supports_manual_crop'),
+                                                                    'manual_crop_required' => $get('manual_crop_required'),
+                                                                ])))
+                                                                ->columnSpanFull(),
+                                                        ]),
+                                                    ]),
+                                                Section::make('Výchozí chování')
+                                                    ->schema([
+                                                        ToggleButtons::make('default_crop_strategy')
                                                             ->label('Fallback strategie')
-                                                            ->options(self::CROP_STRATEGY_OPTIONS)
-                                                            ->native(false)
+                                                            ->options(fn (Get $get): array => $this->cropStrategyOptions(
+                                                                $get('mode'),
+                                                                $get('supports_focal_point'),
+                                                                $get('supports_manual_crop'),
+                                                                $get('manual_crop_required'),
+                                                            ))
+                                                            ->colors([
+                                                                'none' => 'gray',
+                                                                'center' => 'gray',
+                                                                'focal_point' => 'info',
+                                                                'manual' => 'warning',
+                                                            ])
+                                                            ->inline()
+                                                            ->grouped()
                                                             ->default('focal_point')
                                                             ->live()
-                                                            ->helperText('Použije se, když editor nevytvoří vlastní ruční crop.')
+                                                            ->helperText(fn (Get $get): string => $this->cropStrategyHelperText(
+                                                                $get('mode'),
+                                                                $get('supports_focal_point'),
+                                                                $get('supports_manual_crop'),
+                                                                $get('manual_crop_required'),
+                                                            ))
                                                             ->afterStateUpdated(function (?string $state, Set $set): void {
                                                                 if ($state === 'manual') {
                                                                     $set('supports_manual_crop', true);
@@ -352,53 +408,85 @@ class MediaConversionSettings extends Page
                                                                 if ($state === 'focal_point') {
                                                                     $set('supports_focal_point', true);
                                                                 }
-                                                            }),
-                                                    ])
-                                                    ->columns([
-                                                        'default' => 1,
-                                                        'md' => 2,
+                                                            })
+                                                            ->columnSpanFull(),
+                                                        Placeholder::make('crop_strategy_note')
+                                                            ->hiddenLabel()
+                                                            ->content(fn (Get $get): Htmlable => new HtmlString($this->cropStrategyNote(
+                                                                $get('default_crop_strategy'),
+                                                                $get('manual_crop_required'),
+                                                            )))
+                                                            ->columnSpanFull(),
                                                     ]),
                                             ]),
                                         Tab::make('Editor / UI metadata')
                                             ->schema([
-                                                Grid::make([
-                                                    'default' => 1,
-                                                    'md' => 2,
-                                                ])->schema([
-                                                    Toggle::make('show_in_editor')
-                                                        ->label('Zobrazit v editoru médií')
-                                                        ->helperText('Konverze se nabídne editorovi při práci s médiem.')
-                                                        ->default(true)
-                                                        ->live(),
-                                                    Toggle::make('important')
-                                                        ->label('Důležitá konverze')
-                                                        ->helperText('Zvýrazní se mezi klíčovými výstupy.')
-                                                        ->default(false)
-                                                        ->live(),
-                                                    Select::make('priority')
-                                                        ->label('Priorita')
-                                                        ->options(self::PRIORITY_OPTIONS)
-                                                        ->native(false)
-                                                        ->default('normal')
-                                                        ->live(),
-                                                    Select::make('editor_badge')
-                                                        ->label('Badge / typ použití')
-                                                        ->options(self::BADGE_OPTIONS)
-                                                        ->native(false)
-                                                        ->searchable()
-                                                        ->placeholder('Vyberte typ použití')
-                                                        ->live(),
-                                                    Textarea::make('editor_help_text')
-                                                        ->label('Help text pro editora')
-                                                        ->rows(2)
-                                                        ->placeholder('Stručně vysvětlete, kdy tuto konverzi použít.')
-                                                        ->columnSpanFull(),
-                                                    Textarea::make('usage_context')
-                                                        ->label('Použití v systému')
-                                                        ->rows(2)
-                                                        ->placeholder('Např. výpis článků, hero banner, OG image.')
-                                                        ->columnSpanFull(),
-                                                ]),
+                                                Section::make('Viditelnost v editoru')
+                                                    ->schema([
+                                                        Grid::make([
+                                                            'default' => 1,
+                                                            'md' => 2,
+                                                        ])->schema([
+                                                            Toggle::make('show_in_editor')
+                                                                ->label('Zobrazit v editoru')
+                                                                ->helperText('Konverze se nabídne editorovi při práci s médiem.')
+                                                                ->default(true)
+                                                                ->live(),
+                                                            Toggle::make('important')
+                                                                ->label('Důležitá konverze')
+                                                                ->helperText('Zvýrazní se mezi klíčovými výstupy.')
+                                                                ->default(false)
+                                                                ->live()
+                                                                ->afterStateUpdated(function (?bool $state, Set $set, Get $get): void {
+                                                                    if ($state && ($get('priority') !== 'high')) {
+                                                                        $set('priority', 'high');
+                                                                    }
+
+                                                                    if (! $state && ($get('priority') === 'high')) {
+                                                                        $set('priority', 'normal');
+                                                                    }
+                                                                }),
+                                                            ToggleButtons::make('priority')
+                                                                ->label('Priorita')
+                                                                ->options(self::PRIORITY_OPTIONS)
+                                                                ->colors([
+                                                                    'low' => 'gray',
+                                                                    'normal' => 'primary',
+                                                                    'high' => 'warning',
+                                                                ])
+                                                                ->inline()
+                                                                ->grouped()
+                                                                ->default('normal')
+                                                                ->live()
+                                                                ->afterStateUpdated(function (?string $state, Set $set): void {
+                                                                    if ($state === 'high') {
+                                                                        $set('important', true);
+                                                                    }
+                                                                })
+                                                                ->columnSpanFull(),
+                                                        ]),
+                                                    ]),
+                                                Section::make('Texty pro editora')
+                                                    ->description('Krátké texty a badge pomáhají editorovi rychle pochopit, kdy tuto konverzi použít.')
+                                                    ->schema([
+                                                        Select::make('editor_badge')
+                                                            ->label('Badge / typ použití')
+                                                            ->options(self::BADGE_OPTIONS)
+                                                            ->native(false)
+                                                            ->searchable()
+                                                            ->placeholder('Vyberte typ použití')
+                                                            ->live(),
+                                                        Textarea::make('editor_help_text')
+                                                            ->label('Help text pro editora')
+                                                            ->rows(2)
+                                                            ->placeholder('Např. používat hlavně tam, kde je důležitá kontrola kompozice.')
+                                                            ->columnSpanFull(),
+                                                        Textarea::make('usage_context')
+                                                            ->label('Použití v systému')
+                                                            ->rows(2)
+                                                            ->placeholder('Např. výpis článků, hero banner, OG image.')
+                                                            ->columnSpanFull(),
+                                                    ]),
                                             ]),
                                     ])
                                     ->columnSpanFull(),
@@ -519,7 +607,24 @@ class MediaConversionSettings extends Page
         $mode = (string) ($conversion['mode'] ?? 'resize');
         $height = $conversion['height'] ?? $conversion['h'] ?? null;
         $width = $conversion['width'] ?? $conversion['w'] ?? null;
-        $supportsCrop = $this->usesCropMode($mode);
+        $normalizedMode = in_array($mode, array_keys(self::MODE_OPTIONS), true) ? $mode : 'resize';
+        $supportsCrop = $this->usesCropMode($normalizedMode);
+        $supportsFocalPoint = $supportsCrop ? (bool) ($conversion['supports_focal_point'] ?? true) : false;
+        $supportsManualCrop = $supportsCrop ? (bool) ($conversion['supports_manual_crop'] ?? false) : false;
+        $manualCropRequired = $supportsCrop ? (bool) ($conversion['manual_crop_required'] ?? false) : false;
+
+        if ($manualCropRequired) {
+            $supportsManualCrop = true;
+        }
+
+        $aspectRatio = (string) ($conversion['aspect_ratio'] ?? $this->deriveAspectRatio($width, $height) ?? '');
+        $defaultCropStrategy = $this->normalizeCropStrategy(
+            (string) ($conversion['default_crop_strategy'] ?? ($supportsCrop ? 'focal_point' : 'none')),
+            $supportsCrop,
+            $supportsFocalPoint,
+            $supportsManualCrop,
+            $manualCropRequired,
+        );
 
         return [
             'name' => (string) ($conversion['name'] ?? 'conversion_'.$index),
@@ -528,17 +633,15 @@ class MediaConversionSettings extends Page
             'is_active' => (bool) ($conversion['is_active'] ?? true),
             'sort_order' => (int) ($conversion['sort_order'] ?? ($index + 1)),
             'group' => (string) ($conversion['group'] ?? 'content'),
-            'mode' => in_array($mode, array_keys(self::MODE_OPTIONS), true) ? $mode : 'resize',
+            'mode' => $normalizedMode,
             'width' => is_numeric($width) ? (int) $width : null,
             'height' => is_numeric($height) ? (int) $height : null,
-            'aspect_ratio' => (string) ($conversion['aspect_ratio'] ?? $this->deriveAspectRatio($width, $height) ?? ''),
+            'aspect_ratio' => $aspectRatio,
             'allow_upscale' => (bool) ($conversion['allow_upscale'] ?? false),
-            'supports_focal_point' => $supportsCrop ? (bool) ($conversion['supports_focal_point'] ?? true) : false,
-            'supports_manual_crop' => $supportsCrop ? (bool) ($conversion['supports_manual_crop'] ?? false) : false,
-            'manual_crop_required' => $supportsCrop ? (bool) ($conversion['manual_crop_required'] ?? false) : false,
-            'default_crop_strategy' => $supportsCrop
-                ? (string) ($conversion['default_crop_strategy'] ?? 'focal_point')
-                : 'none',
+            'supports_focal_point' => $supportsFocalPoint,
+            'supports_manual_crop' => $supportsManualCrop,
+            'manual_crop_required' => $manualCropRequired,
+            'default_crop_strategy' => $defaultCropStrategy,
             'show_in_editor' => (bool) ($conversion['show_in_editor'] ?? true),
             'important' => (bool) ($conversion['important'] ?? false),
             'priority' => (string) ($conversion['priority'] ?? 'normal'),
@@ -558,13 +661,50 @@ class MediaConversionSettings extends Page
         return in_array((string) $mode, ['resize', 'crop_resize'], true);
     }
 
+    private function resetCropSettings(Set $set): void
+    {
+        $set('supports_focal_point', false);
+        $set('supports_manual_crop', false);
+        $set('manual_crop_required', false);
+        $set('default_crop_strategy', 'none');
+    }
+
+    private function syncAspectRatio(Set $set, Get $get): bool
+    {
+        if (! $this->usesCropMode($get('mode'))) {
+            return true;
+        }
+
+        if (blank($get('aspect_ratio')) && filled($ratio = $this->deriveAspectRatio($get('width'), $get('height')))) {
+            $set('aspect_ratio', $ratio);
+        }
+
+        return true;
+    }
+
     private function modeHelperText(mixed $mode): string
     {
         return match ((string) $mode) {
-            'crop' => 'Ořez podle pevného poměru stran. Prioritou je kompozice výstupu.',
-            'crop_resize' => 'Nejprve ořez podle poměru stran, potom finální zmenšení. Typické pro thumbnail workflow.',
-            default => 'Bez ořezu. Obrázek se jen přizpůsobí velikosti výstupu.',
+            'crop' => 'Ořez podle pevného poměru stran. Prioritou je kompozice výřezu.',
+            'crop_resize' => 'Ořez + finální zmenšení. Typický workflow pro thumbnail a výpisové náhledy.',
+            default => 'Bez ořezu. Obrázek se jen zmenší nebo přizpůsobí cílové velikosti.',
         };
+    }
+
+    private function dimensionsSectionDescription(mixed $mode): string
+    {
+        return match ((string) $mode) {
+            'crop' => 'Poměr stran je pro tuto konverzi pevný a určuje kompozici výřezu.',
+            'crop_resize' => 'Nejdřív se hlídá kompozice výřezu, potom se dopočítá finální velikost.',
+            default => 'U režimu bez ořezu může výška zůstat volitelná, pokud se má zachovat proporce originálu.',
+        };
+    }
+
+    private function heightHelperText(mixed $mode): string
+    {
+        return $this->usesCropMode($mode)
+            ? 'U režimů s ořezem je výška součástí pevného výstupu.'
+            : 'Volitelné. U resize může zůstat prázdná pro proporční přizpůsobení.';
     }
 
     private function deriveAspectRatio(mixed $width, mixed $height): ?string
@@ -617,6 +757,21 @@ class MediaConversionSettings extends Page
         return $this->deriveAspectRatio($width, $height);
     }
 
+    private function ratioLockNote(mixed $mode, mixed $aspectRatio, mixed $width, mixed $height): string
+    {
+        if (! $this->usesCropMode($mode)) {
+            return '';
+        }
+
+        $ratio = $this->compactAspectRatio($aspectRatio, $width, $height);
+
+        if (! filled($ratio)) {
+            return '<p class="text-sm text-gray-600 dark:text-gray-300">Doplňte šířku, výšku nebo poměr stran. Cropper se pak uzamkne na pevný poměr této konverze.</p>';
+        }
+
+        return '<p class="text-sm text-gray-600 dark:text-gray-300">Cropper bude pro tuto konverzi uzamčený na poměr <span class="font-semibold text-gray-950 dark:text-white">'.e($ratio).'</span>.</p>';
+    }
+
     private function dimensionsSummary(array $state): string
     {
         $width = is_numeric($state['width'] ?? null) ? (int) $state['width'] : null;
@@ -633,6 +788,56 @@ class MediaConversionSettings extends Page
         return ($width ?? $height).' px';
     }
 
+    /**
+     * @param  array<string, mixed>  $state
+     * @return array<int, string>
+     */
+    private function cropCapabilityPills(array $state): array
+    {
+        $pills = [];
+
+        if ($this->usesCropMode($state['mode'] ?? null) && (bool) ($state['supports_focal_point'] ?? false)) {
+            $pills[] = $this->summaryPill('FP', 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300');
+        }
+
+        if ($this->usesCropMode($state['mode'] ?? null) && (bool) ($state['supports_manual_crop'] ?? false)) {
+            $pills[] = $this->summaryPill('MC', 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300');
+        }
+
+        if ($this->usesCropMode($state['mode'] ?? null) && (bool) ($state['manual_crop_required'] ?? false)) {
+            $pills[] = $this->summaryPill('Required', 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300');
+        }
+
+        return $pills;
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     * @return array<int, string>
+     */
+    private function conversionStatusPills(array $state): array
+    {
+        $pills = [];
+
+        $pills[] = $this->summaryPill((bool) ($state['show_in_editor'] ?? true) ? 'V editoru' : 'Skryto', (bool) ($state['show_in_editor'] ?? true)
+            ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+            : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200');
+
+        if ((bool) ($state['important'] ?? false)) {
+            $pills[] = $this->summaryPill('Důležitá', 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300');
+        }
+
+        if (($state['priority'] ?? 'normal') === 'high') {
+            $pills[] = $this->summaryPill('Priorita', 'bg-orange-50 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300');
+        }
+
+        if (! (bool) ($state['is_active'] ?? true)) {
+            $pills[] = $this->summaryPill('Neaktivní', 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200');
+        }
+
+        return $pills;
+    }
+
     private function renderConversionItemLabel(array $state): Htmlable
     {
         $title = trim((string) ($state['label'] ?? ''));
@@ -641,24 +846,29 @@ class MediaConversionSettings extends Page
 
         $segments = [
             '<span class="font-medium text-gray-950 dark:text-white">'.e($title).'</span>',
-            $this->summaryPill($this->modeLabel($state['mode'] ?? null), $this->modePillClasses($state['mode'] ?? null)),
-            '<span class="text-xs text-gray-500 dark:text-gray-400">'.e($this->dimensionsSummary($state)).'</span>',
+            $this->summaryPill($this->modeSummaryLabel($state['mode'] ?? null), $this->modePillClasses($state['mode'] ?? null)),
         ];
+
+        if (filled($state['group'] ?? null)) {
+            $segments[] = $this->summaryPill($this->groupLabel($state['group']), 'bg-white text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700');
+        }
+
+        if (filled($editorBadge = $this->editorBadgeLabel($state['editor_badge'] ?? null))) {
+            $segments[] = $this->summaryPill($editorBadge, 'bg-lime-50 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300');
+        }
+
+        $segments[] = '<span class="text-xs text-gray-500 dark:text-gray-400">'.e($this->dimensionsSummary($state)).'</span>';
 
         if (filled($ratio = $this->compactAspectRatio($state['aspect_ratio'] ?? null, $state['width'] ?? null, $state['height'] ?? null))) {
             $segments[] = $this->summaryPill($ratio, 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300');
         }
 
-        if ($this->usesCropMode($state['mode'] ?? null) && (bool) ($state['supports_focal_point'] ?? false)) {
-            $segments[] = $this->summaryPill('FP', 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300');
+        foreach ($this->cropCapabilityPills($state) as $pill) {
+            $segments[] = $pill;
         }
 
-        if ($this->usesCropMode($state['mode'] ?? null) && (bool) ($state['supports_manual_crop'] ?? false)) {
-            $segments[] = $this->summaryPill('MC', 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300');
-        }
-
-        if ($this->usesCropMode($state['mode'] ?? null) && (bool) ($state['manual_crop_required'] ?? false)) {
-            $segments[] = $this->summaryPill('Required', 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300');
+        if (! (bool) ($state['show_in_editor'] ?? true)) {
+            $segments[] = $this->summaryPill('Skryto', 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200');
         }
 
         if (! (bool) ($state['is_active'] ?? true)) {
@@ -676,25 +886,41 @@ class MediaConversionSettings extends Page
         $title = trim((string) ($state['label'] ?? ''));
         $title = $title !== '' ? $title : (trim((string) ($state['name'] ?? '')) ?: 'Nová konverze');
 
+        $contextBits = [
+            '<span class="text-xs text-gray-500 dark:text-gray-400">'.e($this->dimensionsSummary($state)).'</span>',
+        ];
+
+        if (filled($ratio = $this->compactAspectRatio($state['aspect_ratio'] ?? null, $state['width'] ?? null, $state['height'] ?? null))) {
+            $contextBits[] = '<span class="text-xs text-gray-500 dark:text-gray-400">•</span>';
+            $contextBits[] = '<span class="text-xs text-gray-500 dark:text-gray-400">'.e($ratio).'</span>';
+        }
+
+        if (filled($state['usage_context'] ?? null)) {
+            $contextBits[] = '<span class="text-xs text-gray-500 dark:text-gray-400">•</span>';
+            $contextBits[] = '<span class="text-xs text-gray-500 dark:text-gray-400">'.e((string) $state['usage_context']).'</span>';
+        }
+
         $lines = [
             '<div class="flex flex-wrap items-start justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 dark:border-gray-800 dark:bg-gray-900/40">',
             '<div class="space-y-1">',
             '<div class="flex flex-wrap items-center gap-2">',
             '<span class="text-sm font-semibold text-gray-950 dark:text-white">'.e($title).'</span>',
-            $this->summaryPill($this->modeLabel($state['mode'] ?? null), $this->modePillClasses($state['mode'] ?? null)),
+            $this->summaryPill($this->modeSummaryLabel($state['mode'] ?? null), $this->modePillClasses($state['mode'] ?? null)),
             filled($state['group'] ?? null)
                 ? $this->summaryPill($this->groupLabel($state['group']), 'bg-white text-gray-600 ring-1 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700')
                 : '',
+            filled($editorBadge = $this->editorBadgeLabel($state['editor_badge'] ?? null))
+                ? $this->summaryPill($editorBadge, 'bg-lime-50 text-lime-700 dark:bg-lime-900/30 dark:text-lime-300')
+                : '',
             '</div>',
-            '<p class="text-xs text-gray-500 dark:text-gray-400">'.e($this->dimensionsSummary($state)).' • '.e($this->compactAspectRatio($state['aspect_ratio'] ?? null, $state['width'] ?? null, $state['height'] ?? null) ?? 'poměr volný').'</p>',
+            filled($state['description'] ?? null)
+                ? '<p class="text-sm text-gray-600 dark:text-gray-300">'.e((string) $state['description']).'</p>'
+                : '',
+            '<div class="flex flex-wrap items-center gap-2">'.implode('', $contextBits).'</div>',
             '</div>',
             '<div class="flex flex-wrap items-center gap-2">',
-            $this->summaryPill((bool) ($state['show_in_editor'] ?? true) ? 'V editoru' : 'Skryto', (bool) ($state['show_in_editor'] ?? true)
-                ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'),
-            (bool) ($state['important'] ?? false)
-                ? $this->summaryPill('Důležitá', 'bg-violet-50 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300')
-                : '',
+            ...$this->cropCapabilityPills($state),
+            ...$this->conversionStatusPills($state),
             '</div>',
             '</div>',
         ];
@@ -707,6 +933,15 @@ class MediaConversionSettings extends Page
         return '<span class="inline-flex items-center rounded-full px-2 py-1 text-[11px] font-medium '.$classes.'">'.e($label).'</span>';
     }
 
+    private function modeSummaryLabel(mixed $mode): string
+    {
+        return match ((string) $mode) {
+            'crop_resize' => 'Thumbnail',
+            'crop' => 'Ořez',
+            default => 'Bez ořezu',
+        };
+    }
+
     private function modeLabel(mixed $mode): string
     {
         return self::MODE_OPTIONS[(string) $mode] ?? 'Bez ořezu';
@@ -715,6 +950,13 @@ class MediaConversionSettings extends Page
     private function groupLabel(mixed $group): string
     {
         return self::GROUP_OPTIONS[(string) $group] ?? (string) $group;
+    }
+
+    private function editorBadgeLabel(mixed $badge): ?string
+    {
+        $label = self::BADGE_OPTIONS[(string) $badge] ?? null;
+
+        return filled($label) ? $label : null;
     }
 
     private function modePillClasses(mixed $mode): string
@@ -729,18 +971,138 @@ class MediaConversionSettings extends Page
     private function outputNote(mixed $mode): string
     {
         return match ((string) $mode) {
-            'crop' => '<p class="text-sm text-gray-600 dark:text-gray-300">Tato konverze stojí hlavně na kompozici. Poměr stran je pevný a editor řeší, co ve výřezu zůstane.</p>',
-            'crop_resize' => '<p class="text-sm text-gray-600 dark:text-gray-300">Typický workflow pro thumbnail. Nejprve se hlídá kompozice, teprve potom se dopočítá finální velikost.</p>',
-            default => '<p class="text-sm text-gray-600 dark:text-gray-300">Resize režim drží jednoduchý výstup bez ořezu. Crop a focal point volby se zde záměrně nezobrazují.</p>',
+            'crop' => '<p class="text-sm text-gray-600 dark:text-gray-300">Pevný poměr stran a důraz na kompozici. Editor řeší hlavně to, co ve výřezu zůstane.</p>',
+            'crop_resize' => '<p class="text-sm text-gray-600 dark:text-gray-300">Typický thumbnail workflow. Nejdřív se určí kompozice, potom se vypočítá finální velikost.</p>',
+            default => '<p class="text-sm text-gray-600 dark:text-gray-300">Jednoduchý výstup bez ořezu. Crop, focal point ani ruční výřez se v tomto režimu záměrně nezobrazují.</p>',
         };
     }
 
     private function cropIntro(mixed $mode): string
     {
         return match ((string) $mode) {
-            'crop_resize' => '<p class="text-sm text-gray-600 dark:text-gray-300">Thumbnail režim: kompozice je klíčová a cropper má být vždy svázaný s pevným poměrem stran této konverze.</p>',
-            default => '<p class="text-sm text-gray-600 dark:text-gray-300">Tato konverze používá ořez podle pevného poměru stran. Níže nastavíte focal point, ruční crop a fallback strategii.</p>',
+            'crop_resize' => 'Thumbnail režim: kompozice je klíčová a cropper má být vždy svázaný s pevným poměrem stran této konverze.',
+            default => 'Tato konverze používá ořez podle pevného poměru stran. Níže nastavíte focal point, ruční crop a výchozí fallback.',
         };
+    }
+
+    /**
+     * @param  array<string, mixed>  $state
+     */
+    private function cropToolsNote(array $state): string
+    {
+        if ((bool) ($state['manual_crop_required'] ?? false)) {
+            return '<p class="text-sm text-gray-600 dark:text-gray-300">Ruční crop je pro tuto konverzi povinný. Editor musí výřez potvrdit přímo pro tuto variantu.</p>';
+        }
+
+        $parts = [];
+
+        if ((bool) ($state['supports_focal_point'] ?? false)) {
+            $parts[] = 'Focal point může řídit kompozici automaticky.';
+        }
+
+        if ((bool) ($state['supports_manual_crop'] ?? false)) {
+            $parts[] = 'Editor může výřez kdykoliv upravit ručně.';
+        }
+
+        if ($parts === []) {
+            $parts[] = 'Pokud nechcete řídit kompozici přes focal point ani ruční crop, ponechte fallback na střed nebo bez fallbacku.';
+        }
+
+        return '<p class="text-sm text-gray-600 dark:text-gray-300">'.e(implode(' ', $parts)).'</p>';
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function cropStrategyOptions(mixed $mode, mixed $supportsFocalPoint, mixed $supportsManualCrop, mixed $manualCropRequired): array
+    {
+        if (! $this->usesCropMode($mode)) {
+            return [];
+        }
+
+        if ((bool) $manualCropRequired) {
+            return [
+                'manual' => self::CROP_STRATEGY_OPTIONS['manual'],
+            ];
+        }
+
+        $options = [
+            'none' => self::CROP_STRATEGY_OPTIONS['none'],
+            'center' => self::CROP_STRATEGY_OPTIONS['center'],
+        ];
+
+        if ((bool) $supportsFocalPoint) {
+            $options['focal_point'] = self::CROP_STRATEGY_OPTIONS['focal_point'];
+        }
+
+        if ((bool) $supportsManualCrop) {
+            $options['manual'] = self::CROP_STRATEGY_OPTIONS['manual'];
+        }
+
+        return $options;
+    }
+
+    private function cropStrategyHelperText(mixed $mode, mixed $supportsFocalPoint, mixed $supportsManualCrop, mixed $manualCropRequired): string
+    {
+        if (! $this->usesCropMode($mode)) {
+            return '';
+        }
+
+        if ((bool) $manualCropRequired) {
+            return 'Ruční crop je povinný, takže fallback se zamyká na ruční výřez.';
+        }
+
+        if (! (bool) $supportsFocalPoint && ! (bool) $supportsManualCrop) {
+            return 'Určuje chování ve chvíli, kdy konverze nemá focal point ani ruční crop.';
+        }
+
+        return 'Určuje, co se použije, když editor nevytvoří vlastní ruční výřez.';
+    }
+
+    private function cropStrategyNote(mixed $strategy, mixed $manualCropRequired): string
+    {
+        if ((bool) $manualCropRequired) {
+            return '<p class="text-sm text-gray-600 dark:text-gray-300">Bez ručního cropu není tato konverze připravená. To je vhodné hlavně pro důležité thumbnail nebo hero výstupy.</p>';
+        }
+
+        return match ((string) $strategy) {
+            'center' => '<p class="text-sm text-gray-600 dark:text-gray-300">Pokud editor nic nenastaví, použije se středový výřez.</p>',
+            'focal_point' => '<p class="text-sm text-gray-600 dark:text-gray-300">Pokud editor nic nenastaví ručně, výřez se bude řídit focal pointem média.</p>',
+            'manual' => '<p class="text-sm text-gray-600 dark:text-gray-300">Preferovaný je ruční crop pro tuto konkrétní konverzi.</p>',
+            default => '<p class="text-sm text-gray-600 dark:text-gray-300">Bez fallbacku. Kompozici drží explicitní nastavení této konverze.</p>',
+        };
+    }
+
+    private function normalizeCropStrategy(
+        string $strategy,
+        bool $supportsCrop,
+        bool $supportsFocalPoint,
+        bool $supportsManualCrop,
+        bool $manualCropRequired,
+    ): string {
+        if (! $supportsCrop) {
+            return 'none';
+        }
+
+        if ($manualCropRequired) {
+            return 'manual';
+        }
+
+        $allowed = array_keys($this->cropStrategyOptions('crop', $supportsFocalPoint, $supportsManualCrop, $manualCropRequired));
+
+        if (in_array($strategy, $allowed, true)) {
+            return $strategy;
+        }
+
+        if (in_array('focal_point', $allowed, true)) {
+            return 'focal_point';
+        }
+
+        if (in_array('center', $allowed, true)) {
+            return 'center';
+        }
+
+        return 'none';
     }
 
     /**
