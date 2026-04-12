@@ -34,7 +34,7 @@ use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
-use MiPress\Core\Models\Media;
+use Awcodes\Curator\Models\Media;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Services\BlueprintFieldResolver;
@@ -46,10 +46,7 @@ class EntriesTable
      */
     private static array $taxonomyTermOptionsCache = [];
 
-    /**
-     * @var array<int, Media|null>
-     */
-    private static array $libraryMediaCache = [];
+
 
     public static function table(Table $table, ?Collection $collection = null): Table
     {
@@ -155,25 +152,7 @@ class EntriesTable
     {
         $featuredMedia = $record->featuredImage;
 
-        if (! $featuredMedia instanceof Media) {
-            return null;
-        }
-
-        $libraryMediaId = $featuredMedia->getCustomProperty('library_media_id');
-
-        if (! is_numeric($libraryMediaId)) {
-            return $featuredMedia;
-        }
-
-        $libraryMediaId = (int) $libraryMediaId;
-
-        if (! array_key_exists($libraryMediaId, static::$libraryMediaCache)) {
-            static::$libraryMediaCache[$libraryMediaId] = Media::query()->find($libraryMediaId);
-        }
-
-        $libraryMedia = static::$libraryMediaCache[$libraryMediaId];
-
-        return $libraryMedia instanceof Media ? $libraryMedia : $featuredMedia;
+        return $featuredMedia instanceof Media ? $featuredMedia : null;
     }
 
     /**

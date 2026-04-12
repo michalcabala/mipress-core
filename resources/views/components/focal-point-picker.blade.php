@@ -11,8 +11,8 @@
 
 @php
     $isImage = $media && method_exists($media, 'isImage') && $media->isImage();
-    $imageWidth = (int) ($media?->getCustomProperty('width') ?? 0);
-    $imageHeight = (int) ($media?->getCustomProperty('height') ?? 0);
+    $imageWidth = (int) ($media?->width ?? 0);
+    $imageHeight = (int) ($media?->height ?? 0);
 @endphp
 
 @if ($isImage)

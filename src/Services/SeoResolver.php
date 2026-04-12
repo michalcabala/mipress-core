@@ -6,7 +6,7 @@ namespace MiPress\Core\Services;
 
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
-use MiPress\Core\Models\Media;
+use Awcodes\Curator\Models\Media;
 use MiPress\Core\Models\Page;
 
 class SeoResolver

@@ -12,7 +12,6 @@ use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Services\EntryTaxonomySyncService;
 use MiPress\Core\Services\HierarchyParentResolver;
-use MiPress\Core\Services\ModelMediaSyncService;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -104,7 +103,6 @@ class CreateEntry extends CreateRecord
     protected function afterCreate(): void
     {
         $this->syncTaxonomyTerms();
-        $this->syncMediaSelections();
 
         $record = $this->record;
 
@@ -135,19 +133,5 @@ class CreateEntry extends CreateRecord
         }
 
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
-    }
-
-    private function syncMediaSelections(): void
-    {
-        $record = $this->getRecord();
-
-        if (! $record instanceof Entry) {
-            return;
-        }
-
-        app(ModelMediaSyncService::class)->syncFeaturedImage(
-            $record,
-            data_get($this->form->getRawState(), 'featured_image_id'),
-        );
     }
 }

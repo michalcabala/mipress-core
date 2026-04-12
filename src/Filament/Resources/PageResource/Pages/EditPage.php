@@ -19,7 +19,6 @@ use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Services\HierarchyParentResolver;
-use MiPress\Core\Services\ModelMediaSyncService;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -56,22 +55,6 @@ class EditPage extends EditRecord
             ...parent::getSubNavigationParameters(),
             'currentPageClass' => static::class,
         ];
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     * @return array<string, mixed>
-     */
-    protected function mutateFormDataBeforeFill(array $data): array
-    {
-        $record = $this->getRecord();
-
-        if ($record instanceof Page && $record->featuredImage !== null) {
-            $data['featured_image_id'] = $record->featuredImage->getCustomProperty('library_media_id')
-                ?? $record->featured_image_id;
-        }
-
-        return $data;
     }
 
     protected function getHeaderActions(): array
@@ -147,11 +130,6 @@ class EditPage extends EditRecord
         if (! $record instanceof Page) {
             return;
         }
-
-        app(ModelMediaSyncService::class)->syncFeaturedImage(
-            $record,
-            data_get($this->form->getRawState(), 'featured_image_id'),
-        );
 
         if (! $this->shouldProcessStatusChange()) {
             $this->statusBeforeSave = $record->status;

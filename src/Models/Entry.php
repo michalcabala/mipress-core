@@ -15,19 +15,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Media\MediaConfig;
-use MiPress\Core\Media\RegistersMiPressMediaConversions;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Traits\Auditable;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
 use MiPress\Core\Traits\HasWorkflow;
-use Spatie\MediaLibrary\HasMedia;
-use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
-class Entry extends Model implements HasMedia
+class Entry extends Model
 {
     use Auditable;
     use HasFactory;
@@ -35,10 +31,6 @@ class Entry extends Model implements HasMedia
     use HasSeo;
     use HasSlug;
     use HasWorkflow;
-    use InteractsWithMedia;
-    use RegistersMiPressMediaConversions {
-        RegistersMiPressMediaConversions::registerMediaConversions insteadof InteractsWithMedia;
-    }
     use SoftDeletes;
 
     protected $table = 'entries';
@@ -142,18 +134,6 @@ class Entry extends Model implements HasMedia
         return $this->belongsTo(Blueprint::class);
     }
 
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection(MediaConfig::featuredCollection())
-            ->singleFile()
-            ->useDisk(MediaConfig::disk())
-            ->acceptsMimeTypes(MediaConfig::allowedMimeTypes());
-
-        $this->addMediaCollection(MediaConfig::galleryCollection())
-            ->useDisk(MediaConfig::disk())
-            ->acceptsMimeTypes(MediaConfig::allowedMimeTypes());
-    }
-
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id');
@@ -176,12 +156,12 @@ class Entry extends Model implements HasMedia
 
     public function featuredImage(): BelongsTo
     {
-        return $this->belongsTo(Media::class, 'featured_image_id');
+        return $this->belongsTo(\App\Models\CuratorMedia::class, 'featured_image_id');
     }
 
     public function ogImage(): BelongsTo
     {
-        return $this->belongsTo(Media::class, 'og_image_id');
+        return $this->belongsTo(\App\Models\CuratorMedia::class, 'og_image_id');
     }
 
     public function terms(): BelongsToMany

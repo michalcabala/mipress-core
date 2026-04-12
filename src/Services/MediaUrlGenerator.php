@@ -4,26 +4,33 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Services;
 
+use Awcodes\Curator\Models\Media;
 use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
-use MiPress\Core\Media\MediaConfig;
-use MiPress\Core\Models\Media;
 
 class MediaUrlGenerator
 {
+    /**
+     * Get the URL for a Curator media record.
+     *
+     * The $variant parameter is accepted for backward compatibility
+     * but curations are resolved by key from the media's curations JSON.
+     */
     public function media(?Media $media, string $variant = 'default'): ?string
     {
         if (! $media instanceof Media) {
             return null;
         }
 
-        $conversion = $this->resolveConversionName($variant);
+        if ($variant !== 'default') {
+            $curationUrl = $this->resolveCurationUrl($media, $variant);
 
-        if ($conversion !== null && $media->hasGeneratedConversion($conversion)) {
-            return $media->getFullUrl($conversion);
+            if ($curationUrl !== null) {
+                return $curationUrl;
+            }
         }
 
-        return $media->getFullUrl();
+        return $media->url;
     }
 
     public function path(?string $path, string $variant = 'default', ?string $disk = null): ?string
@@ -39,14 +46,28 @@ class MediaUrlGenerator
         }
 
         /** @var FilesystemAdapter $storage */
-        $storage = Storage::disk($disk ?: MediaConfig::disk());
+        $storage = Storage::disk($disk ?: config('curator.default_disk', 'local_uploads'));
 
         return $this->absolutizeUrl($storage->url($path));
     }
 
-    private function resolveConversionName(string $variant): ?string
+    private function resolveCurationUrl(Media $media, string $variant): ?string
     {
-        return MediaConfig::resolveVariantName($variant);
+        $curations = $media->curations;
+
+        if (! is_array($curations)) {
+            return null;
+        }
+
+        foreach ($curations as $item) {
+            $curation = $item['curation'] ?? $item;
+
+            if (isset($curation['key']) && $curation['key'] === $variant && isset($curation['url'])) {
+                return $curation['url'];
+            }
+        }
+
+        return null;
     }
 
     private function normalizePath(?string $path): ?string

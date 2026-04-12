@@ -7,7 +7,7 @@ namespace MiPress\Core\Traits;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
-use MiPress\Core\Models\Media;
+use Awcodes\Curator\Models\Media;
 
 trait HasSeo
 {

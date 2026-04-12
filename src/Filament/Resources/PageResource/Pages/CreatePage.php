@@ -12,7 +12,6 @@ use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Services\HierarchyParentResolver;
-use MiPress\Core\Services\ModelMediaSyncService;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -66,13 +65,6 @@ class CreatePage extends CreateRecord
     protected function afterCreate(): void
     {
         $record = $this->record;
-
-        if ($record instanceof Page) {
-            app(ModelMediaSyncService::class)->syncFeaturedImage(
-                $record,
-                data_get($this->form->getRawState(), 'featured_image_id'),
-            );
-        }
 
         if (! $record instanceof Page || $record->status !== EntryStatus::InReview) {
             return;

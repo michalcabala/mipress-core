@@ -230,7 +230,6 @@ class EditSettings extends Page
         return match ($handle) {
             GlobalSeoSettingsManager::HANDLE => GlobalSeoSettings::getUrl(),
             'sitemap' => SitemapSettings::getUrl(),
-            'media_conversions' => MediaConversionSettings::getUrl(),
             default => null,
         };
     }

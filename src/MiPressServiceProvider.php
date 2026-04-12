@@ -11,12 +11,10 @@ use Illuminate\View\View;
 use MiPress\Core\Console\Commands\GenerateSitemap;
 use MiPress\Core\Console\Commands\PublishScheduledEntries;
 use MiPress\Core\Console\Commands\PublishThemeAssets;
-use MiPress\Core\Console\Commands\RegenerateMediaConversions;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\GlobalSet;
-use MiPress\Core\Models\Media;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
@@ -25,7 +23,6 @@ use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
 use MiPress\Core\Policies\EntryPolicy;
 use MiPress\Core\Policies\GlobalSetPolicy;
-use MiPress\Core\Policies\MediaPolicy;
 use MiPress\Core\Policies\PagePolicy;
 use MiPress\Core\Policies\TaxonomyPolicy;
 use MiPress\Core\Policies\TermPolicy;
@@ -108,7 +105,6 @@ class MiPressServiceProvider extends ServiceProvider
         Entry::observe(ContentObserver::class);
         Page::observe(ContentObserver::class);
 
-        Gate::policy(Media::class, MediaPolicy::class);
         Gate::policy(Entry::class, EntryPolicy::class);
         Gate::policy(Page::class, PagePolicy::class);
         Gate::policy(Collection::class, CollectionPolicy::class);
@@ -126,7 +122,6 @@ class MiPressServiceProvider extends ServiceProvider
                 GenerateSitemap::class,
                 PublishScheduledEntries::class,
                 PublishThemeAssets::class,
-                RegenerateMediaConversions::class,
             ]);
         }
     }
