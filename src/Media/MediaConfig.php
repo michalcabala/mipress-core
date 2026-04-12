@@ -223,6 +223,44 @@ final class MediaConfig
     }
 
     /**
+     * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string, description?: string, supports_focal_point?: bool, supports_manual_crop?: bool, manual_crop_required?: bool, default_crop_strategy?: string, important?: bool, priority?: string, editor_help_text?: string, usage_context?: string}>
+     */
+    public static function conversionDefinitions(): array
+    {
+        return self::configuredConversions();
+    }
+
+    /**
+     * @return array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int, group?: string, editor_badge?: string, description?: string, supports_focal_point?: bool, supports_manual_crop?: bool, manual_crop_required?: bool, default_crop_strategy?: string, important?: bool, priority?: string, editor_help_text?: string, usage_context?: string}|null
+     */
+    public static function findConversion(string $conversionName): ?array
+    {
+        foreach (self::configuredConversions() as $conversion) {
+            if (($conversion['name'] ?? null) === $conversionName) {
+                return $conversion;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $conversion
+     */
+    public static function defaultCropStrategy(array $conversion): string
+    {
+        $fallbackStrategy = self::usesCropMode($conversion['mode'] ?? null)
+            ? 'focal_point'
+            : 'none';
+
+        $strategy = (string) ($conversion['default_crop_strategy'] ?? $fallbackStrategy);
+
+        return in_array($strategy, ['none', 'center', 'focal_point', 'manual'], true)
+            ? $strategy
+            : $fallbackStrategy;
+    }
+
+    /**
      * @return array<int, array{name: string, label: string, w: int, h: int|null, mode: 'resize'|'crop'|'crop_resize', is_active: bool, show_in_editor: bool, sort_order: int}>
      */
     public static function conversionsForJs(): array

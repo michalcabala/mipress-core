@@ -50,6 +50,50 @@
         usesCropMode(c) {
             return ['crop', 'crop_resize'].includes(String(c.mode ?? 'resize'))
         },
+        cropStrategy(c) {
+            const fallback = this.usesCropMode(c) ? 'focal_point' : 'none'
+            const strategy = String(c.default_crop_strategy ?? fallback)
+
+            return ['none', 'center', 'focal_point', 'manual'].includes(strategy) ? strategy : fallback
+        },
+        usesLiveFocalPreview(c) {
+            return this.usesCropMode(c) && this.cropStrategy(c) === 'focal_point' && this.supportsFocalPoint(c)
+        },
+        previewSource(c) {
+            if (this.isGenerated(c) && ! this.usesLiveFocalPreview(c) && typeof c.url === 'string' && c.url.length > 0) {
+                return c.url
+            }
+
+            return this.imageUrl
+        },
+        previewObjectPosition(c) {
+            return this.usesLiveFocalPreview(c) ? `${this.x}% ${this.y}%` : 'center'
+        },
+        pendingPreviewLabel(c) {
+            if (this.cropStrategy(c) === 'manual') return 'Čeká na ruční crop'
+            if (this.cropStrategy(c) === 'none') return 'Bez fallbacku'
+
+            return ''
+        },
+        strategyLabel(c) {
+            switch (this.cropStrategy(c)) {
+                case 'center': return 'střed'
+                case 'manual': return 'ruční'
+                case 'none': return 'bez fallbacku'
+                default: return 'focal point'
+            }
+        },
+        strategyClasses(c) {
+            switch (this.cropStrategy(c)) {
+                case 'center': return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'
+                case 'manual': return 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                case 'none': return 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                default: return 'bg-sky-50 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+            }
+        },
+        showsPendingFallback(c) {
+            return this.usesCropMode(c) && ['manual', 'none'].includes(this.cropStrategy(c)) && ! this.isGenerated(c)
+        },
         supportsFocalPoint(c) {
             return Boolean(c.supports_focal_point)
         },
@@ -118,7 +162,7 @@
     <div class="space-y-3">
         <div>
             <h3 class="text-sm font-semibold text-gray-950 dark:text-white">Náhledy konverzí</h3>
-            <p class="text-xs text-gray-500">Živá simulace výřezů podle focal pointu.</p>
+            <p class="text-xs text-gray-500">Náhled respektuje fallback strategii a focal point jen tam, kde je skutečně aktivní.</p>
         </div>
 
         <div class="grid grid-cols-2 gap-3">
@@ -129,11 +173,19 @@
                 >
                     <div class="flex items-center justify-between gap-1">
                         <p class="text-xs font-semibold text-gray-950 truncate dark:text-white" x-text="conversion.label"></p>
-                        <span
-                            class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
-                            :class="usesCropMode(conversion) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
-                            x-text="modeLabel(conversion)"
-                        ></span>
+                        <div class="flex items-center gap-1">
+                            <span
+                                x-show="usesCropMode(conversion)"
+                                class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                                :class="strategyClasses(conversion)"
+                                x-text="strategyLabel(conversion)"
+                            ></span>
+                            <span
+                                class="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium"
+                                :class="usesCropMode(conversion) ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'"
+                                x-text="modeLabel(conversion)"
+                            ></span>
+                        </div>
                     </div>
 
                     <div class="flex flex-wrap items-center gap-1">
@@ -156,16 +208,26 @@
                     </div>
 
                     <div
-                        class="overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
+                        class="relative overflow-hidden rounded-lg border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800"
                         :style="`aspect-ratio:${aspectRatio(conversion)};`"
                     >
                         <img
-                            :src="imageUrl"
+                            :src="previewSource(conversion)"
                             class="h-full w-full"
                             :class="usesCropMode(conversion) ? 'object-cover' : 'object-contain'"
-                            :style="usesCropMode(conversion) ? `object-position:${x}% ${y}%;` : 'object-position:center;'"
+                            :style="usesCropMode(conversion) ? `object-position:${previewObjectPosition(conversion)};` : 'object-position:center;'"
                             alt=""
                         >
+
+                        <div
+                            x-show="showsPendingFallback(conversion)"
+                            class="absolute inset-0 flex items-end bg-linear-to-t from-black/55 via-black/15 to-transparent p-2"
+                        >
+                            <span
+                                class="inline-flex items-center rounded-full bg-white/90 px-2 py-1 text-[10px] font-medium text-gray-900"
+                                x-text="pendingPreviewLabel(conversion)"
+                            ></span>
+                        </div>
                     </div>
 
                     <p

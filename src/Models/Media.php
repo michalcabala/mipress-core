@@ -87,6 +87,71 @@ class Media extends BaseMedia
         return $this->model_type === Attachment::class;
     }
 
+    /**
+     * @return array<string, bool>
+     */
+    public function manualConversionOverrides(): array
+    {
+        $overrides = $this->getCustomProperty('manual_conversion_overrides');
+
+        if (! is_array($overrides)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($overrides as $conversionName => $enabled) {
+            if (! is_string($conversionName) || $conversionName === '' || ! $enabled) {
+                continue;
+            }
+
+            $normalized[$conversionName] = true;
+        }
+
+        return $normalized;
+    }
+
+    public function hasManualConversionOverride(string $conversionName): bool
+    {
+        return array_key_exists($conversionName, $this->manualConversionOverrides());
+    }
+
+    public function markManualConversionOverride(string $conversionName): self
+    {
+        if ($conversionName === '') {
+            return $this;
+        }
+
+        $overrides = $this->manualConversionOverrides();
+        $overrides[$conversionName] = true;
+
+        $this->setCustomProperty('manual_conversion_overrides', $overrides);
+        $this->saveQuietly();
+
+        return $this;
+    }
+
+    /**
+     * @param  list<string>|null  $conversionNames
+     */
+    public function clearManualConversionOverrides(?array $conversionNames = null): self
+    {
+        $overrides = $this->manualConversionOverrides();
+
+        if ($conversionNames === null) {
+            $overrides = [];
+        } else {
+            foreach ($conversionNames as $conversionName) {
+                unset($overrides[$conversionName]);
+            }
+        }
+
+        $this->setCustomProperty('manual_conversion_overrides', $overrides);
+        $this->saveQuietly();
+
+        return $this;
+    }
+
     public function mimeGroup(): string
     {
         if ($this->isImage()) {

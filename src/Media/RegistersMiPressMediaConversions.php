@@ -15,14 +15,20 @@ trait RegistersMiPressMediaConversions
 
     public function registerMediaConversions(?SpatieMedia $media = null): void
     {
-        foreach (MediaConfig::conversions() as $conversionConfig) {
+        $modelMedia = $media instanceof Media ? $media : null;
+
+        foreach (MediaConfig::conversionDefinitions() as $conversionConfig) {
+            if (! $this->shouldRegisterAutomaticConversion($conversionConfig, $modelMedia)) {
+                continue;
+            }
+
             $conversion = $this->addMediaConversion($conversionConfig['name'])
                 ->format('webp')
                 ->quality(MediaConfig::conversionQuality())
                 ->queued();
 
-            if ($conversionConfig['mode'] === 'crop' && $media instanceof Media) {
-                $this->applyCropManipulations($conversion, $conversionConfig, $media);
+            if (MediaConfig::usesCropMode($conversionConfig['mode'] ?? null)) {
+                $this->applyCropManipulations($conversion, $conversionConfig, $modelMedia);
 
                 continue;
             }
@@ -32,10 +38,22 @@ trait RegistersMiPressMediaConversions
     }
 
     /**
-     * @param  array{name: string, label: string, w: int, h: int|null, mode: 'crop'|'resize'}  $conversionConfig
+     * @param  array<string, mixed>  $conversionConfig
      */
-    private function applyCropManipulations(Conversion $conversion, array $conversionConfig, Media $media): void
+    private function applyCropManipulations(Conversion $conversion, array $conversionConfig, ?Media $media): void
     {
+        $strategy = MediaConfig::defaultCropStrategy($conversionConfig);
+
+        if ($strategy !== 'focal_point' || ! ($conversionConfig['supports_focal_point'] ?? false) || ! $media instanceof Media) {
+            $conversion->fit(
+                Fit::Crop,
+                (int) $conversionConfig['w'],
+                (int) ($conversionConfig['h'] ?? $conversionConfig['w']),
+            );
+
+            return;
+        }
+
         $focalX = is_numeric($media->focal_point_x) ? (int) $media->focal_point_x : 50;
         $focalY = is_numeric($media->focal_point_y) ? (int) $media->focal_point_y : 50;
 
@@ -61,5 +79,31 @@ trait RegistersMiPressMediaConversions
         }
 
         $conversion->width($conversionConfig['w']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $conversionConfig
+     */
+    private function shouldRegisterAutomaticConversion(array $conversionConfig, ?Media $media): bool
+    {
+        if (! MediaConfig::usesCropMode($conversionConfig['mode'] ?? null)) {
+            return true;
+        }
+
+        $strategy = MediaConfig::defaultCropStrategy($conversionConfig);
+
+        if (in_array($strategy, ['manual', 'none'], true)) {
+            return false;
+        }
+
+        if (
+            $media instanceof Media
+            && (bool) ($conversionConfig['supports_manual_crop'] ?? false)
+            && $media->hasManualConversionOverride((string) ($conversionConfig['name'] ?? ''))
+        ) {
+            return false;
+        }
+
+        return true;
     }
 }
