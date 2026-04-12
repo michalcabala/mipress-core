@@ -17,7 +17,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
-use Filament\Tables\Columns\ImageColumn;
+use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -30,7 +30,6 @@ use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
-use Awcodes\Curator\Models\Media;
 
 class PagesTable
 {
@@ -46,12 +45,9 @@ class PagesTable
 
         return $table
             ->columns([
-                ImageColumn::make('featuredImage')
+                CuratorColumn::make('featured_image_id')
                     ->label('Obrázek')
-                    ->height(40)
-                    ->width(40)
-                    ->checkFileExistence(false)
-                    ->state(fn (Page $record): ?string => mipress_media_url(static::resolveFeaturedThumbnailMedia($record), 'miniatura')),
+                    ->size(40),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -423,12 +419,5 @@ class PagesTable
     private static function setRequestParentMap(array $parentMap): void
     {
         request()->attributes->set('mipress.pages.parent_map', $parentMap);
-    }
-
-    private static function resolveFeaturedThumbnailMedia(Page $record): ?Media
-    {
-        $featuredMedia = $record->featuredImage;
-
-        return $featuredMedia instanceof Media ? $featuredMedia : null;
     }
 }

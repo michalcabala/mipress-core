@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace MiPress\Core;
 
+use Awcodes\Curator\Curations\CurationPreset;
+use Awcodes\Curator\Facades\Curation;
+use Awcodes\Curator\Facades\Glide;
+use Awcodes\Curator\Glide\SymfonyResponseFactory;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -92,6 +96,48 @@ class MiPressServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         Blade::anonymousComponentPath(__DIR__.'/../resources/views/components', 'mipress');
 
+        $this->publishes([
+            __DIR__.'/../lang/vendor/curator' => $this->app->langPath('vendor/curator'),
+        ], 'mipress-curator-lang');
+
+        Glide::configure()->serverConfig([
+            'response' => new SymfonyResponseFactory(app('request')),
+            'source' => storage_path('app'),
+            'source_path_prefix' => 'public/uploads',
+            'cache' => storage_path('app'),
+            'cache_path_prefix' => '.cache',
+            'max_image_size' => 2000 * 2000,
+            'base_url' => 'curator',
+        ]);
+
+        Curation::presets([
+            CurationPreset::make('Miniatura')
+                ->width(400)
+                ->height(400)
+                ->format('webp')
+                ->quality(85),
+            CurationPreset::make('Open Graph')
+                ->width(1200)
+                ->height(630)
+                ->format('webp')
+                ->quality(85),
+            CurationPreset::make('Čtverec')
+                ->width(1200)
+                ->height(1200)
+                ->format('webp')
+                ->quality(85),
+            CurationPreset::make('Krajina 16:9')
+                ->width(1600)
+                ->height(900)
+                ->format('webp')
+                ->quality(85),
+            CurationPreset::make('Krajina 4:3')
+                ->width(1600)
+                ->height(1200)
+                ->format('webp')
+                ->quality(85),
+        ]);
+
         $this->app->make(ThemeManager::class)->registerViews();
 
         $this->app->booted(function (): void {
@@ -117,6 +163,10 @@ class MiPressServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/mipress.php' => config_path('mipress.php'),
             ], 'mipress-config');
+
+            $this->publishes([
+                __DIR__.'/../config/curator.php' => config_path('curator.php'),
+            ], 'mipress-curator-config');
 
             $this->commands([
                 GenerateSitemap::class,

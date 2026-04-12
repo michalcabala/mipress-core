@@ -112,7 +112,7 @@ class Page extends Model
 
     public function featuredImage(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\CuratorMedia::class, 'featured_image_id');
+        return $this->belongsTo(CuratorMedia::class, 'featured_image_id');
     }
 
     public function origin(): BelongsTo

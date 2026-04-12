@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament;
 
+use Awcodes\Curator\CuratorPlugin;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentIcon;
@@ -16,6 +17,7 @@ use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Plugins\BotlyPlugin;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
+use MiPress\Core\Filament\Resources\CuratorMediaResource;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Resources\TaxonomyResource;
@@ -64,6 +66,15 @@ class MiPressPlugin implements Plugin
                 BotlyPlugin::make()
                     ->navigationIcon('fal-user-robot')
                     ->title('Správa robots.txt')
+            )
+            ->plugin(
+                CuratorPlugin::make()
+                    ->label('Médium')
+                    ->pluralLabel('Média')
+                    ->navigationIcon('fal-images')
+                    ->navigationSort(90)
+                    ->curations()
+                    ->fileSwap()
             );
     }
 

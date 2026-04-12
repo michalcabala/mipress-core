@@ -17,7 +17,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Section;
-use Filament\Tables\Columns\ImageColumn;
+use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
@@ -34,7 +34,6 @@ use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
-use Awcodes\Curator\Models\Media;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Services\BlueprintFieldResolver;
@@ -54,12 +53,9 @@ class EntriesTable
 
         return $table
             ->columns([
-                ImageColumn::make('featuredImage')
+                CuratorColumn::make('featured_image_id')
                     ->label('Obrázek')
-                    ->height(40)
-                    ->width(40)
-                    ->checkFileExistence(false)
-                    ->state(fn (Entry $record): ?string => mipress_media_url(static::resolveFeaturedThumbnailMedia($record), 'miniatura')),
+                    ->size(50),
                 TextColumn::make('title')
                     ->label('Titulek')
                     ->searchable()
@@ -146,13 +142,6 @@ class EntriesTable
                     ForceDeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    private static function resolveFeaturedThumbnailMedia(Entry $record): ?Media
-    {
-        $featuredMedia = $record->featuredImage;
-
-        return $featuredMedia instanceof Media ? $featuredMedia : null;
     }
 
     /**
