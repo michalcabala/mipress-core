@@ -69,11 +69,13 @@ class Term extends Model
         return $this->hasMany(self::class, 'parent_id');
     }
 
+    /** @future multi-lang — translation origin link (currently unused, locale infra prepared) */
     public function origin(): BelongsTo
     {
         return $this->belongsTo(self::class, 'origin_id');
     }
 
+    /** @future multi-lang — all translations of this term (currently unused) */
     public function translations(): HasMany
     {
         return $this->hasMany(self::class, 'origin_id');
@@ -89,11 +91,13 @@ class Term extends Model
         return $query->orderBy('sort_order')->orderBy('title');
     }
 
+    /** @future multi-lang — filter by locale (currently unused) */
     public function scopeForLocale(Builder $query, string $locale): Builder
     {
         return $query->where('locale', $locale);
     }
 
+    /** @future multi-lang — only original-language records (currently unused) */
     public function scopeOriginals(Builder $query): Builder
     {
         return $query->whereNull('origin_id');

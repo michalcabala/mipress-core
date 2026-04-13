@@ -111,11 +111,13 @@ class Page extends Model
         return $this->belongsTo(CuratorMedia::class, 'featured_image_id');
     }
 
+    /** @future multi-lang — translation origin link (currently unused, locale infra prepared) */
     public function origin(): BelongsTo
     {
         return $this->belongsTo(self::class, 'origin_id');
     }
 
+    /** @future multi-lang — all translations of this page (currently unused) */
     public function translations(): HasMany
     {
         return $this->hasMany(self::class, 'origin_id');
@@ -126,11 +128,13 @@ class Page extends Model
         return $query->orderBy('sort_order');
     }
 
+    /** @future multi-lang — filter by locale (currently unused) */
     public function scopeForLocale(Builder $query, string $locale): Builder
     {
         return $query->where('locale', $locale);
     }
 
+    /** @future multi-lang — only original-language records (currently unused) */
     public function scopeOriginals(Builder $query): Builder
     {
         return $query->whereNull('origin_id');
