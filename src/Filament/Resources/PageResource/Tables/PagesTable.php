@@ -8,7 +8,6 @@ use App\Models\User;
 use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
-use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,8 +16,6 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
@@ -26,24 +23,20 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\CarbonInterface;
-use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
+use MiPress\Core\Filament\Resources\Concerns\HasPublicationTableWorkflow;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
-use MiPress\Core\Services\WorkflowNotificationService;
-use MiPress\Core\Services\WorkflowTransitionService;
 
 class PagesTable
 {
-    use HasReactivePublicationFields;
+    use HasPublicationTableWorkflow;
 
     private const HOMEPAGE_PAGE_SETTING_KEY = 'general.homepage_page_id';
 
@@ -232,325 +225,41 @@ class PagesTable
             ]);
     }
 
-    private static function makeViewLiveAction(): Action
+    // ── HasPublicationTableWorkflow configuration ──
+
+    protected static function getContentModelClass(): string
     {
-        return Action::make('viewLive')
-            ->label('Zobrazit na webu')
-            ->icon('far-arrow-up-right-from-square')
-            ->color('gray')
-            ->url(fn (Page $record): ?string => $record->getPublicUrl(), shouldOpenInNewTab: true)
-            ->visible(fn (Page $record): bool => auth()->user()?->can('view', $record) === true
-                && ! $record->trashed()
-                && $record->status === EntryStatus::Published
-                && filled($record->getPublicUrl()));
+        return Page::class;
     }
 
-    private static function makePreviewAction(): Action
+    protected static function getPreviewRouteName(): string
     {
-        return Action::make('preview')
-            ->label('Náhled')
-            ->icon('far-eye')
-            ->color('gray')
-            ->url(
-                fn (Page $record): string => URL::temporarySignedRoute(
-                    'preview.page',
-                    now()->addHour(),
-                    ['page' => $record->getKey()],
-                ),
-                shouldOpenInNewTab: true,
-            )
-            ->visible(fn (Page $record): bool => auth()->user()?->can('view', $record) === true
-                && ! $record->trashed()
-                && $record->status !== EntryStatus::Published);
+        return 'preview.page';
     }
 
-    private static function makeTogglePublicationAction(): Action
+    protected static function getPreviewRouteParameterName(): string
     {
-        return Action::make('togglePublicationStatus')
-            ->label('Změnit publikaci')
-            ->icon('far-arrows-rotate')
-            ->color('gray')
-            ->visible(fn (Page $record): bool => auth()->user()?->can('publish', $record) === true && ! $record->trashed())
-            ->modalHeading(fn (Page $record): string => 'Změnit publikaci: '.$record->title)
-            ->modalSubmitActionLabel('Uložit změny')
-            ->fillForm(fn (Page $record): array => [
-                'status' => $record->status->value,
-                'published_at' => $record->scheduled_at ?? $record->published_at,
-            ])
-            ->schema(fn (Page $record): array => static::getPublicationWorkflowSchema($record))
-            ->action(function (Page $record, array $data): void {
-                $previousStatus = $record->status;
-
-                if (! static::applyPublicationWorkflowData($record, $data)) {
-                    Notification::make()
-                        ->title('Bez změny')
-                        ->warning()
-                        ->send();
-
-                    return;
-                }
-
-                static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
-
-                Notification::make()
-                    ->title(static::getPublicationNotificationTitle($previousStatus, $record->status))
-                    ->body(static::getPublicationNotificationBody($record))
-                    ->success()
-                    ->send();
-            });
+        return 'page';
     }
 
-    private static function makeBulkPublicationAction(): BulkAction
+    protected static function getEditUrl(Model $record): string
     {
-        return BulkAction::make('changePublicationStatus')
-            ->label('Změnit publikaci')
-            ->icon('far-arrows-rotate')
-            ->visible(fn (): bool => auth()->user()?->hasPermissionTo('entry.publish') === true)
-            ->modalHeading('Změnit publikaci vybraných stránek')
-            ->modalSubmitActionLabel('Uložit změny')
-            ->schema(static::getPublicationWorkflowSchema())
-            ->action(function (EloquentCollection $records, array $data): void {
-                $updated = 0;
-                $skipped = 0;
-
-                foreach ($records as $record) {
-                    if (! $record instanceof Page || auth()->user()?->can('publish', $record) !== true) {
-                        $skipped++;
-
-                        continue;
-                    }
-
-                    $previousStatus = $record->status;
-                    $statusChanged = static::applyPublicationWorkflowData($record, $data);
-
-                    if ($statusChanged) {
-                        $updated++;
-
-                        static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
-
-                        continue;
-                    }
-
-                    $skipped++;
-                }
-
-                Notification::make()
-                    ->title($updated > 0 ? 'Stav publikace změněn' : 'Bez změny')
-                    ->body("Aktualizováno {$updated} položek, přeskočeno {$skipped}.")
-                    ->{$updated > 0 ? 'success' : 'warning'}()
-                    ->send();
-            });
+        return PageResource::getUrl('edit', ['record' => $record]);
     }
 
-    /**
-     * @return array<int, ToggleButtons|DateTimePicker>
-     */
-    private static function getPublicationWorkflowSchema(?Page $record = null): array
+    protected static function getPublishPermission(): string
     {
-        return [
-            static::makePublicationStatusField($record),
-            static::makePublicationDateField($record),
-        ];
+        return 'entry.publish';
     }
 
-    private static function makePublicationStatusField(?Page $record): ToggleButtons
+    protected static function getContentLabel(): string
     {
-        return self::configureReactivePublicationStatusField(
-            ToggleButtons::make('status')
-                ->label('Stav publikování')
-                ->options(static::getPublicationStatusOptions($record))
-                ->colors(static::getPublicationStatusColors())
-                ->icons(static::getPublicationStatusIcons())
-                ->inline()
-                ->required()
-                ->helperText(static::publicationStatusHelperText($record)),
-            static::canPublish($record),
-        );
+        return 'Stránka';
     }
 
-    private static function makePublicationDateField(?Page $record): DateTimePicker
+    protected static function getContentLabelPlural(): string
     {
-        return self::configureReactivePublicationDateField(
-            DateTimePicker::make('published_at')
-                ->label('Datum publikace')
-                ->nullable()
-                ->disabled(fn (): bool => ! static::canPublish($record))
-                ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
-            static::canPublish($record),
-        );
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function getPublicationStatusOptions(?Page $record): array
-    {
-        return collect(static::getVisiblePublicationStatuses($record))
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getLabel()])
-            ->all();
-    }
-
-    /**
-     * @return array<int, EntryStatus>
-     */
-    private static function getVisiblePublicationStatuses(?Page $record): array
-    {
-        if (static::canPublish($record)) {
-            return EntryStatus::cases();
-        }
-
-        if (! $record instanceof Page) {
-            return [EntryStatus::Draft, EntryStatus::InReview];
-        }
-
-        return match ($record->status) {
-            EntryStatus::Published, EntryStatus::Scheduled => [$record->status, EntryStatus::InReview],
-            EntryStatus::Rejected => [$record->status, EntryStatus::Draft, EntryStatus::InReview],
-            default => [EntryStatus::Draft, EntryStatus::InReview],
-        };
-    }
-
-    /**
-     * @return array<string, string|array|null>
-     */
-    private static function getPublicationStatusColors(): array
-    {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getColor()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string|null>
-     */
-    private static function getPublicationStatusIcons(): array
-    {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getIcon()])
-            ->all();
-    }
-
-    private static function publicationStatusHelperText(?Page $record): string
-    {
-        if (static::canPublish($record)) {
-            return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
-        }
-
-        if ($record instanceof Page && in_array($record->status, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
-            return 'Po uložení budou změny odeslány ke schválení.';
-        }
-
-        return 'Vyberte, zda obsah uložit jako koncept nebo odeslat ke schválení.';
-    }
-
-    private static function canPublish(?Page $record): bool
-    {
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        if ($record instanceof Page) {
-            return $user->can('publish', $record);
-        }
-
-        return $user->hasPermissionTo('entry.publish');
-    }
-
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    private static function applyPublicationWorkflowData(Page $record, array $data): bool
-    {
-        $preparedData = app(WorkflowTransitionService::class)->prepareFormDataForStatus(
-            $data,
-            canPublish: static::canPublish($record),
-            currentStatus: $record->status,
-        );
-
-        $nextStatus = data_get($preparedData, 'status');
-        $nextStatus = $nextStatus instanceof EntryStatus
-            ? $nextStatus
-            : EntryStatus::tryFrom((string) $nextStatus);
-
-        if (! $nextStatus instanceof EntryStatus) {
-            return false;
-        }
-
-        $currentPublishedAt = static::normalizePublicationDateValue($record->published_at);
-        $currentScheduledAt = static::normalizePublicationDateValue($record->scheduled_at);
-        $nextPublishedAt = static::normalizePublicationDateValue(data_get($preparedData, 'published_at'));
-        $nextScheduledAt = static::normalizePublicationDateValue(data_get($preparedData, 'scheduled_at'));
-        $nextReviewNote = data_get($preparedData, 'review_note');
-
-        $hasChanged = $record->status !== $nextStatus
-            || $currentPublishedAt?->format('c') !== $nextPublishedAt?->format('c')
-            || $currentScheduledAt?->format('c') !== $nextScheduledAt?->format('c')
-            || (string) ($record->review_note ?? '') !== (string) ($nextReviewNote ?? '');
-
-        if (! $hasChanged) {
-            return false;
-        }
-
-        $record->status = $nextStatus;
-        $record->published_at = $nextPublishedAt;
-        $record->scheduled_at = $nextScheduledAt;
-        $record->review_note = $nextReviewNote;
-        $record->save();
-
-        return true;
-    }
-
-    private static function normalizePublicationDateValue(mixed $value): ?CarbonInterface
-    {
-        if ($value instanceof CarbonInterface) {
-            return $value;
-        }
-
-        if (! is_string($value) || trim($value) === '') {
-            return null;
-        }
-
-        return Carbon::parse($value);
-    }
-
-    private static function sendReviewRequestedNotificationIfNeeded(Page $record, EntryStatus $previousStatus): void
-    {
-        if ($previousStatus === $record->status || $record->status !== EntryStatus::InReview) {
-            return;
-        }
-
-        app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
-            record: $record,
-            permission: 'entry.publish',
-            title: 'Nová stránka ke schválení',
-            body: 'Stránka "'.$record->title.'" čeká na schválení publikace.',
-            editUrl: PageResource::getUrl('edit', ['record' => $record]),
-            previewRouteName: 'preview.page',
-            previewRouteParameterName: 'page',
-        );
-    }
-
-    private static function getPublicationNotificationTitle(EntryStatus $previousStatus, EntryStatus $currentStatus): string
-    {
-        return match ($currentStatus) {
-            EntryStatus::Published => 'Stránka publikována',
-            EntryStatus::Scheduled => 'Publikace naplánována',
-            EntryStatus::InReview => 'Odesláno ke schválení',
-            EntryStatus::Rejected => 'Stránka zamítnuta',
-            EntryStatus::Draft => in_array($previousStatus, [EntryStatus::Published, EntryStatus::Scheduled], true)
-                ? 'Publikace zrušena'
-                : 'Uloženo jako koncept',
-        };
-    }
-
-    private static function getPublicationNotificationBody(Page $record): ?string
-    {
-        return match ($record->status) {
-            EntryStatus::Scheduled => 'Publikace je naplánována na '.(($record->scheduled_at ?? $record->published_at)?->format('j. n. Y H:i') ?? '—').'.',
-            default => null,
-        };
+        return 'stránek';
     }
 
     private static function getHomepagePageId(): ?string
