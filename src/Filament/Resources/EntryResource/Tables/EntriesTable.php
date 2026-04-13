@@ -18,7 +18,9 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\ToggleButtons;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
@@ -29,10 +31,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
+use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\Filament\Tables\Columns\UserColumn;
@@ -42,10 +46,13 @@ use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Taxonomy;
 use MiPress\Core\Models\Term;
 use MiPress\Core\Services\BlueprintFieldResolver;
+use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
 class EntriesTable
 {
+    use HasReactivePublicationFields;
+
     /**
      * @var array<int, array<int, string>>
      */
@@ -187,33 +194,34 @@ class EntriesTable
     private static function makeTogglePublicationAction(): Action
     {
         return Action::make('togglePublicationStatus')
-            ->label(fn (Entry $record): string => match ($record->status) {
-                EntryStatus::Published => 'Zrušit publikaci',
-                EntryStatus::Scheduled => 'Zrušit plánování',
-                default => 'Publikovat',
-            })
-            ->icon(fn (Entry $record): string => match ($record->status) {
-                EntryStatus::Published => 'far-circle-minus',
-                EntryStatus::Scheduled => EntryStatus::Draft->getIcon(),
-                default => EntryStatus::Published->getIcon(),
-            })
-            ->color(fn (Entry $record): string|array|null => match ($record->status) {
-                EntryStatus::Published, EntryStatus::Scheduled => EntryStatus::Draft->getColor(),
-                default => EntryStatus::Published->getColor(),
-            })
-            ->requiresConfirmation()
+            ->label('Změnit publikaci')
+            ->icon('far-arrows-rotate')
+            ->color('gray')
             ->visible(fn (Entry $record): bool => auth()->user()?->can('publish', $record) === true && ! $record->trashed())
-            ->action(function (Entry $record): void {
-                $currentStatus = $record->status;
+            ->modalHeading(fn (Entry $record): string => 'Změnit publikaci: '.$record->title)
+            ->modalSubmitActionLabel('Uložit změny')
+            ->fillForm(fn (Entry $record): array => [
+                'status' => $record->status->value,
+                'published_at' => $record->scheduled_at ?? $record->published_at,
+            ])
+            ->schema(fn (Entry $record): array => static::getPublicationWorkflowSchema($record))
+            ->action(function (Entry $record, array $data): void {
+                $previousStatus = $record->status;
 
-                static::transitionPublicationRecord($record, $currentStatus, 'toggle');
+                if (! static::applyPublicationWorkflowData($record, $data)) {
+                    Notification::make()
+                        ->title('Bez změny')
+                        ->warning()
+                        ->send();
+
+                    return;
+                }
+
+                static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
 
                 Notification::make()
-                    ->title(match ($currentStatus) {
-                        EntryStatus::Published => 'Publikace zrušena',
-                        EntryStatus::Scheduled => 'Plánování zrušeno',
-                        default => 'Položka publikována',
-                    })
+                    ->title(static::getPublicationNotificationTitle($previousStatus, $record->status))
+                    ->body(static::getPublicationNotificationBody($record))
                     ->success()
                     ->send();
             });
@@ -225,18 +233,10 @@ class EntriesTable
             ->label('Změnit publikaci')
             ->icon('far-arrows-rotate')
             ->visible(fn (): bool => auth()->user()?->hasPermissionTo('entry.publish') === true)
-            ->schema([
-                Select::make('target_status')
-                    ->label('Cílový stav')
-                    ->options([
-                        'published' => 'Publikovat',
-                        'draft' => 'Zrušit publikaci',
-                    ])
-                    ->native(false)
-                    ->required(),
-            ])
+            ->modalHeading('Změnit publikaci vybraných položek')
+            ->modalSubmitActionLabel('Uložit změny')
+            ->schema(static::getPublicationWorkflowSchema())
             ->action(function (EloquentCollection $records, array $data): void {
-                $targetStatus = $data['target_status'] ?? null;
                 $updated = 0;
                 $skipped = 0;
 
@@ -247,11 +247,18 @@ class EntriesTable
                         continue;
                     }
 
-                    $statusChanged = static::transitionPublicationRecord($record, $record->status, (string) $targetStatus);
+                    $previousStatus = $record->status;
+                    $statusChanged = static::applyPublicationWorkflowData($record, $data);
 
                     if ($statusChanged) {
                         $updated++;
+
+                        static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
+
+                        continue;
                     }
+
+                    $skipped++;
                 }
 
                 Notification::make()
@@ -262,57 +269,218 @@ class EntriesTable
             });
     }
 
-    private static function transitionPublicationRecord(Entry $record, EntryStatus $currentStatus, string $mode): bool
+    /**
+     * @return array<int, ToggleButtons|DateTimePicker>
+     */
+    private static function getPublicationWorkflowSchema(?Entry $record = null): array
     {
-        $workflowTransitions = app(WorkflowTransitionService::class);
+        return [
+            static::makePublicationStatusField($record),
+            static::makePublicationDateField($record),
+        ];
+    }
 
-        if ($mode === 'published') {
-            if ($currentStatus === EntryStatus::Published) {
-                return false;
-            }
+    private static function makePublicationStatusField(?Entry $record): ToggleButtons
+    {
+        return self::configureReactivePublicationStatusField(
+            ToggleButtons::make('status')
+                ->label('Stav publikování')
+                ->options(static::getPublicationStatusOptions($record))
+                ->colors(static::getPublicationStatusColors())
+                ->icons(static::getPublicationStatusIcons())
+                ->inline()
+                ->required()
+                ->helperText(static::publicationStatusHelperText($record)),
+            static::canPublish($record),
+        );
+    }
 
-            if ($currentStatus === EntryStatus::Scheduled) {
-                $workflowTransitions->publishNow($record);
+    private static function makePublicationDateField(?Entry $record): DateTimePicker
+    {
+        return self::configureReactivePublicationDateField(
+            DateTimePicker::make('published_at')
+                ->label('Datum publikace')
+                ->nullable()
+                ->disabled(fn (): bool => ! static::canPublish($record))
+                ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
+            static::canPublish($record),
+        );
+    }
 
-                return true;
-            }
+    /**
+     * @return array<string, string>
+     */
+    private static function getPublicationStatusOptions(?Entry $record): array
+    {
+        return collect(static::getVisiblePublicationStatuses($record))
+            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getLabel()])
+            ->all();
+    }
 
-            $workflowTransitions->publish($record);
-
-            return true;
+    /**
+     * @return array<int, EntryStatus>
+     */
+    private static function getVisiblePublicationStatuses(?Entry $record): array
+    {
+        if (static::canPublish($record)) {
+            return EntryStatus::cases();
         }
 
-        if ($mode === 'draft') {
-            if ($currentStatus === EntryStatus::Draft) {
-                return false;
-            }
-
-            if ($currentStatus === EntryStatus::Scheduled) {
-                $workflowTransitions->cancelSchedule($record);
-
-                return true;
-            }
-
-            $workflowTransitions->unpublish($record);
-
-            return true;
+        if (! $record instanceof Entry) {
+            return [EntryStatus::Draft, EntryStatus::InReview];
         }
 
-        if ($currentStatus === EntryStatus::Published) {
-            $workflowTransitions->unpublish($record);
+        return match ($record->status) {
+            EntryStatus::Published, EntryStatus::Scheduled => [$record->status, EntryStatus::InReview],
+            EntryStatus::Rejected => [$record->status, EntryStatus::Draft, EntryStatus::InReview],
+            default => [EntryStatus::Draft, EntryStatus::InReview],
+        };
+    }
 
-            return true;
+    /**
+     * @return array<string, string|array|null>
+     */
+    private static function getPublicationStatusColors(): array
+    {
+        return collect(EntryStatus::cases())
+            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getColor()])
+            ->all();
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private static function getPublicationStatusIcons(): array
+    {
+        return collect(EntryStatus::cases())
+            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getIcon()])
+            ->all();
+    }
+
+    private static function publicationStatusHelperText(?Entry $record): string
+    {
+        if (static::canPublish($record)) {
+            return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
         }
 
-        if ($currentStatus === EntryStatus::Scheduled) {
-            $workflowTransitions->cancelSchedule($record);
-
-            return true;
+        if ($record instanceof Entry && in_array($record->status, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
+            return 'Po uložení budou změny odeslány ke schválení.';
         }
 
-        $workflowTransitions->publish($record);
+        return 'Vyberte, zda obsah uložit jako koncept nebo odeslat ke schválení.';
+    }
+
+    private static function canPublish(?Entry $record): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        if ($record instanceof Entry) {
+            return $user->can('publish', $record);
+        }
+
+        return $user->hasPermissionTo('entry.publish');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private static function applyPublicationWorkflowData(Entry $record, array $data): bool
+    {
+        $preparedData = app(WorkflowTransitionService::class)->prepareFormDataForStatus(
+            $data,
+            canPublish: static::canPublish($record),
+            currentStatus: $record->status,
+        );
+
+        $nextStatus = data_get($preparedData, 'status');
+        $nextStatus = $nextStatus instanceof EntryStatus
+            ? $nextStatus
+            : EntryStatus::tryFrom((string) $nextStatus);
+
+        if (! $nextStatus instanceof EntryStatus) {
+            return false;
+        }
+
+        $currentPublishedAt = static::normalizePublicationDateValue($record->published_at);
+        $currentScheduledAt = static::normalizePublicationDateValue($record->scheduled_at);
+        $nextPublishedAt = static::normalizePublicationDateValue(data_get($preparedData, 'published_at'));
+        $nextScheduledAt = static::normalizePublicationDateValue(data_get($preparedData, 'scheduled_at'));
+        $nextReviewNote = data_get($preparedData, 'review_note');
+
+        $hasChanged = $record->status !== $nextStatus
+            || $currentPublishedAt?->format('c') !== $nextPublishedAt?->format('c')
+            || $currentScheduledAt?->format('c') !== $nextScheduledAt?->format('c')
+            || (string) ($record->review_note ?? '') !== (string) ($nextReviewNote ?? '');
+
+        if (! $hasChanged) {
+            return false;
+        }
+
+        $record->status = $nextStatus;
+        $record->published_at = $nextPublishedAt;
+        $record->scheduled_at = $nextScheduledAt;
+        $record->review_note = $nextReviewNote;
+        $record->save();
 
         return true;
+    }
+
+    private static function normalizePublicationDateValue(mixed $value): ?CarbonInterface
+    {
+        if ($value instanceof CarbonInterface) {
+            return $value;
+        }
+
+        if (! is_string($value) || trim($value) === '') {
+            return null;
+        }
+
+        return Carbon::parse($value);
+    }
+
+    private static function sendReviewRequestedNotificationIfNeeded(Entry $record, EntryStatus $previousStatus): void
+    {
+        if ($previousStatus === $record->status || $record->status !== EntryStatus::InReview) {
+            return;
+        }
+
+        app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
+            record: $record,
+            permission: 'entry.publish',
+            title: 'Nový obsah ke schválení',
+            body: 'Položka "'.$record->title.'" čeká na schválení publikace.',
+            editUrl: EntryResource::getUrl('edit', [
+                'record' => $record,
+                'collection' => $record->collection?->handle,
+            ]),
+            previewRouteName: 'preview.entry',
+            previewRouteParameterName: 'entry',
+        );
+    }
+
+    private static function getPublicationNotificationTitle(EntryStatus $previousStatus, EntryStatus $currentStatus): string
+    {
+        return match ($currentStatus) {
+            EntryStatus::Published => 'Položka publikována',
+            EntryStatus::Scheduled => 'Publikace naplánována',
+            EntryStatus::InReview => 'Odesláno ke schválení',
+            EntryStatus::Rejected => 'Položka zamítnuta',
+            EntryStatus::Draft => in_array($previousStatus, [EntryStatus::Published, EntryStatus::Scheduled], true)
+                ? 'Publikace zrušena'
+                : 'Uloženo jako koncept',
+        };
+    }
+
+    private static function getPublicationNotificationBody(Entry $record): ?string
+    {
+        return match ($record->status) {
+            EntryStatus::Scheduled => 'Publikace je naplánována na '.(($record->scheduled_at ?? $record->published_at)?->format('j. n. Y H:i') ?? '—').'.',
+            default => null,
+        };
     }
 
     /**

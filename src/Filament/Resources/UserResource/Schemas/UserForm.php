@@ -12,7 +12,6 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Hash;
 use MiPress\Core\Enums\UserRole;
 
 class UserForm
@@ -50,30 +49,6 @@ class UserForm
                                 ->unique(User::class, 'email', ignoreRecord: true),
                         ]),
                 ]),
-
-            Section::make('Heslo')
-                ->schema([
-                    Grid::make(2)
-                        ->schema([
-                            TextInput::make('password')
-                                ->label('Nové heslo')
-                                ->password()
-                                ->revealable()
-                                ->dehydrated(fn (?string $state): bool => filled($state))
-                                ->dehydrateStateUsing(fn (string $state): string => Hash::make($state))
-                                ->confirmed()
-                                ->minLength(8),
-
-                            TextInput::make('password_confirmation')
-                                ->label('Heslo (potvrzení)')
-                                ->password()
-                                ->revealable()
-                                ->dehydrated(false),
-                        ]),
-                ])
-                ->collapsible()
-                ->collapsed()
-                ->visible(fn (string $context): bool => $context === 'edit'),
 
             Section::make('Role a oprávnění')
                 ->schema([
