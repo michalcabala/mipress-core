@@ -13,7 +13,6 @@ use Filament\Support\Facades\FilamentView;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -216,8 +215,6 @@ trait HasWorkflowActions
                 $record->refresh();
                 $transition = $this->workflowTransitions()->saveDraft($record);
 
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
-
                 Notification::make()
                     ->title('Koncept uložen')
                     ->success()
@@ -246,8 +243,6 @@ trait HasWorkflowActions
                 $this->workflowIntent = null;
 
                 $record->refresh();
-
-                AuditLog::logStatusChange($record, EntryStatus::InReview, $oldStatus);
 
                 $this->workflowNotifications()->sendReviewRequestedDatabaseNotifications(
                     record: $record,
@@ -284,8 +279,6 @@ trait HasWorkflowActions
 
                 $record->refresh();
                 $transition = $this->workflowTransitions()->publish($record);
-
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 if ($transition->isScheduled()) {
                     Notification::make()
@@ -342,8 +335,6 @@ trait HasWorkflowActions
 
                 $transition = $this->workflowTransitions()->reject($record, $data['reason']);
 
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus, $data['reason']);
-
                 Notification::make()
                     ->title($this->workflowRejectedNotificationTitle())
                     ->warning()
@@ -366,8 +357,6 @@ trait HasWorkflowActions
                 }
 
                 $transition = $this->workflowTransitions()->saveDraft($record);
-
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title('Vráceno do konceptu')
@@ -392,8 +381,6 @@ trait HasWorkflowActions
 
                 $transition = $this->workflowTransitions()->unpublish($record);
 
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
-
                 Notification::make()
                     ->title('Publikace zrušena')
                     ->success()
@@ -417,8 +404,6 @@ trait HasWorkflowActions
 
                 $transition = $this->workflowTransitions()->cancelSchedule($record);
 
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
-
                 Notification::make()
                     ->title('Plánování zrušeno')
                     ->success()
@@ -441,8 +426,6 @@ trait HasWorkflowActions
                 }
 
                 $transition = $this->workflowTransitions()->publishNow($record);
-
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 Notification::make()
                     ->title($this->workflowPublishedNotificationTitle())
@@ -469,8 +452,6 @@ trait HasWorkflowActions
 
                 $record->refresh();
                 $transition = $this->workflowTransitions()->transitionToReview($record);
-
-                AuditLog::logStatusChange($record, $transition->newStatus, $transition->oldStatus);
 
                 $this->workflowNotifications()->sendReviewRequestedDatabaseNotifications(
                     record: $record,

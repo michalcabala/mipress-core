@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\PageFactory;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Mason\EditorialBrickCollection;
-use MiPress\Core\Traits\Auditable;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
 use MiPress\Core\Traits\HasWorkflow;
@@ -24,7 +23,6 @@ use Spatie\Sluggable\SlugOptions;
 
 class Page extends Model
 {
-    use Auditable;
     use HasFactory;
     use HasRevisions;
     use HasSeo;

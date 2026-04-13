@@ -33,7 +33,6 @@ use MiPress\Core\Filament\Forms\Components\UserSelect;
 use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Mason\EditorialBrickCollection;
-use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Page;
 
 use function Filament\Support\generate_icon_html;
@@ -443,24 +442,13 @@ class PageForm
 
     private static function renderStatusMeta(Page $record): string
     {
-        $statusLog = AuditLog::query()
-            ->with('user')
-            ->where('auditable_type', $record->getMorphClass())
-            ->where('auditable_id', $record->getKey())
-            ->where('action', 'status_changed')
-            ->where('new_values->status', $record->status->value)
-            ->latest('created_at')
-            ->first();
-
-        $actor = e($statusLog?->user?->name ?? 'Systém');
-        $date = e($statusLog?->created_at?->format('j. n. Y H:i') ?? '—');
         $scheduledAt = $record->scheduled_at ?? $record->published_at;
 
         return match ($record->status) {
-            EntryStatus::Published => 'Publikováno · schválil '.$actor.' · '.$date,
-            EntryStatus::Rejected => 'Zamítnuto · zamítl '.$actor.' · '.$date.'<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
-            EntryStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—').' · naplánoval '.$actor,
-            EntryStatus::InReview => 'Odesláno ke schválení · odeslal '.$actor.' · '.$date,
+            EntryStatus::Published => 'Publikováno',
+            EntryStatus::Rejected => 'Zamítnuto<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
+            EntryStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—'),
+            EntryStatus::InReview => 'Odesláno ke schválení',
             default => '',
         };
     }

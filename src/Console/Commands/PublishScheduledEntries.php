@@ -10,7 +10,6 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
 use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Entry;
 
 class PublishScheduledEntries extends Command
@@ -54,8 +53,6 @@ class PublishScheduledEntries extends Command
             $entry->published_at = $entry->published_at?->isFuture() ? now() : ($entry->published_at ?? now());
             $entry->scheduled_at = null;
             $entry->save();
-
-            AuditLog::logStatusChange($entry, EntryStatus::Published, $oldStatus, 'Automaticky publikováno plánovačem.');
 
             if ($entry->author !== null && Schema::hasTable('notifications')) {
                 Notification::make()

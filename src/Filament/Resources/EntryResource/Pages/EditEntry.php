@@ -13,7 +13,6 @@ use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\EntryResource;
-use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Services\EntryTaxonomySyncService;
 use MiPress\Core\Services\HierarchyParentResolver;
@@ -147,13 +146,6 @@ class EditEntry extends EditRecord
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
 
         if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
-            AuditLog::logStatusChange(
-                $record,
-                $record->status,
-                $this->statusBeforeSave,
-                $record->status === EntryStatus::Rejected ? $record->review_note : null,
-            );
-
             if ($record->status === EntryStatus::InReview) {
                 app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
                     record: $record,

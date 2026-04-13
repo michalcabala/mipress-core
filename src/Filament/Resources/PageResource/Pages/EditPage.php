@@ -16,7 +16,6 @@ use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\PageResource;
-use MiPress\Core\Models\AuditLog;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Services\HierarchyParentResolver;
 use MiPress\Core\Services\WorkflowNotificationService;
@@ -138,13 +137,6 @@ class EditPage extends EditRecord
         }
 
         if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
-            AuditLog::logStatusChange(
-                $record,
-                $record->status,
-                $this->statusBeforeSave,
-                $record->status === EntryStatus::Rejected ? $record->review_note : null,
-            );
-
             if ($record->status === EntryStatus::InReview) {
                 app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
                     record: $record,

@@ -111,7 +111,7 @@ class MiPressServiceProvider extends ServiceProvider
         ]);
 
         Curation::presets([
-            CurationPreset::make('Miniatura')
+            CurationPreset::make('Náhled')
                 ->width(400)
                 ->height(400)
                 ->format('webp')
@@ -126,12 +126,12 @@ class MiPressServiceProvider extends ServiceProvider
                 ->height(1200)
                 ->format('webp')
                 ->quality(85),
-            CurationPreset::make('Krajina 16:9')
+            CurationPreset::make('16:9')
                 ->width(1600)
                 ->height(900)
                 ->format('webp')
                 ->quality(85),
-            CurationPreset::make('Krajina 4:3')
+            CurationPreset::make('4:3')
                 ->width(1600)
                 ->height(1200)
                 ->format('webp')
