@@ -54,8 +54,6 @@ class Entry extends Model
         'featured_image_id',
     ];
 
-    protected array $auditExclude = ['data'];
-
     protected $attributes = [
         'data' => '{}',
         'status' => 'draft',

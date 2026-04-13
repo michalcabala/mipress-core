@@ -52,8 +52,6 @@ class Page extends Model
         'review_note',
     ];
 
-    protected array $auditExclude = ['data'];
-
     protected $attributes = [
         'data' => '{}',
         'status' => 'draft',
