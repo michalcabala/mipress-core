@@ -126,3 +126,4 @@ class ListCuratorMedia extends ListMedia
             ->success()
             ->send();
     }
+}
