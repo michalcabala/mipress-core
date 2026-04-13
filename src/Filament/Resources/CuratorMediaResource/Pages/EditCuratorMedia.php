@@ -56,6 +56,10 @@ class EditCuratorMedia extends EditMedia
                 ->url($this->record->url, shouldOpenInNewTab: true)
                 ->label(trans('curator::views.panel.view')),
             DeleteAction::make(),
+            Action::make('cancel')
+                ->label('Zrušit')
+                ->color('gray')
+                ->url(static::getResource()::getUrl()),
         ];
     }
 

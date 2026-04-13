@@ -36,6 +36,7 @@ class CuratorMediaForm
                             ->hiddenOn('create')
                             ->tabs([
                                 Tab::make(trans('curator::forms.sections.preview'))
+                                    ->icon('far-eye')
                                     ->schema([
                                         ViewField::make('preview')
                                             ->view('curator::components.forms.preview')
@@ -60,6 +61,7 @@ class CuratorMediaForm
                                         Hidden::make('focal_point_y'),
                                     ]),
                                 Tab::make(trans('curator::forms.sections.curation'))
+                                    ->icon('far-crop')
                                     ->visible(fn ($record): bool => is_media_resizable($record->ext) && CuratorPlugin::get()->supportsCurations())
                                     ->schema([
                                         Repeater::make('curations')
@@ -77,6 +79,7 @@ class CuratorMediaForm
                                             ]),
                                     ]),
                                 Tab::make(trans('curator::forms.sections.replace'))
+                                    ->icon('far-arrow-up-from-bracket')
                                     ->visible(fn () => CuratorPlugin::get()->supportsFileSwap())
                                     ->schema([
                                         static::getUploaderField()

@@ -172,6 +172,14 @@
                             >
                                 Hotovo
                             </button>
+                            <button
+                                type="button"
+                                class="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5 dark:hover:text-gray-300"
+                                x-on:click="closeModal()"
+                                title="Zavřít"
+                            >
+                                <x-filament::icon icon="fas-xmark" class="size-5" />
+                            </button>
                         </div>
                     </div>
 

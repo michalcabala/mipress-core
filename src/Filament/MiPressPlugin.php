@@ -70,7 +70,8 @@ class MiPressPlugin implements Plugin
             ->plugin(
                 CuratorPlugin::make()
                     ->label('Médium')
-                    ->pluralLabel('Média')
+                    ->pluralLabel('Knihovna médií')
+                    ->navigationGroup('Obsah')
                     ->navigationIcon('fal-photo-film-music')
                     ->navigationSort(90)
                     ->curations()

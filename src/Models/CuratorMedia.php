@@ -6,8 +6,11 @@ namespace MiPress\Core\Models;
 
 use App\Models\User;
 use Awcodes\Curator\Models\Media;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use MiPress\Core\Observers\CuratorMediaObserver;
 
+#[ObservedBy([CuratorMediaObserver::class])]
 class CuratorMedia extends Media
 {
     protected $fillable = [
@@ -29,6 +32,7 @@ class CuratorMedia extends Media
         'curations',
         'focal_point_x',
         'focal_point_y',
+        'uploaded_by',
         'file',
     ];
 

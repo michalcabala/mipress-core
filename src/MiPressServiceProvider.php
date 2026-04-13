@@ -17,6 +17,7 @@ use MiPress\Core\Console\Commands\PublishScheduledEntries;
 use MiPress\Core\Console\Commands\PublishThemeAssets;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
+use MiPress\Core\Models\CuratorMedia;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\GlobalSet;
 use MiPress\Core\Models\Page;
@@ -25,6 +26,7 @@ use MiPress\Core\Models\Term;
 use MiPress\Core\Observers\ContentObserver;
 use MiPress\Core\Policies\BlueprintPolicy;
 use MiPress\Core\Policies\CollectionPolicy;
+use MiPress\Core\Policies\CuratorMediaPolicy;
 use MiPress\Core\Policies\EntryPolicy;
 use MiPress\Core\Policies\GlobalSetPolicy;
 use MiPress\Core\Policies\PagePolicy;
@@ -158,6 +160,7 @@ class MiPressServiceProvider extends ServiceProvider
         Gate::policy(GlobalSet::class, GlobalSetPolicy::class);
         Gate::policy(Taxonomy::class, TaxonomyPolicy::class);
         Gate::policy(Term::class, TermPolicy::class);
+        Gate::policy(CuratorMedia::class, CuratorMediaPolicy::class);
 
         if ($this->app->runningInConsole()) {
             $this->publishes([
