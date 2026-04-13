@@ -84,7 +84,7 @@ class CuratorMediaResource extends MediaResource
                     ->options(function (): array {
                         return CuratorMedia::query()
                             ->selectRaw("DISTINCT DATE_FORMAT(created_at, '%Y-%m') as month_key")
-                            ->selectRaw("MONTH(created_at) as m, YEAR(created_at) as y")
+                            ->selectRaw('MONTH(created_at) as m, YEAR(created_at) as y')
                             ->orderByDesc('month_key')
                             ->get()
                             ->mapWithKeys(fn (object $row): array => [
@@ -106,7 +106,9 @@ class CuratorMediaResource extends MediaResource
                     }),
                 UserSelectFilter::make('uploaded_by')
                     ->label('Nahrál')
-                    ->relationship('uploadedBy', 'name'),
+                    ->relationship('uploadedBy', 'name')
+                    ->searchable()
+                    ->preload(),
             ])
             ->recordActions(
                 $isGrid ? [] : [
@@ -175,8 +177,9 @@ class CuratorMediaResource extends MediaResource
             TextColumn::make('dimensions')
                 ->label('Rozměry')
                 ->getStateUsing(fn (CuratorMedia $record): ?string => $record->width ? $record->width.'×'.$record->height : null),
-            UserColumn::make('uploadedBy.name')
+            UserColumn::make('uploaded_by')
                 ->label('Nahrál')
+                ->getStateUsing(fn (CuratorMedia $record) => $record->uploadedBy)
                 ->toggleable()
                 ->toggledHiddenByDefault(),
             TextColumn::make('created_at')
