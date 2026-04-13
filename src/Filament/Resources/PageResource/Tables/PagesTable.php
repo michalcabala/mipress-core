@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Tables;
 
 use App\Models\User;
+use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,21 +17,24 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section;
-use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
+use MiPress\Core\Services\WorkflowTransitionService;
 
 class PagesTable
 {
@@ -131,6 +136,9 @@ class PagesTable
             ->filtersFormSchema(fn (array $filters): array => static::getFiltersFormSchema($filters))
             ->actions([
                 ActionGroup::make([
+                    static::makeViewLiveAction(),
+                    static::makePreviewAction(),
+                    static::makeTogglePublicationAction(),
                     Action::make('toggleHomepage')
                         ->label(function (Page $record) use ($homepageId): string {
                             return ((string) $record->getKey()) === $homepageId
@@ -209,6 +217,7 @@ class PagesTable
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    static::makeBulkPublicationAction(),
                     DeleteBulkAction::make(),
                     RestoreBulkAction::make(),
                     ForceDeleteBulkAction::make(),
@@ -216,10 +225,173 @@ class PagesTable
             ]);
     }
 
+    private static function makeViewLiveAction(): Action
+    {
+        return Action::make('viewLive')
+            ->label('Zobrazit na webu')
+            ->icon('far-arrow-up-right-from-square')
+            ->color('gray')
+            ->url(fn (Page $record): ?string => $record->getPublicUrl(), shouldOpenInNewTab: true)
+            ->visible(fn (Page $record): bool => auth()->user()?->can('view', $record) === true
+                && ! $record->trashed()
+                && $record->status === EntryStatus::Published
+                && filled($record->getPublicUrl()));
+    }
+
+    private static function makePreviewAction(): Action
+    {
+        return Action::make('preview')
+            ->label('Náhled')
+            ->icon('far-eye')
+            ->color('gray')
+            ->url(
+                fn (Page $record): string => URL::temporarySignedRoute(
+                    'preview.page',
+                    now()->addHour(),
+                    ['page' => $record->getKey()],
+                ),
+                shouldOpenInNewTab: true,
+            )
+            ->visible(fn (Page $record): bool => auth()->user()?->can('view', $record) === true
+                && ! $record->trashed()
+                && $record->status !== EntryStatus::Published);
+    }
+
+    private static function makeTogglePublicationAction(): Action
+    {
+        return Action::make('togglePublicationStatus')
+            ->label(fn (Page $record): string => match ($record->status) {
+                EntryStatus::Published => 'Zrušit publikaci',
+                EntryStatus::Scheduled => 'Zrušit plánování',
+                default => 'Publikovat',
+            })
+            ->icon(fn (Page $record): string => match ($record->status) {
+                EntryStatus::Published => 'far-circle-minus',
+                EntryStatus::Scheduled => EntryStatus::Draft->getIcon(),
+                default => EntryStatus::Published->getIcon(),
+            })
+            ->color(fn (Page $record): string|array|null => match ($record->status) {
+                EntryStatus::Published, EntryStatus::Scheduled => EntryStatus::Draft->getColor(),
+                default => EntryStatus::Published->getColor(),
+            })
+            ->requiresConfirmation()
+            ->visible(fn (Page $record): bool => auth()->user()?->can('publish', $record) === true && ! $record->trashed())
+            ->action(function (Page $record): void {
+                $currentStatus = $record->status;
+
+                static::transitionPublicationRecord($record, $currentStatus, 'toggle');
+
+                Notification::make()
+                    ->title(match ($currentStatus) {
+                        EntryStatus::Published => 'Publikace zrušena',
+                        EntryStatus::Scheduled => 'Plánování zrušeno',
+                        default => 'Stránka publikována',
+                    })
+                    ->success()
+                    ->send();
+            });
+    }
+
+    private static function makeBulkPublicationAction(): BulkAction
+    {
+        return BulkAction::make('changePublicationStatus')
+            ->label('Změnit publikaci')
+            ->icon('far-arrows-rotate')
+            ->visible(fn (): bool => auth()->user()?->hasPermissionTo('entry.publish') === true)
+            ->schema([
+                Select::make('target_status')
+                    ->label('Cílový stav')
+                    ->options([
+                        'published' => 'Publikovat',
+                        'draft' => 'Zrušit publikaci',
+                    ])
+                    ->native(false)
+                    ->required(),
+            ])
+            ->action(function (EloquentCollection $records, array $data): void {
+                $targetStatus = $data['target_status'] ?? null;
+                $updated = 0;
+                $skipped = 0;
+
+                foreach ($records as $record) {
+                    if (! $record instanceof Page || auth()->user()?->can('publish', $record) !== true) {
+                        $skipped++;
+
+                        continue;
+                    }
+
+                    $statusChanged = static::transitionPublicationRecord($record, $record->status, (string) $targetStatus);
+
+                    if ($statusChanged) {
+                        $updated++;
+                    }
+                }
+
+                Notification::make()
+                    ->title($updated > 0 ? 'Stav publikace změněn' : 'Bez změny')
+                    ->body("Aktualizováno {$updated} položek, přeskočeno {$skipped}.")
+                    ->{$updated > 0 ? 'success' : 'warning'}()
+                    ->send();
+            });
+    }
+
     private static function getHomepagePageId(): ?string
     {
         return Setting::getValue(self::HOMEPAGE_PAGE_SETTING_KEY)
             ?? Setting::getValue(self::LEGACY_HOMEPAGE_PAGE_SETTING_KEY);
+    }
+
+    private static function transitionPublicationRecord(Page $record, EntryStatus $currentStatus, string $mode): bool
+    {
+        $workflowTransitions = app(WorkflowTransitionService::class);
+
+        if ($mode === 'published') {
+            if ($currentStatus === EntryStatus::Published) {
+                return false;
+            }
+
+            if ($currentStatus === EntryStatus::Scheduled) {
+                $workflowTransitions->publishNow($record);
+
+                return true;
+            }
+
+            $workflowTransitions->publish($record);
+
+            return true;
+        }
+
+        if ($mode === 'draft') {
+            if ($currentStatus === EntryStatus::Draft) {
+                return false;
+            }
+
+            if ($currentStatus === EntryStatus::Scheduled) {
+                $workflowTransitions->cancelSchedule($record);
+
+                return true;
+            }
+
+            $workflowTransitions->unpublish($record);
+
+            return true;
+        }
+
+        if ($currentStatus === EntryStatus::Published) {
+            $workflowTransitions->unpublish($record);
+
+            return true;
+        }
+
+        if ($currentStatus === EntryStatus::Scheduled) {
+            $workflowTransitions->cancelSchedule($record);
+
+            return true;
+        }
+
+        $workflowTransitions->publish($record);
+
+        return true;
     }
 
     private static function storeHomepagePageId(?string $pageId): void

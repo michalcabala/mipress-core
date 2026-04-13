@@ -7,6 +7,8 @@ namespace MiPress\Core\Filament\Resources;
 use Awcodes\Curator\Components\Tables\CuratorColumn;
 use Awcodes\Curator\Facades\Curator;
 use Awcodes\Curator\Resources\Media\MediaResource;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -112,12 +114,16 @@ class CuratorMediaResource extends MediaResource
             ])
             ->recordActions(
                 $isGrid ? [] : [
-                    EditAction::make(),
-                    DeleteAction::make(),
+                    ActionGroup::make([
+                        EditAction::make(),
+                        DeleteAction::make(),
+                    ]),
                 ]
             )
             ->toolbarActions([
-                DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
             ])
             ->defaultSort('created_at', 'desc')
             ->contentGrid(function () use ($livewire): ?array {
