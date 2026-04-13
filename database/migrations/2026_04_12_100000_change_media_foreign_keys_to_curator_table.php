@@ -55,6 +55,16 @@ return new class extends Migration
 
     private function hasForeignKey(string $table, string $constraintName): bool
     {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'sqlite') {
+            return count(
+                collect(DB::select("PRAGMA foreign_key_list({$table})"))
+                    ->filter(fn ($fk) => str_contains($constraintName, $fk->from))
+                    ->all(),
+            ) > 0;
+        }
+
         return (bool) DB::selectOne(
             'SELECT 1 FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = ? AND TABLE_NAME = ? AND CONSTRAINT_NAME = ? AND CONSTRAINT_TYPE = ?',
             [DB::getDatabaseName(), $table, $constraintName, 'FOREIGN KEY'],
