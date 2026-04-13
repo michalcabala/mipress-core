@@ -14,6 +14,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\View\View;
 use MiPress\Core\Console\Commands\GenerateSitemap;
 use MiPress\Core\Console\Commands\PublishScheduledEntries;
+use MiPress\Core\Console\Commands\PublishScheduledPages;
 use MiPress\Core\Console\Commands\PublishThemeAssets;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
@@ -174,6 +175,7 @@ class MiPressServiceProvider extends ServiceProvider
             $this->commands([
                 GenerateSitemap::class,
                 PublishScheduledEntries::class,
+                PublishScheduledPages::class,
                 PublishThemeAssets::class,
             ]);
         }
