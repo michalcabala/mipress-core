@@ -20,11 +20,19 @@ use MiPress\Core\Filament\Resources\CuratorMediaResource\Pages\CreateCuratorMedi
 use MiPress\Core\Filament\Resources\CuratorMediaResource\Pages\EditCuratorMedia;
 use MiPress\Core\Filament\Resources\CuratorMediaResource\Pages\ListCuratorMedia;
 use MiPress\Core\Filament\Resources\CuratorMediaResource\Schemas\CuratorMediaForm;
+use MiPress\Core\Filament\Tables\Columns\UserColumn;
+use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
 use MiPress\Core\Models\CuratorMedia;
 
 class CuratorMediaResource extends MediaResource
 {
     protected static ?string $slug = 'curator-media';
+
+    private const CZECH_MONTHS = [
+        1 => 'Leden', 2 => 'Únor', 3 => 'Březen', 4 => 'Duben',
+        5 => 'Květen', 6 => 'Červen', 7 => 'Červenec', 8 => 'Srpen',
+        9 => 'Září', 10 => 'Říjen', 11 => 'Listopad', 12 => 'Prosinec',
+    ];
 
     public static function form(Schema $schema): Schema
     {
@@ -34,10 +42,11 @@ class CuratorMediaResource extends MediaResource
     public static function table(Table $table): Table
     {
         $livewire = $table->getLivewire();
+        $isGrid = $livewire->layoutView === 'grid';
 
         return $table
             ->columns(
-                $livewire->layoutView === 'grid'
+                $isGrid
                     ? static::getGridColumns()
                     : static::getListColumns(),
             )
@@ -72,13 +81,17 @@ class CuratorMediaResource extends MediaResource
                     }),
                 SelectFilter::make('upload_month')
                     ->label('Měsíc nahrání')
-                    ->options(fn (): array => CuratorMedia::query()
-                        ->selectRaw("DISTINCT DATE_FORMAT(created_at, '%Y-%m') as month_key")
-                        ->selectRaw("DATE_FORMAT(created_at, '%m/%Y') as month_label")
-                        ->orderByDesc('month_key')
-                        ->pluck('month_label', 'month_key')
-                        ->all()
-                    )
+                    ->options(function (): array {
+                        return CuratorMedia::query()
+                            ->selectRaw("DISTINCT DATE_FORMAT(created_at, '%Y-%m') as month_key")
+                            ->selectRaw("MONTH(created_at) as m, YEAR(created_at) as y")
+                            ->orderByDesc('month_key')
+                            ->get()
+                            ->mapWithKeys(fn (object $row): array => [
+                                $row->month_key => self::CZECH_MONTHS[(int) $row->m].' '.$row->y,
+                            ])
+                            ->all();
+                    })
                     ->query(function (Builder $query, array $data): Builder {
                         $value = $data['value'] ?? null;
 
@@ -91,30 +104,36 @@ class CuratorMediaResource extends MediaResource
                         return $query->whereYear('created_at', $year)
                             ->whereMonth('created_at', $month);
                     }),
+                UserSelectFilter::make('uploaded_by')
+                    ->label('Nahrál')
+                    ->relationship('uploadedBy', 'name'),
             ])
-            ->recordActions([
-                EditAction::make(),
-                DeleteAction::make(),
-            ])
+            ->recordActions(
+                $isGrid ? [] : [
+                    EditAction::make(),
+                    DeleteAction::make(),
+                ]
+            )
             ->toolbarActions([
                 DeleteBulkAction::make(),
             ])
             ->defaultSort('created_at', 'desc')
             ->contentGrid(function () use ($livewire): ?array {
-                if ($livewire->layoutView === 'grid') {
-                    return [
-                        'md' => 2,
-                        'lg' => 3,
-                        'xl' => 4,
-                    ];
+                if ($livewire->layoutView !== 'grid') {
+                    return null;
                 }
 
-                return null;
+                $density = $livewire->gridDensity ?? 'normal';
+
+                return match ($density) {
+                    'compact' => ['sm' => 3, 'md' => 4, 'lg' => 6, 'xl' => 8],
+                    default => ['sm' => 2, 'md' => 3, 'lg' => 4, 'xl' => 6],
+                };
             })
             ->deferLoading()
-            ->defaultPaginationPageOption(24)
-            ->paginationPageOptions([12, 24, 48, 'all'])
-            ->recordUrl(null);
+            ->defaultPaginationPageOption(48)
+            ->paginationPageOptions([24, 48, 96])
+            ->recordUrl(fn (CuratorMedia $record): string => static::getUrl('edit', ['record' => $record]));
     }
 
     public static function getPages(): array
@@ -131,7 +150,7 @@ class CuratorMediaResource extends MediaResource
         return [
             CuratorColumn::make('url')
                 ->label('Náhled')
-                ->imageSize(40),
+                ->imageSize(60),
             TextColumn::make('name')
                 ->label('Název')
                 ->searchable()
@@ -156,7 +175,7 @@ class CuratorMediaResource extends MediaResource
             TextColumn::make('dimensions')
                 ->label('Rozměry')
                 ->getStateUsing(fn (CuratorMedia $record): ?string => $record->width ? $record->width.'×'.$record->height : null),
-            TextColumn::make('uploadedBy.name')
+            UserColumn::make('uploadedBy.name')
                 ->label('Nahrál')
                 ->toggleable()
                 ->toggledHiddenByDefault(),

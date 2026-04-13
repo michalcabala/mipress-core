@@ -16,9 +16,20 @@ class ListCuratorMedia extends ListMedia
 {
     protected static string $resource = CuratorMediaResource::class;
 
+    public string $gridDensity = 'normal';
+
     public function getHeaderActions(): array
     {
         return [
+            Action::make('toggle-grid-density')
+                ->color('gray')
+                ->label(fn (): string => $this->gridDensity === 'normal' ? 'Hustší mřížka' : 'Normální mřížka')
+                ->icon(fn (): string => $this->gridDensity === 'normal' ? 'far-grid' : 'far-grid-2')
+                ->visible(fn (): bool => $this->layoutView === 'grid')
+                ->action(function (): void {
+                    $this->gridDensity = $this->gridDensity === 'normal' ? 'compact' : 'normal';
+                    $this->dispatch('layoutViewChanged', $this->layoutView);
+                }),
             Action::make('regenerate_all_curations')
                 ->label('Přegenerovat všechny ořezy')
                 ->icon('far-arrows-rotate')

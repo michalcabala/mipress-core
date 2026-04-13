@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Models;
 
 use App\Models\User;
+use Awcodes\Curator\Facades\Curator;
 use Awcodes\Curator\Models\Media;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -53,21 +54,39 @@ class CuratorMedia extends Media
         return $this->belongsTo(User::class, 'uploaded_by');
     }
 
-    public function thumbnailCurationUrl(): Attribute
+    /**
+     * Override parent thumbnailUrl to prefer pre-generated curation.
+     * Falls back to Glide URL if curation doesn't exist.
+     */
+    public function thumbnailUrl(): Attribute
     {
         return Attribute::make(
-            get: function (): ?string {
-                $curation = $this->getCuration('nahled');
+            get: function (): string {
+                $curationUrl = $this->getCurationUrl('nahled');
 
-                if (filled($curation) && isset($curation['path'])) {
-                    $storage = Storage::disk($curation['disk'] ?? $this->disk);
-
-                    if ($storage->exists($curation['path'])) {
-                        return $storage->url($curation['path']);
-                    }
+                if ($curationUrl) {
+                    return $curationUrl;
                 }
 
-                return null;
+                return Curator::getUrlProvider()::getThumbnailUrl($this->path);
+            },
+        );
+    }
+
+    /**
+     * Override parent mediumUrl to prefer pre-generated curation.
+     */
+    public function mediumUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $curationUrl = $this->getCurationUrl('nahled');
+
+                if ($curationUrl) {
+                    return $curationUrl;
+                }
+
+                return Curator::getUrlProvider()::getMediumUrl($this->path);
             },
         );
     }
@@ -91,5 +110,20 @@ class CuratorMedia extends Media
                 return 'Dokument';
             },
         );
+    }
+
+    private function getCurationUrl(string $key): ?string
+    {
+        $curation = $this->getCuration($key);
+
+        if (filled($curation) && isset($curation['path'])) {
+            $storage = Storage::disk($curation['disk'] ?? $this->disk);
+
+            if ($storage->exists($curation['path'])) {
+                return $storage->url($curation['path']);
+            }
+        }
+
+        return null;
     }
 }
