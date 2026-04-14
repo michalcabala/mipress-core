@@ -6,6 +6,7 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Widgets;
 
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
+use Livewire\Attributes\On;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
@@ -21,6 +22,11 @@ class EntryPublicationStatusOverview extends Widget
     protected int | string | array $columnSpan = 'full';
 
     protected string $view = 'mipress::filament.widgets.entry-publication-status-overview';
+
+    #[On('entry-publication-status-updated')]
+    public function refreshStatusOverview(): void
+    {
+    }
 
     /**
      * @return array<string, mixed>
@@ -174,15 +180,15 @@ class EntryPublicationStatusOverview extends Widget
         $baseClass = 'group flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50';
 
         if (! $isActive) {
-            return $baseClass . ' border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-200 dark:hover:border-white/20 dark:hover:bg-white/10';
+            return $baseClass . ' border-gray-200/80 bg-white/90 text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-200 dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/[0.08]';
         }
 
         return $baseClass . ' ' . match ($tone) {
-            'success' => 'border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200',
-            'warning' => 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200',
-            'info' => 'border-cyan-300 bg-cyan-50 text-cyan-800 dark:border-cyan-500/30 dark:bg-cyan-500/10 dark:text-cyan-200',
-            'danger' => 'border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200',
-            default => 'border-gray-300 bg-gray-100 text-gray-800 dark:border-white/20 dark:bg-white/10 dark:text-white',
+            'success' => 'border-emerald-300 bg-emerald-50 text-emerald-800 shadow-[0_1px_2px_rgba(16,185,129,0.12)] dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-200 dark:shadow-none',
+            'warning' => 'border-amber-300 bg-amber-50 text-amber-800 shadow-[0_1px_2px_rgba(245,158,11,0.12)] dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-200 dark:shadow-none',
+            'info' => 'border-cyan-300 bg-cyan-50 text-cyan-800 shadow-[0_1px_2px_rgba(6,182,212,0.12)] dark:border-cyan-500/30 dark:bg-cyan-500/12 dark:text-cyan-200 dark:shadow-none',
+            'danger' => 'border-rose-300 bg-rose-50 text-rose-800 shadow-[0_1px_2px_rgba(244,63,94,0.12)] dark:border-rose-500/30 dark:bg-rose-500/12 dark:text-rose-200 dark:shadow-none',
+            default => 'border-gray-300 bg-gray-100 text-gray-800 shadow-[0_1px_2px_rgba(107,114,128,0.08)] dark:border-white/20 dark:bg-white/[0.10] dark:text-white dark:shadow-none',
         };
     }
 

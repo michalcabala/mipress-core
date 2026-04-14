@@ -101,7 +101,7 @@ trait HasPublicationTableWorkflow
                 'published_at' => $record->scheduled_at ?? $record->published_at,
             ])
             ->schema(fn (Model $record): array => static::getPublicationWorkflowSchema($record))
-            ->action(function (Model $record, array $data): void {
+            ->action(function (Model $record, array $data, $livewire): void {
                 $previousStatus = $record->status;
 
                 if (! static::applyPublicationWorkflowData($record, $data)) {
@@ -120,6 +120,10 @@ trait HasPublicationTableWorkflow
                     ->body(static::getPublicationNotificationBody($record))
                     ->success()
                     ->send();
+
+                if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
+                    $livewire->dispatch('entry-publication-status-updated');
+                }
             });
     }
 
@@ -135,7 +139,7 @@ trait HasPublicationTableWorkflow
             ->modalHeading("Změnit publikaci vybraných {$label}")
             ->modalSubmitActionLabel('Uložit změny')
             ->schema(static::getPublicationWorkflowSchema())
-            ->action(function (EloquentCollection $records, array $data) use ($modelClass): void {
+            ->action(function (EloquentCollection $records, array $data, $livewire) use ($modelClass): void {
                 $updated = 0;
                 $skipped = 0;
 
@@ -165,6 +169,10 @@ trait HasPublicationTableWorkflow
                     ->body("Aktualizováno {$updated} položek, přeskočeno {$skipped}.")
                     ->{$updated > 0 ? 'success' : 'warning'}()
                     ->send();
+
+                if (($updated > 0) && is_object($livewire) && method_exists($livewire, 'dispatch')) {
+                    $livewire->dispatch('entry-publication-status-updated');
+                }
             });
     }
 
