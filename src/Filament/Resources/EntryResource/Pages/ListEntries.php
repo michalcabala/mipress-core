@@ -10,6 +10,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
+use MiPress\Core\Filament\Resources\EntryResource\Widgets\EntryPublicationStatusOverview;
 use MiPress\Core\Models\Collection;
 
 class ListEntries extends ListRecords
@@ -64,6 +65,16 @@ class ListEntries extends ListRecords
 
                 $query->where('collection_id', $resolvedCollection->id);
             });
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            EntryPublicationStatusOverview::make([
+                'collectionId' => $this->resolveCollection()?->id,
+                'collectionHandle' => $this->collectionHandle,
+            ]),
+        ];
     }
 
     protected function getHeaderActions(): array
