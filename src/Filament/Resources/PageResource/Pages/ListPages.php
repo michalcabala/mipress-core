@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ListRecords;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use MiPress\Core\Filament\Resources\PageResource;
+use MiPress\Core\Filament\Resources\PageResource\Widgets\PagePublicationStatusOverview;
 
 class ListPages extends ListRecords
 {
@@ -27,6 +28,13 @@ class ListPages extends ListRecords
     public function table(Table $table): Table
     {
         return $table->queryStringIdentifier('pages');
+    }
+
+    protected function getHeaderWidgets(): array
+    {
+        return [
+            PagePublicationStatusOverview::make(),
+        ];
     }
 
     protected function getHeaderActions(): array
