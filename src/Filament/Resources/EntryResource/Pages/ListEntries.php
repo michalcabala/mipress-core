@@ -6,11 +6,14 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Resources\EntryResource\Tables\EntriesTable;
 use MiPress\Core\Models\Collection;
+use MiPress\Core\Models\Entry;
 
 class ListEntries extends ListRecords
 {
@@ -43,9 +46,57 @@ class ListEntries extends ListRecords
         parent::mount();
     }
 
-    protected function getTableQuery(): Builder
+    protected function loadDefaultActiveTab(): void
     {
-        return parent::getTableQuery();
+        parent::loadDefaultActiveTab();
+
+        if (filled($this->activeTab) && ! array_key_exists($this->activeTab, $this->getCachedTabs())) {
+            $this->activeTab = $this->getDefaultActiveTab();
+        }
+    }
+
+    /**
+     * @return array<string, Tab>
+     */
+    public function getTabs(): array
+    {
+        $collectionId = $this->resolveCollection()?->id;
+
+        $baseQuery = Entry::query()
+            ->when($collectionId, fn (Builder $q): Builder => $q->where('collection_id', $collectionId));
+
+        $allCount = (clone $baseQuery)->count();
+
+        $tabs = [
+            'all' => Tab::make('Vše')
+                ->icon('far-layer-group')
+                ->badge($allCount)
+                ->deferBadge()
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->withoutTrashed()),
+        ];
+
+        foreach (EntryStatus::cases() as $status) {
+            $count = (clone $baseQuery)->where('status', $status)->count();
+
+            $tabs[$status->value] = Tab::make($status->getLabel())
+                ->icon($status->getIcon())
+                ->badge($count)
+                ->badgeColor($status->getColor())
+                ->deferBadge()
+                ->modifyQueryUsing(fn (Builder $query): Builder => $query->withoutTrashed()->where('status', $status));
+        }
+
+        $trashedCount = (clone $baseQuery)->onlyTrashed()->count();
+
+        $tabs['trashed'] = Tab::make('Koš')
+            ->icon('far-trash-can')
+            ->badge($trashedCount ?: null)
+            ->badgeColor('danger')
+            ->deferBadge()
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->onlyTrashed())
+            ->excludeQueryWhenResolvingRecord();
+
+        return $tabs;
     }
 
     public function table(Table $table): Table

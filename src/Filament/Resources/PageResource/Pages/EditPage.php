@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\PageResource\Pages;
 
 use Carbon\CarbonInterface;
-use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\URL;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
@@ -54,30 +52,6 @@ class EditPage extends EditRecord
             ...parent::getSubNavigationParameters(),
             'currentPageClass' => static::class,
         ];
-    }
-
-    protected function getHeaderActions(): array
-    {
-        $actions = [];
-
-        if ($viewOnWebAction = $this->getViewOnWebHeaderAction()) {
-            $actions[] = $viewOnWebAction;
-        }
-
-        if ($previewAction = $this->getPreviewHeaderAction()) {
-            $actions[] = $previewAction;
-        }
-
-        $actions[] = $this->getSaveFormAction()
-            ->label('Uložit')
-            ->icon('far-floppy-disk')
-            ->formId('form');
-
-        $actions[] = $this->getCancelFormAction()
-            ->label('Zrušit')
-            ->icon('far-xmark');
-
-        return $actions;
     }
 
     protected function getFormActions(): array
@@ -217,45 +191,9 @@ class EditPage extends EditRecord
         return PageResource::getUrl('edit', ['record' => $record]);
     }
 
-    private function getViewOnWebHeaderAction(): ?Action
+    protected function workflowCompletedRedirectUrl(): string
     {
-        $record = $this->getRecord();
-
-        if (! $record instanceof Page || auth()->user()?->can('view', $record) !== true) {
-            return null;
-        }
-
-        if ($record->status !== EntryStatus::Published || blank($record->getPublicUrl())) {
-            return null;
-        }
-
-        return Action::make('viewLive')
-            ->label('Zobrazit na webu')
-            ->icon('far-arrow-up-right-from-square')
-            ->color('gray')
-            ->url($record->getPublicUrl(), shouldOpenInNewTab: true);
-    }
-
-    private function getPreviewHeaderAction(): ?Action
-    {
-        $record = $this->getRecord();
-
-        if (! $record instanceof Page || auth()->user()?->can('view', $record) !== true) {
-            return null;
-        }
-
-        return Action::make('preview')
-            ->label('Náhled')
-            ->icon('far-eye')
-            ->color('gray')
-            ->url(
-                URL::temporarySignedRoute(
-                    'preview.page',
-                    now()->addHour(),
-                    ['page' => $record->getKey()],
-                ),
-                shouldOpenInNewTab: true,
-            );
+        return PageResource::getUrl('index');
     }
 
     /**
@@ -280,6 +218,10 @@ class EditPage extends EditRecord
      */
     private function shouldPrepareWorkflowData(array $data): bool
     {
+        if ($this->workflowIntent !== null) {
+            return true;
+        }
+
         $mountedActionName = $this->getMountedAction()?->getName();
 
         $containsWorkflowFields = array_key_exists('status', $data)
@@ -299,6 +241,10 @@ class EditPage extends EditRecord
 
     private function shouldProcessStatusChange(): bool
     {
+        if ($this->workflowIntent !== null) {
+            return true;
+        }
+
         $mountedActionName = $this->getMountedAction()?->getName();
 
         if ($mountedActionName === null) {

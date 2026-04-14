@@ -7,6 +7,7 @@ namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 use Filament\Resources\Pages\CreateRecord;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
+use MiPress\Core\Filament\Resources\Concerns\HasCreateWorkflowActions;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
@@ -18,6 +19,7 @@ use MiPress\Core\Services\WorkflowTransitionService;
 class CreateEntry extends CreateRecord
 {
     use HasContextualCrudNotifications;
+    use HasCreateWorkflowActions;
 
     protected static string $resource = EntryResource::class;
 
@@ -32,22 +34,7 @@ class CreateEntry extends CreateRecord
         parent::mount();
     }
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            $this->getCreateFormAction()
-                ->label('Uložit')
-                ->icon('far-floppy-disk')
-                ->formId('form'),
-            $this->getCancelFormAction()
-                ->icon('far-xmark'),
-        ];
-    }
 
-    protected function getFormActions(): array
-    {
-        return [];
-    }
 
     protected function getRedirectUrl(): string
     {
@@ -74,9 +61,9 @@ class CreateEntry extends CreateRecord
 
         $data['parent_id'] = $this->resolveParentId($data, $collection);
 
-        return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
+        return app(WorkflowTransitionService::class)->prepareCreateDataForIntent(
             $data,
-            canPublish: (bool) auth()->user()?->hasPermissionTo('entry.publish'),
+            $this->workflowCreateIntent(),
         );
     }
 

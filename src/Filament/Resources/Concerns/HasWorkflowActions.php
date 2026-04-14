@@ -74,6 +74,8 @@ trait HasWorkflowActions
 
     abstract protected function workflowEditUrl(Model $record): string;
 
+    abstract protected function workflowCompletedRedirectUrl(): string;
+
     abstract protected function getCancelFormAction(): Action;
 
     protected function workflowReviewPermission(): string
@@ -269,7 +271,9 @@ trait HasWorkflowActions
             ->color(EntryStatus::Published->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
+                $this->workflowIntent = 'publish';
                 $this->save(false, false);
+                $this->workflowIntent = null;
 
                 $record = $this->getWorkflowRecord();
 
@@ -303,13 +307,7 @@ trait HasWorkflowActions
 
     private function releaseLockAndRedirect(): void
     {
-        $record = $this->getWorkflowRecord();
-
-        if ($record instanceof Model) {
-            $record->unlock();
-        }
-
-        $redirectUrl = $this->getRedirectUrl();
+        $redirectUrl = $this->workflowCompletedRedirectUrl();
 
         $this->redirect($redirectUrl, navigate: FilamentView::hasSpaMode($redirectUrl));
     }

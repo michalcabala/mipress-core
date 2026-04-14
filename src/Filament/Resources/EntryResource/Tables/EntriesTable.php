@@ -21,7 +21,6 @@ use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -120,7 +119,6 @@ class EntriesTable
                             ->whereYear('created_at', (int) $year)
                             ->whereMonth('created_at', (int) $month);
                     }),
-                TrashedFilter::make(),
                 ...static::getTaxonomyFilters($currentCollection),
                 ...static::getBlueprintFilters($currentCollection),
             ])
@@ -418,24 +416,15 @@ class EntriesTable
     {
         $sections = [];
 
-        $publicationFilters = array_values(array_filter([
+        $basicFilters = array_values(array_filter([
             $filters['status'] ?? null,
-            $filters['trashed'] ?? null,
-        ]));
-
-        if ($publicationFilters !== []) {
-            $sections[] = Section::make('Publikace')
-                ->schema($publicationFilters);
-        }
-
-        $metadataFilters = array_values(array_filter([
             $filters['author_id'] ?? null,
             $filters['created_month'] ?? null,
         ]));
 
-        if ($metadataFilters !== []) {
-            $sections[] = Section::make('Metadata')
-                ->schema($metadataFilters);
+        if ($basicFilters !== []) {
+            $sections[] = Section::make('Základní')
+                ->schema($basicFilters);
         }
 
         $taxonomyFilters = static::getTaxonomyFilterComponents($filters, $collection);

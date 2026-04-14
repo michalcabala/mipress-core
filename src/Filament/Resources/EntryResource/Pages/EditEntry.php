@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
+use Carbon\CarbonInterface;
 use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
-use Illuminate\Support\Facades\URL;
+use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
+use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
 use MiPress\Core\Filament\Resources\Concerns\UsesCurrentPageSubNavigation;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
@@ -23,6 +25,7 @@ class EditEntry extends EditRecord
 {
     use HandlesWorkflowValidationErrors;
     use HasContextualCrudNotifications;
+    use HasWorkflowActions;
     use UsesCurrentPageSubNavigation;
 
     protected static string $resource = EntryResource::class;
@@ -34,30 +37,6 @@ class EditEntry extends EditRecord
     protected Width|string|null $maxWidth = Width::Full;
 
     protected ?EntryStatus $statusBeforeSave = null;
-
-    protected function getHeaderActions(): array
-    {
-        $actions = [];
-
-        if ($viewOnWebAction = $this->getViewOnWebHeaderAction()) {
-            $actions[] = $viewOnWebAction;
-        }
-
-        if ($previewAction = $this->getPreviewHeaderAction()) {
-            $actions[] = $previewAction;
-        }
-
-        $actions[] = $this->getSaveFormAction()
-            ->label('Uložit')
-            ->icon('far-floppy-disk')
-            ->formId('form');
-
-        $actions[] = $this->getCancelFormAction()
-            ->label('Zrušit')
-            ->icon('far-xmark');
-
-        return $actions;
-    }
 
     protected function getFormActions(): array
     {
@@ -128,6 +107,10 @@ class EditEntry extends EditRecord
 
         $data['parent_id'] = $this->resolveParentId($data);
 
+        if ($this->workflowIntent === 'publish') {
+            return $data;
+        }
+
         return app(WorkflowTransitionService::class)->prepareFormDataForStatus(
             $data,
             canPublish: (bool) $user?->can('publish', $record),
@@ -165,45 +148,83 @@ class EditEntry extends EditRecord
         $this->statusBeforeSave = $record->status;
     }
 
-    private function getViewOnWebHeaderAction(): ?Action
+    protected function workflowRecordClass(): string
     {
-        $record = $this->getRecord();
-
-        if (! $record instanceof Entry || auth()->user()?->can('view', $record) !== true) {
-            return null;
-        }
-
-        if ($record->status !== EntryStatus::Published || blank($record->getPublicUrl())) {
-            return null;
-        }
-
-        return Action::make('viewLive')
-            ->label('Zobrazit na webu')
-            ->icon('far-arrow-up-right-from-square')
-            ->color('gray')
-            ->url($record->getPublicUrl(), shouldOpenInNewTab: true);
+        return Entry::class;
     }
 
-    private function getPreviewHeaderAction(): ?Action
+    protected function workflowPublishActionName(): string
     {
-        $record = $this->getRecord();
+        return 'publishEntry';
+    }
 
-        if (! $record instanceof Entry || auth()->user()?->can('view', $record) !== true) {
-            return null;
+    protected function workflowRejectActionName(): string
+    {
+        return 'rejectEntry';
+    }
+
+    protected function workflowUpdateActionName(): string
+    {
+        return 'updateEntry';
+    }
+
+    protected function workflowPublishedNotificationTitle(): string
+    {
+        return 'Položka publikována';
+    }
+
+    protected function workflowRejectedNotificationTitle(): string
+    {
+        return 'Položka zamítnuta';
+    }
+
+    protected function workflowScheduledNotificationBody(CarbonInterface $scheduleAt): string
+    {
+        return 'Publikace položky je naplánována na '.$scheduleAt->format('j. n. Y H:i').'.';
+    }
+
+    protected function workflowReviewNotificationTitle(): string
+    {
+        return 'Nový obsah ke schválení';
+    }
+
+    protected function workflowReviewNotificationBody(Model $record): string
+    {
+        if (! $record instanceof Entry) {
+            return 'Položka čeká na schválení publikace.';
         }
 
-        return Action::make('preview')
-            ->label('Náhled')
-            ->icon('far-eye')
-            ->color('gray')
-            ->url(
-                URL::temporarySignedRoute(
-                    'preview.entry',
-                    now()->addHour(),
-                    ['entry' => $record->getKey()],
-                ),
-                shouldOpenInNewTab: true,
-            );
+        return 'Položka "'.$record->title.'" čeká na schválení publikace.';
+    }
+
+    protected function workflowPreviewRouteName(): string
+    {
+        return 'preview.entry';
+    }
+
+    protected function workflowPreviewRouteParameterName(): string
+    {
+        return 'entry';
+    }
+
+    protected function workflowEditUrl(Model $record): string
+    {
+        $collection = $record instanceof Entry ? $record->collection : null;
+
+        return EntryResource::getUrl('edit', [
+            'record' => $record,
+            'collection' => $collection?->handle,
+        ]);
+    }
+
+    protected function workflowCompletedRedirectUrl(): string
+    {
+        $record = $this->getRecord();
+        $collection = $record instanceof Entry ? $record->collection : null;
+
+        return EntryResource::getUrl('index', [
+            'collection' => $collection?->handle,
+        ]);
     }
 
     /**

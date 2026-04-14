@@ -127,7 +127,8 @@ class Blueprint extends Model
 
             $normalizedField = $fieldDefinition;
             $normalizedField['handle'] = $handle;
-            $normalizedField['label'] = trim((string) ($fieldDefinition['label'] ?? $handle));
+            $label = trim((string) ($fieldDefinition['label'] ?? ''));
+            $normalizedField['label'] = $label !== '' ? $label : $handle;
             $normalizedField['type'] = trim((string) ($fieldDefinition['type'] ?? 'text')) ?: 'text';
             $normalizedField['required'] = static::normalizeBoolean($fieldDefinition['required'] ?? false);
             $normalizedField['show_in_table'] = static::normalizeBoolean($fieldDefinition['show_in_table'] ?? false);
@@ -154,10 +155,13 @@ class Blueprint extends Model
         }
 
         $normalized = $config;
-        $normalized['visibility_mode'] = mb_strtolower((string) ($config['visibility_mode'] ?? 'all')) === 'any'
-            ? 'any'
-            : 'all';
-        $normalized['visibility_conditions'] = static::normalizeVisibilityConditions($config['visibility_conditions'] ?? []);
+
+        if (array_key_exists('visibility_mode', $config) || array_key_exists('visibility_conditions', $config)) {
+            $normalized['visibility_mode'] = mb_strtolower((string) ($config['visibility_mode'] ?? 'all')) === 'any'
+                ? 'any'
+                : 'all';
+            $normalized['visibility_conditions'] = static::normalizeVisibilityConditions($config['visibility_conditions'] ?? []);
+        }
 
         return $normalized;
     }
