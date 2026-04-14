@@ -5,65 +5,50 @@ declare(strict_types=1);
 namespace MiPress\Core\Policies;
 
 use App\Models\User;
-use MiPress\Core\Enums\EntryStatus;
-use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Models\Entry;
+use MiPress\Core\Policies\Concerns\HandlesEntryLikePolicyChecks;
 
 class EntryPolicy
 {
+    use HandlesEntryLikePolicyChecks;
+
     public function viewAny(User $user): bool
     {
-        return $user->hasPermissionTo('entry.view');
+        return $this->canViewAnyContent($user);
     }
 
     public function view(User $user, Entry $entry): bool
     {
-        return $user->hasPermissionTo('entry.view');
+        return $this->canViewContent($user);
     }
 
     public function create(User $user): bool
     {
-        return $user->hasPermissionTo('entry.create');
+        return $this->canCreateContent($user);
     }
 
     public function update(User $user, Entry $entry): bool
     {
-        if ($user->hasRole(UserRole::Contributor->value)) {
-            if ($entry->author_id !== $user->id) {
-                return false;
-            }
-
-            return in_array($entry->status, [EntryStatus::Draft, EntryStatus::InReview, EntryStatus::Rejected, EntryStatus::Published], true);
-        }
-
-        return $user->hasPermissionTo('entry.update');
+        return $this->canUpdateContent($user, $entry);
     }
 
     public function delete(User $user, Entry $entry): bool
     {
-        if ($entry->status === EntryStatus::Published && ! $user->hasPermissionTo('entry.publish')) {
-            return false;
-        }
-
-        return $user->hasPermissionTo('entry.delete');
+        return $this->canDeleteContent($user, $entry);
     }
 
     public function restore(User $user, Entry $entry): bool
     {
-        if ($entry->status === EntryStatus::Published && ! $user->hasPermissionTo('entry.publish')) {
-            return false;
-        }
-
-        return $user->hasPermissionTo('entry.delete');
+        return $this->canRestoreContent($user, $entry);
     }
 
     public function forceDelete(User $user, Entry $entry): bool
     {
-        return $user->hasRole(UserRole::SuperAdmin->value);
+        return $this->canForceDeleteContent($user);
     }
 
     public function publish(User $user, Entry $entry): bool
     {
-        return $user->hasPermissionTo('entry.publish');
+        return $this->canPublishContent($user);
     }
 }
