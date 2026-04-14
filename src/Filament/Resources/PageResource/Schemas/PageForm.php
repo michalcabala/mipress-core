@@ -7,11 +7,8 @@ namespace MiPress\Core\Filament\Resources\PageResource\Schemas;
 use Awcodes\Mason\Enums\SidebarPosition;
 use Awcodes\Mason\Mason;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\ToggleButtons;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
@@ -21,53 +18,31 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\IconSize;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
-use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
-use Illuminate\View\ComponentAttributeBag;
 use MiPress\Core\Enums\EntryStatus;
-use Awcodes\Curator\Components\Forms\CuratorPicker;
-use MiPress\Core\Filament\Forms\Components\UserSelect;
-use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Filament\Resources\PageResource;
+use MiPress\Core\Filament\Support\EntryLikeFormBuilders;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Models\Page;
 
-use function Filament\Support\generate_icon_html;
-
 class PageForm
 {
-    use HasReactivePublicationFields;
-
     public static function configure(Schema $schema): Schema
     {
         $record = $schema->getRecord();
         $isEdit = $record instanceof Page;
 
         $components = [];
-        $seoSection = Section::make('SEO')
-            ->icon('fal-magnifying-glass')
-            ->collapsible()
-            ->schema([
-                TextInput::make('meta_title')
-                    ->label('SEO titulek')
-                    ->maxLength(60)
-                    ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek stránky.'),
-                Textarea::make('meta_description')
-                    ->label('SEO popis')
-                    ->maxLength(160)
-                    ->rows(3)
-                    ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
-            ]);
+        $seoSection = EntryLikeFormBuilders::makeSeoSection('stránky');
 
         $components[] =
             Grid::make([
                 'default' => 1,
                 'lg' => 4,
             ])->columnSpanFull()
-                ->disabled(fn (): bool => $record instanceof Page ? self::isReadOnlyForCurrentUser($record) : false)
+                ->disabled(fn (): bool => $record instanceof Page ? EntryLikeFormBuilders::isReadOnlyForCurrentUser($record) : false)
                 ->schema([
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 3])
@@ -123,21 +98,9 @@ class PageForm
                         ->schema([
                             Section::make('Publikace')
                                 ->icon('fal-calendar')
-                                ->schema([
-                                    self::makePublicationStatusField($record),
-                                    self::makePublicationDateField($record),
-                                    UserSelect::make('author_id')
-                                        ->label('Autor')
-                                        ->relationship('author', 'name')
-                                        ->searchable()
-                                        ->preload()
-                                        ->native(false)
-                                        ->required()
-                                        ->default(fn () => auth()->id()),
-                                    TextInput::make('sort_order')
-                                        ->label('Pořadí')
-                                        ->numeric()
-                                        ->default(0),
+                                ->schema(EntryLikeFormBuilders::makePublicationFields(
+                                    $record,
+                                    [
                                     Select::make('parent_id')
                                         ->label('Nadřazená stránka')
                                         ->options(fn (): array => self::getParentOptions($record))
@@ -146,30 +109,15 @@ class PageForm
                                         ->native(false)
                                         ->nullable()
                                         ->helperText('Vyberte nadřazenou stránku pro vytvoření hierarchie.'),
-                                ]),
+                                    ],
+                                )),
 
-                            Section::make('Hlavní obrázek')
-                                ->icon('fal-image')
-                                ->schema([
-                                    CuratorPicker::make('featured_image_id')
-                                        ->label(''),
-                                ]),
+                            EntryLikeFormBuilders::makeFeaturedImageSection(),
 
                             Section::make('Stav')
                                 ->visible($isEdit)
                                 ->schema([
-                                    TextEntry::make('status_badge')
-                                        ->label('Stav publikace')
-                                        ->state(fn (Page $record): HtmlString => self::renderStatusBadge($record->status)),
-
-                                    TextEntry::make('status_meta')
-                                        ->label('Detail stavu')
-                                        ->visible(fn (Page $record): bool => self::renderStatusMeta($record) !== '')
-                                        ->state(fn (Page $record): HtmlString => new HtmlString(self::renderStatusMeta($record))),
-
-                                    TextEntry::make('published_status_at')
-                                        ->label('Datum publikace')
-                                        ->state(fn (Page $record): string => self::formatPublicationDate($record)),
+                                    ...EntryLikeFormBuilders::makeStatusOverviewEntries('published_status_at'),
 
                                     Actions::make([
                                         Action::make('moveToTrash')
@@ -262,112 +210,6 @@ class PageForm
         return static::configure($schema);
     }
 
-    private static function makePublicationStatusField(?Page $record): ToggleButtons
-    {
-        return self::configureReactivePublicationStatusField(
-            ToggleButtons::make('status')
-                ->label('Stav publikování')
-                ->options(self::getPublicationStatusOptions($record))
-                ->colors(self::getPublicationStatusColors())
-                ->icons(self::getPublicationStatusIcons())
-                ->inline()
-                ->required()
-                ->default(EntryStatus::Draft->value)
-                ->helperText(self::publicationStatusHelperText($record)),
-            self::canPublish($record),
-        );
-    }
-
-    private static function makePublicationDateField(?Page $record): DateTimePicker
-    {
-        return self::configureReactivePublicationDateField(
-            DateTimePicker::make('published_at')
-                ->label('Datum publikace')
-                ->nullable()
-                ->disabled(fn (): bool => ! self::canPublish($record))
-                ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
-            self::canPublish($record),
-        );
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    private static function getPublicationStatusOptions(?Page $record): array
-    {
-        return collect(self::getVisiblePublicationStatuses($record))
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getLabel()])
-            ->all();
-    }
-
-    /**
-     * @return array<int, EntryStatus>
-     */
-    private static function getVisiblePublicationStatuses(?Page $record): array
-    {
-        if (self::canPublish($record)) {
-            return EntryStatus::cases();
-        }
-
-        if (! $record instanceof Page) {
-            return [EntryStatus::Draft, EntryStatus::InReview];
-        }
-
-        return match ($record->status) {
-            EntryStatus::Published, EntryStatus::Scheduled => [$record->status, EntryStatus::InReview],
-            EntryStatus::Rejected => [$record->status, EntryStatus::Draft, EntryStatus::InReview],
-            default => [EntryStatus::Draft, EntryStatus::InReview],
-        };
-    }
-
-    /**
-     * @return array<string, string|array|null>
-     */
-    private static function getPublicationStatusColors(): array
-    {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getColor()])
-            ->all();
-    }
-
-    /**
-     * @return array<string, string|null>
-     */
-    private static function getPublicationStatusIcons(): array
-    {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getIcon()])
-            ->all();
-    }
-
-    private static function publicationStatusHelperText(?Page $record): string
-    {
-        if (self::canPublish($record)) {
-            return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
-        }
-
-        if ($record instanceof Page && in_array($record->status, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
-            return 'Po uložení budou změny odeslány ke schválení.';
-        }
-
-        return 'Vyberte, zda obsah uložit jako koncept nebo odeslat ke schválení.';
-    }
-
-    private static function canPublish(?Page $record): bool
-    {
-        $user = auth()->user();
-
-        if ($user === null) {
-            return false;
-        }
-
-        if ($record instanceof Page) {
-            return $user->can('publish', $record);
-        }
-
-        return $user->hasPermissionTo('entry.publish');
-    }
-
     /**
      * @return array<int, string>
      */
@@ -414,55 +256,5 @@ class PageForm
         }
 
         return $options;
-    }
-
-    private static function formatPublicationDate(Page $record): string
-    {
-        $publicationAt = $record->scheduled_at ?? $record->published_at;
-
-        return $publicationAt?->format('j. n. Y H:i') ?? '—';
-    }
-
-    private static function renderStatusBadge(EntryStatus $status): HtmlString
-    {
-        $color = $status->getColor();
-        $color = is_string($color) ? $color : 'gray';
-        $icon = generate_icon_html(
-            $status->getIcon(),
-            attributes: new ComponentAttributeBag(['class' => 'shrink-0']),
-            size: IconSize::Small,
-        )?->toHtml() ?? '';
-
-        return new HtmlString(
-            '<span class="fi-badge fi-color-'.e($color).' fi-size-sm">'
-            .'<span class="inline-flex items-center gap-1.5">'.$icon.'<span>'.e($status->getLabel()).'</span></span>'
-            .'</span>'
-        );
-    }
-
-    private static function renderStatusMeta(Page $record): string
-    {
-        $scheduledAt = $record->scheduled_at ?? $record->published_at;
-
-        return match ($record->status) {
-            EntryStatus::Published => 'Publikováno',
-            EntryStatus::Rejected => 'Zamítnuto<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
-            EntryStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—'),
-            EntryStatus::InReview => 'Odesláno ke schválení',
-            default => '',
-        };
-    }
-
-    private static function isReadOnlyForCurrentUser(Page $record): bool
-    {
-        $user = auth()->user();
-
-        if ($user === null) {
-            return true;
-        }
-
-        return $user->hasRole('contributor')
-            && (int) $record->author_id === (int) $user->getKey()
-            && $record->status === EntryStatus::InReview;
     }
 }
