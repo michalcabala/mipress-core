@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Tables;
 
-use App\Models\User;
 use Awcodes\Curator\Components\Tables\CuratorColumn;
 use CodeWithDennis\FilamentSelectTree\SelectTree;
 use Filament\Actions\ActionGroup;
@@ -20,20 +19,15 @@ use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Section;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\Filament\Resources\Concerns\HasPublicationTableWorkflow;
 use MiPress\Core\Filament\Resources\EntryResource;
-use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
-use MiPress\Core\Filament\Tables\Columns\UserColumn;
-use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
+use MiPress\Core\Filament\Support\EntryLikeTableBuilders;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Taxonomy;
@@ -63,63 +57,19 @@ class EntriesTable
                     ->searchable()
                     ->sortable()
                     ->description(fn (Entry $record): ?string => filled($record->slug) ? '/'.$record->slug : null),
-                TextColumn::make('slug')
-                    ->label('Slug')
-                    ->searchable()
-                    ->sortable()
-                    ->copyable()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->default('—'),
-                TextColumn::make('status')
-                    ->label('Stav')
-                    ->badge()
-                    ->icon(fn (EntryStatus $state): ?string => $state->getIcon())
-                    ->color(fn (EntryStatus $state) => $state->getColor())
-                    ->sortable(),
+                EntryLikeTableBuilders::makeSlugColumn(),
+                EntryLikeTableBuilders::makeStatusColumn(),
                 ...static::getTaxonomyColumns($currentCollection),
                 ...static::getBlueprintColumns($currentCollection),
-                TextColumn::make('updated_at')
-                    ->label('Datum')
-                    ->isoDateTime('LLL')
-                    ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                        ? 'Vytvořeno '.$record->created_at->isoFormat('LLL')
-                        : null)
-                    ->sortable()
-                    ->toggleable(),
-                UserColumn::make('author.name')
-                    ->label('Autor')
-                    ->state(fn (Entry $record): ?User => $record->author)
-                    ->sortable()
-                    ->toggleable()
-                    ->wrapped(),
+                EntryLikeTableBuilders::makeUpdatedAtColumn(),
+                EntryLikeTableBuilders::makeAuthorColumn(),
             ])
             ->defaultSort('sort_order')
             ->reorderable('sort_order')
             ->filters([
-                SelectFilter::make('status')
-                    ->label('Stav')
-                    ->options(EntryStatus::class),
-                UserSelectFilter::make('author_id')
-                    ->label('Autor')
-                    ->options(fn (): array => static::getAuthorFilterOptions($currentCollection))
-                    ->multiple()
-                    ->searchable(),
-                SelectFilter::make('created_month')
-                    ->label('Měsíc')
-                    ->options(fn (): array => static::getCreatedMonthOptions($currentCollection))
-                    ->query(function (Builder $query, array $data): Builder {
-                        $value = $data['value'] ?? null;
-
-                        if (! is_string($value) || ! preg_match('/^\d{4}-\d{2}$/', $value)) {
-                            return $query;
-                        }
-
-                        [$year, $month] = explode('-', $value);
-
-                        return $query
-                            ->whereYear('created_at', (int) $year)
-                            ->whereMonth('created_at', (int) $month);
-                    }),
+                EntryLikeTableBuilders::makeStatusFilter(),
+                EntryLikeTableBuilders::makeAuthorFilter(fn (): array => static::getAuthorFilterOptions($currentCollection)),
+                EntryLikeTableBuilders::makeCreatedMonthFilter(fn (): array => static::getCreatedMonthOptions($currentCollection)),
                 TrashedFilter::make(),
                 ...static::getTaxonomyFilters($currentCollection),
                 ...static::getBlueprintFilters($currentCollection),
@@ -197,26 +147,13 @@ class EntriesTable
     {
         $collection ??= EntryResource::getCurrentCollection();
 
-        $authorIds = Entry::query()
+        return EntryLikeTableBuilders::getAuthorFilterOptions(
+            Entry::query()
             ->when(
                 $collection,
                 fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
-            )
-            ->whereNotNull('author_id')
-            ->distinct()
-            ->pluck('author_id')
-            ->filter();
-
-        if ($authorIds->isEmpty()) {
-            return [];
-        }
-
-        $authors = User::query()
-            ->whereIn('id', $authorIds)
-            ->orderBy('name')
-            ->get();
-
-        return UserFieldRenderer::mapUsersToOptionLabels($authors);
+            ),
+        );
     }
 
     /**
@@ -226,44 +163,13 @@ class EntriesTable
     {
         $collection ??= EntryResource::getCurrentCollection();
 
-        $createdMonthExpression = static::getCreatedMonthExpression(Entry::query()->getModel()->getConnection()->getDriverName());
-
-        $values = Entry::query()
-            ->when(
-                $collection,
-                fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
-            )
-            ->whereNotNull('created_at')
-            ->toBase()
-            ->selectRaw("{$createdMonthExpression} as created_month")
-            ->distinct()
-            ->orderByDesc('created_month')
-            ->pluck('created_month')
-            ->filter(fn (?string $value): bool => filled($value))
-            ->values();
-
-        $options = [];
-
-        foreach ($values as $value) {
-            try {
-                $date = Carbon::createFromFormat('Y-m', $value);
-                $date->locale('cs_CZ');
-                $options[$value] = (string) str($date->translatedFormat('F Y'))->ucfirst();
-            } catch (\Throwable) {
-                $options[$value] = $value;
-            }
-        }
-
-        return $options;
-    }
-
-    private static function getCreatedMonthExpression(string $driver): string
-    {
-        return match ($driver) {
-            'sqlite' => "strftime('%Y-%m', created_at)",
-            'pgsql' => "to_char(created_at, 'YYYY-MM')",
-            default => "DATE_FORMAT(created_at, '%Y-%m')",
-        };
+        return EntryLikeTableBuilders::getCreatedMonthOptions(
+            Entry::query()
+                ->when(
+                    $collection,
+                    fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
+                ),
+        );
     }
 
     /**
@@ -418,41 +324,17 @@ class EntriesTable
     {
         $sections = [];
 
-        $publicationFilters = array_values(array_filter([
-            $filters['status'] ?? null,
-            $filters['trashed'] ?? null,
-        ]));
-
-        if ($publicationFilters !== []) {
-            $sections[] = Section::make('Publikace')
-                ->schema($publicationFilters);
-        }
-
-        $metadataFilters = array_values(array_filter([
-            $filters['author_id'] ?? null,
-            $filters['created_month'] ?? null,
-        ]));
-
-        if ($metadataFilters !== []) {
-            $sections[] = Section::make('Metadata')
-                ->schema($metadataFilters);
-        }
-
         $taxonomyFilters = static::getTaxonomyFilterComponents($filters, $collection);
-
-        if ($taxonomyFilters !== []) {
-            $sections[] = Section::make('Taxonomie')
-                ->schema($taxonomyFilters);
-        }
-
         $blueprintFilters = static::getBlueprintFilterComponents($filters, $collection);
 
-        if ($blueprintFilters !== []) {
-            $sections[] = Section::make('Pole šablony')
-                ->schema($blueprintFilters);
-        }
-
-        return $sections;
+        return EntryLikeTableBuilders::buildBaseFiltersFormSchema($filters, [
+            $taxonomyFilters !== []
+                ? Section::make('Taxonomie')->schema($taxonomyFilters)
+                : null,
+            $blueprintFilters !== []
+                ? Section::make('Pole šablony')->schema($blueprintFilters)
+                : null,
+        ]);
     }
 
     /**
