@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\HasCreateWorkflowActions;
 use MiPress\Core\Filament\Resources\EntryResource;
@@ -99,7 +99,7 @@ class CreateEntry extends CreateRecord
 
         $record = $this->record;
 
-        if (! $record instanceof Entry || $record->status !== EntryStatus::InReview) {
+        if (! $record instanceof Entry || $record->status !== ContentStatus::InReview) {
             return;
         }
 

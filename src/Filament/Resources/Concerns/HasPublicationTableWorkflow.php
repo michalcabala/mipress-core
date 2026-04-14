@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\URL;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -57,7 +57,7 @@ trait HasPublicationTableWorkflow
             ->visible(fn (Model $record): bool => $record instanceof $modelClass
                 && auth()->user()?->can('view', $record) === true
                 && ! $record->trashed()
-                && $record->status === EntryStatus::Published
+                && $record->status === ContentStatus::Published
                 && filled($record->getPublicUrl()));
     }
 
@@ -80,7 +80,7 @@ trait HasPublicationTableWorkflow
             ->visible(fn (Model $record): bool => $record instanceof $modelClass
                 && auth()->user()?->can('view', $record) === true
                 && ! $record->trashed()
-                && $record->status !== EntryStatus::Published);
+                && $record->status !== ContentStatus::Published);
     }
 
     protected static function makeTogglePublicationAction(): Action
@@ -222,29 +222,29 @@ trait HasPublicationTableWorkflow
     protected static function getPublicationStatusOptions(?Model $record): array
     {
         return collect(static::getVisiblePublicationStatuses($record))
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getLabel()])
+            ->mapWithKeys(fn (ContentStatus $status): array => [$status->value => $status->getLabel()])
             ->all();
     }
 
     /**
-     * @return array<int, EntryStatus>
+     * @return array<int, ContentStatus>
      */
     protected static function getVisiblePublicationStatuses(?Model $record): array
     {
         $modelClass = static::getContentModelClass();
 
         if (static::canPublishRecord($record)) {
-            return EntryStatus::cases();
+            return ContentStatus::cases();
         }
 
         if (! $record instanceof $modelClass) {
-            return [EntryStatus::Draft, EntryStatus::InReview];
+            return [ContentStatus::Draft, ContentStatus::InReview];
         }
 
         return match ($record->status) {
-            EntryStatus::Published, EntryStatus::Scheduled => [$record->status, EntryStatus::InReview],
-            EntryStatus::Rejected => [$record->status, EntryStatus::Draft, EntryStatus::InReview],
-            default => [EntryStatus::Draft, EntryStatus::InReview],
+            ContentStatus::Published, ContentStatus::Scheduled => [$record->status, ContentStatus::InReview],
+            ContentStatus::Rejected => [$record->status, ContentStatus::Draft, ContentStatus::InReview],
+            default => [ContentStatus::Draft, ContentStatus::InReview],
         };
     }
 
@@ -253,8 +253,8 @@ trait HasPublicationTableWorkflow
      */
     protected static function getPublicationStatusColors(): array
     {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getColor()])
+        return collect(ContentStatus::cases())
+            ->mapWithKeys(fn (ContentStatus $status): array => [$status->value => $status->getColor()])
             ->all();
     }
 
@@ -263,8 +263,8 @@ trait HasPublicationTableWorkflow
      */
     protected static function getPublicationStatusIcons(): array
     {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getIcon()])
+        return collect(ContentStatus::cases())
+            ->mapWithKeys(fn (ContentStatus $status): array => [$status->value => $status->getIcon()])
             ->all();
     }
 
@@ -276,7 +276,7 @@ trait HasPublicationTableWorkflow
             return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
         }
 
-        if ($record instanceof $modelClass && in_array($record->status, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
+        if ($record instanceof $modelClass && in_array($record->status, [ContentStatus::Published, ContentStatus::Scheduled], true)) {
             return 'Po uložení budou změny odeslány ke schválení.';
         }
 
@@ -314,11 +314,11 @@ trait HasPublicationTableWorkflow
         );
 
         $nextStatus = data_get($preparedData, 'status');
-        $nextStatus = $nextStatus instanceof EntryStatus
+        $nextStatus = $nextStatus instanceof ContentStatus
             ? $nextStatus
-            : EntryStatus::tryFrom((string) $nextStatus);
+            : ContentStatus::tryFrom((string) $nextStatus);
 
-        if (! $nextStatus instanceof EntryStatus) {
+        if (! $nextStatus instanceof ContentStatus) {
             return false;
         }
 
@@ -361,9 +361,9 @@ trait HasPublicationTableWorkflow
 
     // ── Notifications ──
 
-    protected static function sendReviewRequestedNotificationIfNeeded(Model $record, EntryStatus $previousStatus): void
+    protected static function sendReviewRequestedNotificationIfNeeded(Model $record, ContentStatus $previousStatus): void
     {
-        if ($previousStatus === $record->status || $record->status !== EntryStatus::InReview) {
+        if ($previousStatus === $record->status || $record->status !== ContentStatus::InReview) {
             return;
         }
 
@@ -380,16 +380,16 @@ trait HasPublicationTableWorkflow
         );
     }
 
-    protected static function getPublicationNotificationTitle(EntryStatus $previousStatus, EntryStatus $currentStatus): string
+    protected static function getPublicationNotificationTitle(ContentStatus $previousStatus, ContentStatus $currentStatus): string
     {
         $label = static::getContentLabel();
 
         return match ($currentStatus) {
-            EntryStatus::Published => "{$label} publikována",
-            EntryStatus::Scheduled => 'Publikace naplánována',
-            EntryStatus::InReview => 'Odesláno ke schválení',
-            EntryStatus::Rejected => "{$label} zamítnuta",
-            EntryStatus::Draft => in_array($previousStatus, [EntryStatus::Published, EntryStatus::Scheduled], true)
+            ContentStatus::Published => "{$label} publikována",
+            ContentStatus::Scheduled => 'Publikace naplánována',
+            ContentStatus::InReview => 'Odesláno ke schválení',
+            ContentStatus::Rejected => "{$label} zamítnuta",
+            ContentStatus::Draft => in_array($previousStatus, [ContentStatus::Published, ContentStatus::Scheduled], true)
                 ? 'Publikace zrušena'
                 : 'Uloženo jako koncept',
         };
@@ -398,7 +398,7 @@ trait HasPublicationTableWorkflow
     protected static function getPublicationNotificationBody(Model $record): ?string
     {
         return match ($record->status) {
-            EntryStatus::Scheduled => 'Publikace je naplánována na '.(($record->scheduled_at ?? $record->published_at)?->format('j. n. Y H:i') ?? '—').'.',
+            ContentStatus::Scheduled => 'Publikace je naplánována na '.(($record->scheduled_at ?? $record->published_at)?->format('j. n. Y H:i') ?? '—').'.',
             default => null,
         };
     }

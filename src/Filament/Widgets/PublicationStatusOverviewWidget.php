@@ -7,7 +7,7 @@ namespace MiPress\Core\Filament\Widgets;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 
 abstract class PublicationStatusOverviewWidget extends Widget
 {
@@ -52,7 +52,7 @@ abstract class PublicationStatusOverviewWidget extends Widget
             ),
         ];
 
-        foreach (EntryStatus::cases() as $status) {
+        foreach (ContentStatus::cases() as $status) {
             $count = $statusCounts[$status->value] ?? 0;
 
             if ($count < 1) {

@@ -11,7 +11,7 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\ToggleButtons;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 
 trait HasReactivePublicationFields
 {
@@ -32,13 +32,13 @@ trait HasReactivePublicationFields
 
                 $publishedAt = static::normalizePublicationDate($get('published_at'));
 
-                if ($status === EntryStatus::Published && ($publishedAt === null || $publishedAt->isFuture())) {
+                if ($status === ContentStatus::Published && ($publishedAt === null || $publishedAt->isFuture())) {
                     $set('published_at', now()->startOfMinute());
 
                     return;
                 }
 
-                if ($status === EntryStatus::Scheduled && ! ($publishedAt instanceof CarbonInterface && $publishedAt->isFuture())) {
+                if ($status === ContentStatus::Scheduled && ! ($publishedAt instanceof CarbonInterface && $publishedAt->isFuture())) {
                     $set('published_at', static::defaultScheduledPublicationAt());
                 }
             });
@@ -64,15 +64,15 @@ trait HasReactivePublicationFields
                 $currentStatus = static::normalizePublicationStatus($get('status'));
 
                 if ($publishedAt->isFuture()) {
-                    if (! in_array($currentStatus, [EntryStatus::InReview, EntryStatus::Rejected], true)) {
-                        $set('status', EntryStatus::Scheduled->value);
+                    if (! in_array($currentStatus, [ContentStatus::InReview, ContentStatus::Rejected], true)) {
+                        $set('status', ContentStatus::Scheduled->value);
                     }
 
                     return;
                 }
 
-                if ($currentStatus === EntryStatus::Scheduled) {
-                    $set('status', EntryStatus::Published->value);
+                if ($currentStatus === ContentStatus::Scheduled) {
+                    $set('status', ContentStatus::Published->value);
                 }
             });
     }
@@ -82,9 +82,9 @@ trait HasReactivePublicationFields
         return now()->addHour()->startOfHour();
     }
 
-    private static function normalizePublicationStatus(mixed $value): ?EntryStatus
+    private static function normalizePublicationStatus(mixed $value): ?ContentStatus
     {
-        if ($value instanceof EntryStatus) {
+        if ($value instanceof ContentStatus) {
             return $value;
         }
 
@@ -92,7 +92,7 @@ trait HasReactivePublicationFields
             return null;
         }
 
-        return EntryStatus::tryFrom($value);
+        return ContentStatus::tryFrom($value);
     }
 
     private static function normalizePublicationDate(mixed $value): ?CarbonInterface

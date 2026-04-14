@@ -7,7 +7,7 @@ namespace MiPress\Core\Services;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 
 class WorkflowTransitionService
 {
@@ -15,24 +15,24 @@ class WorkflowTransitionService
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
-    public function prepareFormDataForStatus(array $data, bool $canPublish, ?EntryStatus $currentStatus = null): array
+    public function prepareFormDataForStatus(array $data, bool $canPublish, ?ContentStatus $currentStatus = null): array
     {
-        $selectedStatus = $this->normalizeStatus(data_get($data, 'status')) ?? $currentStatus ?? EntryStatus::Draft;
+        $selectedStatus = $this->normalizeStatus(data_get($data, 'status')) ?? $currentStatus ?? ContentStatus::Draft;
 
         if (! $canPublish) {
-            if (in_array($currentStatus, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
+            if (in_array($currentStatus, [ContentStatus::Published, ContentStatus::Scheduled], true)) {
                 return $this->prepareReviewData($data);
             }
 
-            return $selectedStatus === EntryStatus::InReview
+            return $selectedStatus === ContentStatus::InReview
                 ? $this->prepareCreateReviewData($data)
                 : $this->prepareDraftData($data);
         }
 
         return match ($selectedStatus) {
-            EntryStatus::Published, EntryStatus::Scheduled => $this->preparePublishData($data),
-            EntryStatus::InReview => $this->prepareCreateReviewData($data),
-            EntryStatus::Rejected => $this->prepareRejectedData($data),
+            ContentStatus::Published, ContentStatus::Scheduled => $this->preparePublishData($data),
+            ContentStatus::InReview => $this->prepareCreateReviewData($data),
+            ContentStatus::Rejected => $this->prepareRejectedData($data),
             default => $this->prepareDraftData($data),
         };
     }
@@ -58,7 +58,7 @@ class WorkflowTransitionService
      */
     public function prepareReviewData(array $data): array
     {
-        $data['status'] = EntryStatus::InReview;
+        $data['status'] = ContentStatus::InReview;
         $data['scheduled_at'] = null;
 
         $publishedAt = $this->normalizeDate(data_get($data, 'published_at'));
@@ -74,21 +74,21 @@ class WorkflowTransitionService
 
     public function saveDraft(Model $record): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::Draft, [
+        return $this->transition($record, ContentStatus::Draft, [
             'review_note' => null,
         ]);
     }
 
     public function transitionToReview(Model $record): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::InReview, [
+        return $this->transition($record, ContentStatus::InReview, [
             'review_note' => null,
         ]);
     }
 
     public function reject(Model $record, string $reason): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::Rejected, [
+        return $this->transition($record, ContentStatus::Rejected, [
             'review_note' => $reason,
         ]);
     }
@@ -101,7 +101,7 @@ class WorkflowTransitionService
             return $this->schedule($record, $scheduleAt);
         }
 
-        return $this->transition($record, EntryStatus::Published, [
+        return $this->transition($record, ContentStatus::Published, [
             'published_at' => $record->published_at ?? now(),
             'scheduled_at' => null,
             'review_note' => null,
@@ -110,14 +110,14 @@ class WorkflowTransitionService
 
     public function unpublish(Model $record): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::Draft, [
+        return $this->transition($record, ContentStatus::Draft, [
             'review_note' => null,
         ]);
     }
 
     public function cancelSchedule(Model $record): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::Draft, [
+        return $this->transition($record, ContentStatus::Draft, [
             'published_at' => null,
             'scheduled_at' => null,
             'review_note' => null,
@@ -126,7 +126,7 @@ class WorkflowTransitionService
 
     public function publishNow(Model $record): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::Published, [
+        return $this->transition($record, ContentStatus::Published, [
             'published_at' => now(),
             'scheduled_at' => null,
             'review_note' => null,
@@ -135,7 +135,7 @@ class WorkflowTransitionService
 
     public function schedule(Model $record, CarbonInterface $scheduleAt): WorkflowTransitionResult
     {
-        return $this->transition($record, EntryStatus::Scheduled, [
+        return $this->transition($record, ContentStatus::Scheduled, [
             'published_at' => $scheduleAt,
             'scheduled_at' => $scheduleAt,
             'review_note' => null,
@@ -145,9 +145,9 @@ class WorkflowTransitionService
     /**
      * @param  array<string, mixed>  $attributes
      */
-    private function transition(Model $record, EntryStatus $newStatus, array $attributes = [], ?CarbonInterface $scheduledFor = null): WorkflowTransitionResult
+    private function transition(Model $record, ContentStatus $newStatus, array $attributes = [], ?CarbonInterface $scheduledFor = null): WorkflowTransitionResult
     {
-        /** @var EntryStatus $oldStatus */
+        /** @var ContentStatus $oldStatus */
         $oldStatus = $record->status;
 
         $record->status = $newStatus;
@@ -167,7 +167,7 @@ class WorkflowTransitionService
      */
     private function prepareDraftData(array $data): array
     {
-        $data['status'] = EntryStatus::Draft;
+        $data['status'] = ContentStatus::Draft;
         $data['scheduled_at'] = null;
 
         $publishedAt = $this->normalizeDate(data_get($data, 'published_at'));
@@ -187,7 +187,7 @@ class WorkflowTransitionService
      */
     private function prepareRejectedData(array $data): array
     {
-        $data['status'] = EntryStatus::Rejected;
+        $data['status'] = ContentStatus::Rejected;
         $data['scheduled_at'] = null;
 
         return $data;
@@ -204,14 +204,14 @@ class WorkflowTransitionService
         $scheduleAt = $scheduledAt ?: $publishedAt;
 
         if ($scheduleAt instanceof CarbonInterface && now()->lt($scheduleAt)) {
-            $data['status'] = EntryStatus::Scheduled;
+            $data['status'] = ContentStatus::Scheduled;
             $data['scheduled_at'] = $scheduleAt;
             $data['published_at'] = $scheduleAt;
 
             return $data;
         }
 
-        $data['status'] = EntryStatus::Published;
+        $data['status'] = ContentStatus::Published;
         $data['published_at'] = $publishedAt ?: now();
         $data['scheduled_at'] = null;
 
@@ -240,9 +240,9 @@ class WorkflowTransitionService
         return Carbon::parse($value);
     }
 
-    private function normalizeStatus(mixed $value): ?EntryStatus
+    private function normalizeStatus(mixed $value): ?ContentStatus
     {
-        if ($value instanceof EntryStatus) {
+        if ($value instanceof ContentStatus) {
             return $value;
         }
 
@@ -250,6 +250,6 @@ class WorkflowTransitionService
             return null;
         }
 
-        return EntryStatus::tryFrom($value);
+        return ContentStatus::tryFrom($value);
     }
 }

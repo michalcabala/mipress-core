@@ -6,7 +6,7 @@ namespace MiPress\Core\Traits;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Revision;
 
 trait HasRevisions
@@ -77,7 +77,7 @@ trait HasRevisions
             : $this->revisions()->get();
 
         $revision = $revisions->first(
-            fn (Revision $revision): bool => $this->normalizeRevisionStatus(data_get($revision->data, 'status')) === EntryStatus::Published->value,
+            fn (Revision $revision): bool => $this->normalizeRevisionStatus(data_get($revision->data, 'status')) === ContentStatus::Published->value,
         );
 
         if (! $revision instanceof Revision || ! is_array($revision->data)) {
@@ -113,7 +113,7 @@ trait HasRevisions
 
     private function normalizeRevisionStatus(mixed $status): ?string
     {
-        if ($status instanceof EntryStatus) {
+        if ($status instanceof ContentStatus) {
             return $status->value;
         }
 
@@ -124,11 +124,11 @@ trait HasRevisions
         $candidate = strtolower(trim($status));
 
         return match (true) {
-            str_contains($candidate, EntryStatus::Published->value) => EntryStatus::Published->value,
-            str_contains($candidate, EntryStatus::Scheduled->value) => EntryStatus::Scheduled->value,
-            str_contains($candidate, EntryStatus::InReview->value) => EntryStatus::InReview->value,
-            str_contains($candidate, EntryStatus::Rejected->value) => EntryStatus::Rejected->value,
-            str_contains($candidate, EntryStatus::Draft->value) => EntryStatus::Draft->value,
+            str_contains($candidate, ContentStatus::Published->value) => ContentStatus::Published->value,
+            str_contains($candidate, ContentStatus::Scheduled->value) => ContentStatus::Scheduled->value,
+            str_contains($candidate, ContentStatus::InReview->value) => ContentStatus::InReview->value,
+            str_contains($candidate, ContentStatus::Rejected->value) => ContentStatus::Rejected->value,
+            str_contains($candidate, ContentStatus::Draft->value) => ContentStatus::Draft->value,
             default => null,
         };
     }

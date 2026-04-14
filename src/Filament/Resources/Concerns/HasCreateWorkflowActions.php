@@ -7,7 +7,7 @@ namespace MiPress\Core\Filament\Resources\Concerns;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Support\Facades\FilamentView;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -97,8 +97,8 @@ trait HasCreateWorkflowActions
     {
         return Action::make('createDraft')
             ->label('Uložit koncept')
-            ->icon(EntryStatus::Draft->getIcon())
-            ->color(EntryStatus::Draft->getColor())
+            ->icon(ContentStatus::Draft->getIcon())
+            ->color(ContentStatus::Draft->getColor())
             ->submit('createAsDraft')
             ->formId('form');
     }
@@ -107,8 +107,8 @@ trait HasCreateWorkflowActions
     {
         return Action::make('createReview')
             ->label('Odeslat ke schválení')
-            ->icon(EntryStatus::InReview->getIcon())
-            ->color(EntryStatus::InReview->getColor())
+            ->icon(ContentStatus::InReview->getIcon())
+            ->color(ContentStatus::InReview->getColor())
             ->submit('createAndSubmitForReview')
             ->formId('form');
     }
@@ -117,8 +117,8 @@ trait HasCreateWorkflowActions
     {
         return Action::make('createPublish')
             ->label('Publikovat')
-            ->icon(EntryStatus::Published->getIcon())
-            ->color(EntryStatus::Published->getColor())
+            ->icon(ContentStatus::Published->getIcon())
+            ->color(ContentStatus::Published->getColor())
             ->submit('createAndPublish')
             ->formId('form');
     }

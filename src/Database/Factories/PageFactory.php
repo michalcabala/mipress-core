@@ -6,7 +6,7 @@ namespace MiPress\Core\Database\Factories;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Page;
 
 class PageFactory extends Factory
@@ -20,7 +20,7 @@ class PageFactory extends Factory
             'title' => $this->faker->sentence(4),
             'slug' => null,
             'data' => [],
-            'status' => EntryStatus::Draft,
+            'status' => ContentStatus::Draft,
             'published_at' => null,
             'author_id' => User::factory(),
             'sort_order' => 0,
@@ -31,13 +31,13 @@ class PageFactory extends Factory
     public function published(): static
     {
         return $this->state([
-            'status' => EntryStatus::Published,
+            'status' => ContentStatus::Published,
             'published_at' => now(),
         ]);
     }
 
     public function draft(): static
     {
-        return $this->state(['status' => EntryStatus::Draft]);
+        return $this->state(['status' => ContentStatus::Draft]);
     }
 }

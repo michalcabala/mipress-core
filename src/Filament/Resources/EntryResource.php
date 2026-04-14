@@ -13,7 +13,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\CreateEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntry;
 use MiPress\Core\Filament\Resources\EntryResource\Pages\EditEntrySeo;
@@ -52,7 +52,7 @@ class EntryResource extends Resource
 
         if (static::shouldShowInReviewBadges()) {
             $inReviewCounts = Entry::query()
-                ->where('status', EntryStatus::InReview)
+                ->where('status', ContentStatus::InReview)
                 ->selectRaw('collection_id, COUNT(*) as aggregate')
                 ->groupBy('collection_id')
                 ->pluck('aggregate', 'collection_id')

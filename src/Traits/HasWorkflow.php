@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Traits;
 
 use Illuminate\Database\Eloquent\Builder;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 
 trait HasWorkflow
 {
@@ -14,19 +14,19 @@ trait HasWorkflow
         return $query->where(function (Builder $outer): void {
             $outer
                 ->where(function (Builder $published): void {
-                    $published->where('status', EntryStatus::Published)
+                    $published->where('status', ContentStatus::Published)
                         ->where(function (Builder $q): void {
                             $q->whereNull('published_at')
                                 ->orWhere('published_at', '<=', now());
                         });
                 })
-                ->orWhere('status', EntryStatus::InReview);
+                ->orWhere('status', ContentStatus::InReview);
         });
     }
 
     public function scopePublished(Builder $query): Builder
     {
-        return $query->where('status', EntryStatus::Published)
+        return $query->where('status', ContentStatus::Published)
             ->where(function (Builder $q): void {
                 $q->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
@@ -35,12 +35,12 @@ trait HasWorkflow
 
     public function scopeDraft(Builder $query): Builder
     {
-        return $query->where('status', EntryStatus::Draft);
+        return $query->where('status', ContentStatus::Draft);
     }
 
     public function scopeScheduled(Builder $query): Builder
     {
-        return $query->where('status', EntryStatus::Scheduled)
+        return $query->where('status', ContentStatus::Scheduled)
             ->where(function (Builder $scheduled): void {
                 $scheduled
                     ->where(function (Builder $query): void {
@@ -57,14 +57,14 @@ trait HasWorkflow
             });
     }
 
-    public function scopeForStatus(Builder $query, EntryStatus $status): Builder
+    public function scopeForStatus(Builder $query, ContentStatus $status): Builder
     {
         return $query->where('status', $status);
     }
 
     public function publish(): static
     {
-        $this->status = EntryStatus::Published;
+        $this->status = ContentStatus::Published;
         $this->published_at ??= now();
         $this->scheduled_at = null;
         $this->save();
@@ -74,7 +74,7 @@ trait HasWorkflow
 
     public function unpublish(): static
     {
-        $this->status = EntryStatus::Draft;
+        $this->status = ContentStatus::Draft;
         $this->save();
 
         return $this;
@@ -82,7 +82,7 @@ trait HasWorkflow
 
     public function submitForReview(): static
     {
-        $this->status = EntryStatus::InReview;
+        $this->status = ContentStatus::InReview;
         $this->save();
 
         return $this;
@@ -90,7 +90,7 @@ trait HasWorkflow
 
     public function reject(string $reason): static
     {
-        $this->status = EntryStatus::Rejected;
+        $this->status = ContentStatus::Rejected;
         $this->review_note = $reason;
         $this->save();
 
@@ -99,7 +99,7 @@ trait HasWorkflow
 
     public function schedule(\DateTimeInterface $publishAt): static
     {
-        $this->status = EntryStatus::Scheduled;
+        $this->status = ContentStatus::Scheduled;
         $this->scheduled_at = $publishAt;
         $this->published_at = $publishAt;
         $this->save();
@@ -109,17 +109,17 @@ trait HasWorkflow
 
     public function isPublished(): bool
     {
-        return $this->status === EntryStatus::Published
+        return $this->status === ContentStatus::Published
             && ($this->published_at === null || $this->published_at->isPast());
     }
 
     public function isDraft(): bool
     {
-        return $this->status === EntryStatus::Draft;
+        return $this->status === ContentStatus::Draft;
     }
 
     public function isInReview(): bool
     {
-        return $this->status === EntryStatus::InReview;
+        return $this->status === ContentStatus::InReview;
     }
 }

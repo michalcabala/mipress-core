@@ -12,7 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\URL;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Services\WorkflowNotificationService;
 use MiPress\Core\Services\WorkflowTransitionService;
 
@@ -97,16 +97,16 @@ trait HasWorkflowActions
         $isOwner = (int) $record->author_id === (int) $user->getKey();
 
         return match ($record->status) {
-            EntryStatus::Draft => $isContributor
+            ContentStatus::Draft => $isContributor
                 ? $this->makeSubmitForReviewAction('Odeslat ke schválení')
                 : ($canPublish ? $this->makePublishAction('Publikovat') : null),
-            EntryStatus::InReview => $canPublish
+            ContentStatus::InReview => $canPublish
                 ? $this->makePublishAction('Schválit a publikovat')
                 : null,
-            EntryStatus::Published, EntryStatus::Scheduled => $isContributor && $isOwner
+            ContentStatus::Published, ContentStatus::Scheduled => $isContributor && $isOwner
                 ? $this->makeSubmitForReviewAction('Odeslat změny ke schválení')
                 : $this->makeUpdateAction(),
-            EntryStatus::Rejected => $isContributor && $isOwner
+            ContentStatus::Rejected => $isContributor && $isOwner
                 ? $this->makeResubmitRejectedAction()
                 : ($canPublish ? $this->makePublishAction('Publikovat') : null),
         };
@@ -128,20 +128,20 @@ trait HasWorkflowActions
 
         $actions = [];
 
-        if ($record->status === EntryStatus::Draft) {
+        if ($record->status === ContentStatus::Draft) {
             $actions[] = $this->makeSaveDraftAction();
         }
 
-        if ($record->status === EntryStatus::InReview && $canPublish) {
+        if ($record->status === ContentStatus::InReview && $canPublish) {
             $actions[] = $this->makeRejectAction();
             $actions[] = $this->makeReturnToDraftAction('Uložit koncept');
         }
 
-        if ($record->status === EntryStatus::Published && $canPublish) {
+        if ($record->status === ContentStatus::Published && $canPublish) {
             $actions[] = $this->makeUnpublishAction();
         }
 
-        if ($record->status === EntryStatus::Scheduled) {
+        if ($record->status === ContentStatus::Scheduled) {
             $actions[] = $this->makeCancelScheduleAction();
 
             if ($canPublish) {
@@ -149,7 +149,7 @@ trait HasWorkflowActions
             }
         }
 
-        if ($record->status === EntryStatus::Rejected) {
+        if ($record->status === ContentStatus::Rejected) {
             $actions[] = $this->makeSaveDraftAction();
         }
 
@@ -168,7 +168,7 @@ trait HasWorkflowActions
             return null;
         }
 
-        if ($record->status === EntryStatus::Published && filled($record->getPublicUrl())) {
+        if ($record->status === ContentStatus::Published && filled($record->getPublicUrl())) {
             return Action::make('viewLive')
                 ->label('Zobrazit na webu')
                 ->icon('far-arrow-up-right-from-square')
@@ -203,8 +203,8 @@ trait HasWorkflowActions
     {
         return Action::make('saveDraft')
             ->label('Uložit koncept')
-            ->icon(EntryStatus::Draft->getIcon())
-            ->color(EntryStatus::Draft->getColor())
+            ->icon(ContentStatus::Draft->getIcon())
+            ->color(ContentStatus::Draft->getColor())
             ->action(function (): void {
                 $this->save(false, false);
 
@@ -228,8 +228,8 @@ trait HasWorkflowActions
     {
         return Action::make('submitForReview')
             ->label($label)
-            ->icon(EntryStatus::InReview->getIcon())
-            ->color(EntryStatus::InReview->getColor())
+            ->icon(ContentStatus::InReview->getIcon())
+            ->color(ContentStatus::InReview->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getWorkflowRecord();
@@ -267,8 +267,8 @@ trait HasWorkflowActions
     {
         return Action::make($this->workflowPublishActionName())
             ->label($label)
-            ->icon(EntryStatus::Published->getIcon())
-            ->color(EntryStatus::Published->getColor())
+            ->icon(ContentStatus::Published->getIcon())
+            ->color(ContentStatus::Published->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $this->workflowIntent = 'publish';
@@ -316,8 +316,8 @@ trait HasWorkflowActions
     {
         return Action::make($this->workflowRejectActionName())
             ->label('Zamítnout')
-            ->icon(EntryStatus::Rejected->getIcon())
-            ->color(EntryStatus::Rejected->getColor())
+            ->icon(ContentStatus::Rejected->getIcon())
+            ->color(ContentStatus::Rejected->getColor())
             ->schema([
                 Textarea::make('reason')
                     ->label('Důvod zamítnutí')
@@ -344,8 +344,8 @@ trait HasWorkflowActions
     {
         return Action::make('returnToDraft')
             ->label($label)
-            ->icon(EntryStatus::Draft->getIcon())
-            ->color(EntryStatus::Draft->getColor())
+            ->icon(ContentStatus::Draft->getIcon())
+            ->color(ContentStatus::Draft->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getWorkflowRecord();
@@ -367,8 +367,8 @@ trait HasWorkflowActions
     {
         return Action::make('unpublish')
             ->label('Zrušit publikaci')
-            ->icon(EntryStatus::Draft->getIcon())
-            ->color(EntryStatus::Draft->getColor())
+            ->icon(ContentStatus::Draft->getIcon())
+            ->color(ContentStatus::Draft->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getWorkflowRecord();
@@ -390,8 +390,8 @@ trait HasWorkflowActions
     {
         return Action::make('cancelSchedule')
             ->label('Zrušit plánování')
-            ->icon(EntryStatus::Draft->getIcon())
-            ->color(EntryStatus::Draft->getColor())
+            ->icon(ContentStatus::Draft->getIcon())
+            ->color(ContentStatus::Draft->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getWorkflowRecord();
@@ -413,8 +413,8 @@ trait HasWorkflowActions
     {
         return Action::make('publishNow')
             ->label('Publikovat ihned')
-            ->icon(EntryStatus::Published->getIcon())
-            ->color(EntryStatus::Published->getColor())
+            ->icon(ContentStatus::Published->getIcon())
+            ->color(ContentStatus::Published->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $record = $this->getWorkflowRecord();
@@ -436,8 +436,8 @@ trait HasWorkflowActions
     {
         return Action::make('resubmitRejected')
             ->label('Upravit a znovu odeslat')
-            ->icon(EntryStatus::InReview->getIcon())
-            ->color(EntryStatus::InReview->getColor())
+            ->icon(ContentStatus::InReview->getIcon())
+            ->color(ContentStatus::InReview->getColor())
             ->requiresConfirmation()
             ->action(function (): void {
                 $this->save(false, false);

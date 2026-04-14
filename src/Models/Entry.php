@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\EntryFactory;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
@@ -65,7 +65,7 @@ class Entry extends Model
         'collection_id' => 'integer',
         'blueprint_id' => 'integer',
         'data' => 'array',
-        'status' => EntryStatus::class,
+        'status' => ContentStatus::class,
         'published_at' => 'datetime',
         'scheduled_at' => 'datetime',
         'author_id' => 'integer',

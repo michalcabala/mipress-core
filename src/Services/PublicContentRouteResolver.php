@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Services;
 
 use Illuminate\Database\Eloquent\Builder;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
@@ -75,7 +75,7 @@ class PublicContentRouteResolver
     {
         return $collection->entries()
             ->with(['collection', 'blueprint', 'featuredImage', 'revisions'])
-            ->where('status', EntryStatus::InReview)
+            ->where('status', ContentStatus::InReview)
             ->where(function (Builder $query): void {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());
@@ -93,7 +93,7 @@ class PublicContentRouteResolver
     {
         return Page::query()
             ->with(['blueprint', 'featuredImage', 'revisions'])
-            ->where('status', EntryStatus::InReview)
+            ->where('status', ContentStatus::InReview)
             ->where(function (Builder $query): void {
                 $query->whereNull('published_at')
                     ->orWhere('published_at', '<=', now());

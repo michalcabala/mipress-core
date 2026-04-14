@@ -12,7 +12,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Support\UserFields\UserFieldRenderer;
 use MiPress\Core\Filament\Tables\Columns\UserColumn;
 use MiPress\Core\Filament\Tables\Filters\UserSelectFilter;
@@ -35,8 +35,8 @@ class EntryLikeTableBuilders
         return TextColumn::make('status')
             ->label('Stav')
             ->badge()
-            ->icon(fn (EntryStatus $state): ?string => $state->getIcon())
-            ->color(fn (EntryStatus $state) => $state->getColor())
+            ->icon(fn (ContentStatus $state): ?string => $state->getIcon())
+            ->color(fn (ContentStatus $state) => $state->getColor())
             ->sortable();
     }
 
@@ -66,7 +66,7 @@ class EntryLikeTableBuilders
     {
         return SelectFilter::make('status')
             ->label('Stav')
-            ->options(EntryStatus::class);
+            ->options(ContentStatus::class);
     }
 
     public static function makeAuthorFilter(Closure $optionsResolver): UserSelectFilter

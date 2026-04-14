@@ -14,7 +14,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Support\Enums\IconSize;
 use Illuminate\Support\HtmlString;
 use Illuminate\View\ComponentAttributeBag;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Forms\Components\UserSelect;
 use MiPress\Core\Filament\Resources\Concerns\HasReactivePublicationFields;
 use MiPress\Core\Models\Entry;
@@ -133,7 +133,7 @@ class EntryLikeFormBuilders
 
         return $user->hasRole('contributor')
             && (int) $record->author_id === (int) $user->getKey()
-            && $record->status === EntryStatus::InReview;
+            && $record->status === ContentStatus::InReview;
     }
 
     public static function formatPublicationDate(Entry|Page $record): string
@@ -143,7 +143,7 @@ class EntryLikeFormBuilders
         return $publicationAt?->format('j. n. Y H:i') ?? '—';
     }
 
-    public static function renderStatusBadge(EntryStatus $status): HtmlString
+    public static function renderStatusBadge(ContentStatus $status): HtmlString
     {
         $color = $status->getColor();
         $color = is_string($color) ? $color : 'gray';
@@ -165,10 +165,10 @@ class EntryLikeFormBuilders
         $scheduledAt = $record->scheduled_at ?? $record->published_at;
 
         return match ($record->status) {
-            EntryStatus::Published => 'Publikováno',
-            EntryStatus::Rejected => 'Zamítnuto<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
-            EntryStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—'),
-            EntryStatus::InReview => 'Odesláno ke schválení',
+            ContentStatus::Published => 'Publikováno',
+            ContentStatus::Rejected => 'Zamítnuto<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
+            ContentStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—'),
+            ContentStatus::InReview => 'Odesláno ke schválení',
             default => '',
         };
     }
@@ -183,7 +183,7 @@ class EntryLikeFormBuilders
                 ->icons(self::getPublicationStatusIcons())
                 ->inline()
                 ->required()
-                ->default(EntryStatus::Draft->value)
+                ->default(ContentStatus::Draft->value)
                 ->helperText(self::publicationStatusHelperText($record, $canPublish)),
             $canPublish,
         );
@@ -207,27 +207,27 @@ class EntryLikeFormBuilders
     private static function getPublicationStatusOptions(Entry|Page|null $record, bool $canPublish): array
     {
         return collect(self::getVisiblePublicationStatuses($record, $canPublish))
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getLabel()])
+            ->mapWithKeys(fn (ContentStatus $status): array => [$status->value => $status->getLabel()])
             ->all();
     }
 
     /**
-     * @return array<int, EntryStatus>
+     * @return array<int, ContentStatus>
      */
     private static function getVisiblePublicationStatuses(Entry|Page|null $record, bool $canPublish): array
     {
         if ($canPublish) {
-            return EntryStatus::cases();
+            return ContentStatus::cases();
         }
 
         if ($record === null) {
-            return [EntryStatus::Draft, EntryStatus::InReview];
+            return [ContentStatus::Draft, ContentStatus::InReview];
         }
 
         return match ($record->status) {
-            EntryStatus::Published, EntryStatus::Scheduled => [$record->status, EntryStatus::InReview],
-            EntryStatus::Rejected => [$record->status, EntryStatus::Draft, EntryStatus::InReview],
-            default => [EntryStatus::Draft, EntryStatus::InReview],
+            ContentStatus::Published, ContentStatus::Scheduled => [$record->status, ContentStatus::InReview],
+            ContentStatus::Rejected => [$record->status, ContentStatus::Draft, ContentStatus::InReview],
+            default => [ContentStatus::Draft, ContentStatus::InReview],
         };
     }
 
@@ -236,8 +236,8 @@ class EntryLikeFormBuilders
      */
     private static function getPublicationStatusColors(): array
     {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getColor()])
+        return collect(ContentStatus::cases())
+            ->mapWithKeys(fn (ContentStatus $status): array => [$status->value => $status->getColor()])
             ->all();
     }
 
@@ -246,8 +246,8 @@ class EntryLikeFormBuilders
      */
     private static function getPublicationStatusIcons(): array
     {
-        return collect(EntryStatus::cases())
-            ->mapWithKeys(fn (EntryStatus $status): array => [$status->value => $status->getIcon()])
+        return collect(ContentStatus::cases())
+            ->mapWithKeys(fn (ContentStatus $status): array => [$status->value => $status->getIcon()])
             ->all();
     }
 
@@ -257,7 +257,7 @@ class EntryLikeFormBuilders
             return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
         }
 
-        if ($record !== null && in_array($record->status, [EntryStatus::Published, EntryStatus::Scheduled], true)) {
+        if ($record !== null && in_array($record->status, [ContentStatus::Published, ContentStatus::Scheduled], true)) {
             return 'Po uložení budou změny odeslány ke schválení.';
         }
 

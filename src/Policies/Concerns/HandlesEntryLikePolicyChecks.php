@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Policies\Concerns;
 
 use App\Models\User;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Enums\UserRole;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
@@ -34,7 +34,7 @@ trait HandlesEntryLikePolicyChecks
                 return false;
             }
 
-            return in_array($record->status, [EntryStatus::Draft, EntryStatus::InReview, EntryStatus::Rejected, EntryStatus::Published], true);
+            return in_array($record->status, [ContentStatus::Draft, ContentStatus::InReview, ContentStatus::Rejected, ContentStatus::Published], true);
         }
 
         return $user->hasPermissionTo('entry.update');
@@ -42,7 +42,7 @@ trait HandlesEntryLikePolicyChecks
 
     protected function canDeleteContent(User $user, Entry|Page $record): bool
     {
-        if ($record->status === EntryStatus::Published && ! $user->hasPermissionTo('entry.publish')) {
+        if ($record->status === ContentStatus::Published && ! $user->hasPermissionTo('entry.publish')) {
             return false;
         }
 

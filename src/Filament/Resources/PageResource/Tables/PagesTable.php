@@ -22,7 +22,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Resources\Concerns\HasPublicationTableWorkflow;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Support\EntryLikeTableBuilders;
@@ -140,7 +140,7 @@ class PagesTable
                             }
 
                             if (
-                                $record->status !== EntryStatus::Published
+                                $record->status !== ContentStatus::Published
                                 || ! ($record->published_at instanceof Carbon)
                                 || $record->published_at->isFuture()
                             ) {

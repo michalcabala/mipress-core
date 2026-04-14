@@ -19,7 +19,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Revision;
 use MiPress\Core\Services\RevisionDiffPresenter;
 
@@ -45,11 +45,11 @@ trait ConfiguresRevisionTable
                     ->sortable(),
                 TextColumn::make('status_snapshot')
                     ->label('Stav obsahu')
-                    ->state(fn (Revision $record): ?EntryStatus => $this->resolveRevisionStatus($record))
-                    ->formatStateUsing(fn (?EntryStatus $state): string => $state?->getLabel() ?? 'Bez stavu')
+                    ->state(fn (Revision $record): ?ContentStatus => $this->resolveRevisionStatus($record))
+                    ->formatStateUsing(fn (?ContentStatus $state): string => $state?->getLabel() ?? 'Bez stavu')
                     ->badge()
-                    ->icon(fn (?EntryStatus $state): ?string => $state?->getIcon())
-                    ->color(fn (?EntryStatus $state): string|array|null => $state?->getColor() ?? 'gray')
+                    ->icon(fn (?ContentStatus $state): ?string => $state?->getIcon())
+                    ->color(fn (?ContentStatus $state): string|array|null => $state?->getColor() ?? 'gray')
                     ->toggleable(),
                 TextColumn::make('user.name')
                     ->label('Uložil')
@@ -387,11 +387,11 @@ trait ConfiguresRevisionTable
         return $components;
     }
 
-    protected function resolveRevisionStatus(Revision $record): ?EntryStatus
+    protected function resolveRevisionStatus(Revision $record): ?ContentStatus
     {
         $status = data_get($record->data, 'status');
 
-        if ($status instanceof EntryStatus) {
+        if ($status instanceof ContentStatus) {
             return $status;
         }
 
@@ -399,7 +399,7 @@ trait ConfiguresRevisionTable
             return null;
         }
 
-        return EntryStatus::tryFrom(trim($status));
+        return ContentStatus::tryFrom(trim($status));
     }
 
     protected function revisionDiffPresenter(): RevisionDiffPresenter

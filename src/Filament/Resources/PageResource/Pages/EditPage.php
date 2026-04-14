@@ -8,7 +8,7 @@ use Carbon\CarbonInterface;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
@@ -34,7 +34,7 @@ class EditPage extends EditRecord
 
     protected Width|string|null $maxWidth = Width::Full;
 
-    protected ?EntryStatus $statusBeforeSave = null;
+    protected ?ContentStatus $statusBeforeSave = null;
 
     protected function getRedirectUrl(): string
     {
@@ -76,7 +76,7 @@ class EditPage extends EditRecord
             $record instanceof Page
             && $user?->hasRole('contributor')
             && (int) $record->author_id === (int) $user->getKey()
-            && in_array($record->status, [EntryStatus::Published, EntryStatus::InReview, EntryStatus::Scheduled], true)
+            && in_array($record->status, [ContentStatus::Published, ContentStatus::InReview, ContentStatus::Scheduled], true)
         ) {
             $data['slug'] = $record->slug;
         }
@@ -111,7 +111,7 @@ class EditPage extends EditRecord
         }
 
         if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
-            if ($record->status === EntryStatus::InReview) {
+            if ($record->status === ContentStatus::InReview) {
                 app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
                     record: $record,
                     permission: 'entry.publish',

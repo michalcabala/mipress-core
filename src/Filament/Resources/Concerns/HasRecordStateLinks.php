@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\Concerns;
 
 use Illuminate\Database\Eloquent\Builder;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 
 trait HasRecordStateLinks
 {
@@ -45,7 +45,7 @@ trait HasRecordStateLinks
             ),
         ];
 
-        foreach (EntryStatus::cases() as $status) {
+        foreach (ContentStatus::cases() as $status) {
             $count = $visibleStatusCounts[$status->value] ?? 0;
 
             if ($count < 1) {
@@ -86,11 +86,11 @@ trait HasRecordStateLinks
         return [];
     }
 
-    private function getRecordStateLinkUrl(?EntryStatus $status = null, bool $trashed = false): string
+    private function getRecordStateLinkUrl(?ContentStatus $status = null, bool $trashed = false): string
     {
         $parameters = $this->getRecordStateLinksRouteParameters();
 
-        if ($status instanceof EntryStatus) {
+        if ($status instanceof ContentStatus) {
             $parameters['filters'] = [
                 'status' => ['value' => $status->value],
             ];
@@ -105,11 +105,11 @@ trait HasRecordStateLinks
         return static::getResource()::getUrl('index', $parameters);
     }
 
-    private function isRecordStateLinkActive(?EntryStatus $status = null, bool $trashed = false): bool
+    private function isRecordStateLinkActive(?ContentStatus $status = null, bool $trashed = false): bool
     {
         $currentStatus = data_get($this->tableFilters ?? [], 'status.value');
 
-        if ($currentStatus instanceof EntryStatus) {
+        if ($currentStatus instanceof ContentStatus) {
             $currentStatus = $currentStatus->value;
         }
 
@@ -119,7 +119,7 @@ trait HasRecordStateLinks
             return in_array($currentTrashed, [0, '0', false], true);
         }
 
-        if ($status instanceof EntryStatus) {
+        if ($status instanceof ContentStatus) {
             return $currentStatus === $status->value && blank($currentTrashed);
         }
 

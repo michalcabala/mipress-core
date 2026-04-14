@@ -9,7 +9,7 @@ use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Schema;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Entry;
 
 class PublishScheduledEntries extends Command
@@ -22,7 +22,7 @@ class PublishScheduledEntries extends Command
     {
         /** @var Collection<int, Entry> $entries */
         $entries = Entry::query()
-            ->where('status', EntryStatus::Scheduled->value)
+            ->where('status', ContentStatus::Scheduled->value)
             ->where(function (Builder $query): void {
                 $query
                     ->where(function (Builder $scheduled): void {
@@ -49,7 +49,7 @@ class PublishScheduledEntries extends Command
             /** @var Entry $entry */
             $oldStatus = $entry->status;
 
-            $entry->status = EntryStatus::Published;
+            $entry->status = ContentStatus::Published;
             $entry->published_at = $entry->published_at?->isFuture() ? now() : ($entry->published_at ?? now());
             $entry->scheduled_at = null;
             $entry->save();

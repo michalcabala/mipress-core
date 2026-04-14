@@ -9,7 +9,7 @@ use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Resources\Concerns\HandlesWorkflowValidationErrors;
 use MiPress\Core\Filament\Resources\Concerns\HasContextualCrudNotifications;
 use MiPress\Core\Filament\Resources\Concerns\HasWorkflowActions;
@@ -36,7 +36,7 @@ class EditEntry extends EditRecord
 
     protected Width|string|null $maxWidth = Width::Full;
 
-    protected ?EntryStatus $statusBeforeSave = null;
+    protected ?ContentStatus $statusBeforeSave = null;
 
     protected function getFormActions(): array
     {
@@ -106,7 +106,7 @@ class EditEntry extends EditRecord
             $record instanceof Entry
             && $user?->hasRole('contributor')
             && (int) $record->author_id === (int) $user->getKey()
-            && in_array($record->status, [EntryStatus::Published, EntryStatus::InReview, EntryStatus::Scheduled], true)
+            && in_array($record->status, [ContentStatus::Published, ContentStatus::InReview, ContentStatus::Scheduled], true)
         ) {
             $data['slug'] = $record->slug;
         }
@@ -135,7 +135,7 @@ class EditEntry extends EditRecord
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
 
         if ($this->statusBeforeSave !== null && $record->status !== $this->statusBeforeSave) {
-            if ($record->status === EntryStatus::InReview) {
+            if ($record->status === ContentStatus::InReview) {
                 app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
                     record: $record,
                     permission: 'entry.publish',

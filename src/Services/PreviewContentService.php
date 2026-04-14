@@ -6,7 +6,7 @@ namespace MiPress\Core\Services;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Response;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
@@ -78,7 +78,7 @@ class PreviewContentService
      */
     private function redirectToPublicUrlIfPublished(Entry|Page $record): ?RedirectResponse
     {
-        if ($record->status !== EntryStatus::Published || ! filled($record->getPublicUrl())) {
+        if ($record->status !== ContentStatus::Published || ! filled($record->getPublicUrl())) {
             return null;
         }
 

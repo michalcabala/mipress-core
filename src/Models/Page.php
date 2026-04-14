@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use MiPress\Core\Database\Factories\PageFactory;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Mason\EditorialBrickCollection;
 use MiPress\Core\Traits\HasRevisions;
 use MiPress\Core\Traits\HasSeo;
@@ -63,7 +63,7 @@ class Page extends Model
         'blueprint_id' => 'integer',
         'content' => 'array',
         'data' => 'array',
-        'status' => EntryStatus::class,
+        'status' => ContentStatus::class,
         'published_at' => 'datetime',
         'scheduled_at' => 'datetime',
         'author_id' => 'integer',

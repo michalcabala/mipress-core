@@ -21,7 +21,7 @@ use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Support\EntryLikeFormBuilders;
 use MiPress\Core\Mason\EditorialBrickCollection;
@@ -167,7 +167,7 @@ class PageForm
                                             ->action(function (EditRecord $livewire, Page $record): void {
                                                 $copy = $record->replicate();
                                                 $copy->title = str($record->title)->append(' (kopie)')->toString();
-                                                $copy->status = EntryStatus::Draft;
+                                                $copy->status = ContentStatus::Draft;
                                                 $copy->slug = null;
                                                 $copy->published_at = null;
                                                 $copy->review_note = null;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Observers;
 
 use Illuminate\Database\Eloquent\Model;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Jobs\GenerateSitemapJob;
 use MiPress\Core\Models\Setting;
 
@@ -26,7 +26,7 @@ class ContentObserver
             return;
         }
 
-        if ($model->getAttribute('status') !== EntryStatus::Published) {
+        if ($model->getAttribute('status') !== ContentStatus::Published) {
             return;
         }
 
@@ -43,17 +43,17 @@ class ContentObserver
         $originalStatus = $model->getOriginal('status');
 
         // Published → something else (unpublished)
-        if ($originalStatus === EntryStatus::Published && $status !== EntryStatus::Published) {
+        if ($originalStatus === ContentStatus::Published && $status !== ContentStatus::Published) {
             return true;
         }
 
         // Something else → Published (newly published)
-        if ($status === EntryStatus::Published && $originalStatus !== EntryStatus::Published) {
+        if ($status === ContentStatus::Published && $originalStatus !== ContentStatus::Published) {
             return true;
         }
 
         // Already published and slug changed
-        if ($status === EntryStatus::Published && $model->wasChanged('slug')) {
+        if ($status === ContentStatus::Published && $model->wasChanged('slug')) {
             return true;
         }
 

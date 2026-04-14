@@ -6,7 +6,7 @@ namespace MiPress\Core\Services;
 
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
-use MiPress\Core\Enums\EntryStatus;
+use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\Models\Entry;
 use MiPress\Core\Models\Page;
 use MiPress\Core\Models\Setting;
@@ -122,7 +122,7 @@ class SitemapGenerator
             if (method_exists($modelClass, 'scopePublished')) {
                 $query->published();
             } else {
-                $query->where('status', EntryStatus::Published);
+                $query->where('status', ContentStatus::Published);
             }
 
             $query->select(['id', 'slug', 'updated_at', ...$this->extraSelectColumns($modelClass)])
