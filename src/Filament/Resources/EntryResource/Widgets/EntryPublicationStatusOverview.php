@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Widgets;
 
-use Filament\Widgets\Widget;
+use Filament\Widgets\StatsOverviewWidget;
+use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
 
-class EntryPublicationStatusOverview extends Widget
+class EntryPublicationStatusOverview extends StatsOverviewWidget
 {
     public ?int $collectionId = null;
 
@@ -21,7 +22,16 @@ class EntryPublicationStatusOverview extends Widget
 
     protected int | string | array $columnSpan = 'full';
 
-    protected string $view = 'mipress::filament.widgets.entry-publication-status-overview';
+    protected ?string $pollingInterval = null;
+
+    protected int | array | null $columns = [
+        'md' => 3,
+        'xl' => 6,
+    ];
+
+    protected ?string $heading = null;
+
+    protected ?string $description = null;
 
     #[On('entry-publication-status-updated')]
     public function refreshStatusOverview(): void
@@ -29,9 +39,9 @@ class EntryPublicationStatusOverview extends Widget
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<Stat>
      */
-    protected function getViewData(): array
+    protected function getStats(): array
     {
         $statusCounts = Entry::query()
             ->when(
@@ -54,8 +64,8 @@ class EntryPublicationStatusOverview extends Widget
         $activeFilter = $this->getActiveFilter();
         $allCount = array_sum($statusCounts);
 
-        $items = [
-            $this->makeItem(
+        $stats = [
+            $this->makeStat(
                 key: 'all',
                 label: 'Vše',
                 count: $allCount,
@@ -72,7 +82,7 @@ class EntryPublicationStatusOverview extends Widget
                 continue;
             }
 
-            $items[] = $this->makeItem(
+            $stats[] = $this->makeStat(
                 key: $status->value,
                 label: $status->getLabel(),
                 count: $count,
@@ -83,7 +93,7 @@ class EntryPublicationStatusOverview extends Widget
         }
 
         if ($trashedCount > 0) {
-            $items[] = $this->makeItem(
+            $stats[] = $this->makeStat(
                 key: 'trashed',
                 label: 'Koš',
                 count: $trashedCount,
@@ -93,32 +103,33 @@ class EntryPublicationStatusOverview extends Widget
             );
         }
 
-        return [
-            'items' => $items,
-        ];
+        return $stats;
     }
 
     /**
-     * @return array<string, mixed>
+     * @return Stat
      */
-    private function makeItem(
+    private function makeStat(
         string $key,
         string $label,
         int $count,
         ?string $icon,
         string $tone,
         bool $isActive,
-    ): array {
-        return [
-            'key' => $key,
-            'label' => $label,
-            'count' => $count,
-            'icon' => $icon,
-            'url' => $this->getFilterUrl($key),
-            'isActive' => $isActive,
-            'itemClass' => $this->getItemClass($tone, $isActive),
-            'countClass' => $this->getCountClass($tone, $isActive),
-        ];
+    ): Stat {
+        return Stat::make($label, (string) $count)
+            ->icon($icon)
+            ->color($tone)
+            ->url($this->getFilterUrl($key))
+            ->extraAttributes([
+                'wire:navigate' => true,
+                'class' => implode(' ', array_filter([
+                    'transition',
+                    'hover:bg-gray-50',
+                    'dark:hover:bg-white/5',
+                    $isActive ? 'ring-2 ring-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10' : null,
+                ])),
+            ]);
     }
 
     private function getActiveFilter(): string
@@ -173,40 +184,6 @@ class EntryPublicationStatusOverview extends Widget
         return filled($queryString)
             ? "{$url}?{$queryString}"
             : $url;
-    }
-
-    private function getItemClass(string $tone, bool $isActive): string
-    {
-        $baseClass = 'group flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/50';
-
-        if (! $isActive) {
-            return $baseClass . ' border-gray-200/80 bg-white/90 text-gray-700 shadow-[0_1px_2px_rgba(15,23,42,0.04)] hover:border-gray-300 hover:bg-gray-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-gray-200 dark:shadow-none dark:hover:border-white/20 dark:hover:bg-white/[0.08]';
-        }
-
-        return $baseClass . ' ' . match ($tone) {
-            'success' => 'border-emerald-300 bg-emerald-50 text-emerald-800 shadow-[0_1px_2px_rgba(16,185,129,0.12)] dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-200 dark:shadow-none',
-            'warning' => 'border-amber-300 bg-amber-50 text-amber-800 shadow-[0_1px_2px_rgba(245,158,11,0.12)] dark:border-amber-500/30 dark:bg-amber-500/12 dark:text-amber-200 dark:shadow-none',
-            'info' => 'border-cyan-300 bg-cyan-50 text-cyan-800 shadow-[0_1px_2px_rgba(6,182,212,0.12)] dark:border-cyan-500/30 dark:bg-cyan-500/12 dark:text-cyan-200 dark:shadow-none',
-            'danger' => 'border-rose-300 bg-rose-50 text-rose-800 shadow-[0_1px_2px_rgba(244,63,94,0.12)] dark:border-rose-500/30 dark:bg-rose-500/12 dark:text-rose-200 dark:shadow-none',
-            default => 'border-gray-300 bg-gray-100 text-gray-800 shadow-[0_1px_2px_rgba(107,114,128,0.08)] dark:border-white/20 dark:bg-white/[0.10] dark:text-white dark:shadow-none',
-        };
-    }
-
-    private function getCountClass(string $tone, bool $isActive): string
-    {
-        $baseClass = 'inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-semibold';
-
-        if (! $isActive) {
-            return $baseClass . ' bg-gray-100 text-gray-700 dark:bg-white/10 dark:text-gray-200';
-        }
-
-        return $baseClass . ' ' . match ($tone) {
-            'success' => 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-200',
-            'warning' => 'bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-200',
-            'info' => 'bg-cyan-100 text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-200',
-            'danger' => 'bg-rose-100 text-rose-700 dark:bg-rose-500/20 dark:text-rose-200',
-            default => 'bg-white/80 text-gray-700 dark:bg-white/10 dark:text-white',
-        };
     }
 
     private function getTableFiltersQueryStringProperty(): string
