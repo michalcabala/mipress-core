@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Resources\EntryResource\Widgets;
 
-use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\StatsOverviewWidget\Stat;
+use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\On;
 use MiPress\Core\Enums\EntryStatus;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Models\Entry;
 
-class EntryPublicationStatusOverview extends StatsOverviewWidget
+class EntryPublicationStatusOverview extends Widget
 {
     public ?int $collectionId = null;
 
@@ -22,16 +21,7 @@ class EntryPublicationStatusOverview extends StatsOverviewWidget
 
     protected int | string | array $columnSpan = 'full';
 
-    protected ?string $pollingInterval = null;
-
-    protected int | array | null $columns = [
-        'md' => 3,
-        'xl' => 6,
-    ];
-
-    protected ?string $heading = null;
-
-    protected ?string $description = null;
+    protected string $view = 'mipress::filament.widgets.entry-publication-status-overview';
 
     #[On('entry-publication-status-updated')]
     public function refreshStatusOverview(): void
@@ -39,9 +29,9 @@ class EntryPublicationStatusOverview extends StatsOverviewWidget
     }
 
     /**
-     * @return array<Stat>
+     * @return array<string, array<int, array{key: string, label: string, count: int, icon: ?string, color: string, isActive: bool, url: string}>>
      */
-    protected function getStats(): array
+    protected function getViewData(): array
     {
         $statusCounts = Entry::query()
             ->when(
@@ -64,13 +54,13 @@ class EntryPublicationStatusOverview extends StatsOverviewWidget
         $activeFilter = $this->getActiveFilter();
         $allCount = array_sum($statusCounts);
 
-        $stats = [
-            $this->makeStat(
+        $items = [
+            $this->makeItem(
                 key: 'all',
                 label: 'Vše',
                 count: $allCount,
                 icon: 'far-layer-group',
-                tone: 'gray',
+                color: 'gray',
                 isActive: $activeFilter === 'all',
             ),
         ];
@@ -82,54 +72,52 @@ class EntryPublicationStatusOverview extends StatsOverviewWidget
                 continue;
             }
 
-            $stats[] = $this->makeStat(
+            $items[] = $this->makeItem(
                 key: $status->value,
                 label: $status->getLabel(),
                 count: $count,
                 icon: $status->getIcon(),
-                tone: (string) $status->getColor(),
+                color: (string) $status->getColor(),
                 isActive: $activeFilter === $status->value,
             );
         }
 
         if ($trashedCount > 0) {
-            $stats[] = $this->makeStat(
+            $items[] = $this->makeItem(
                 key: 'trashed',
                 label: 'Koš',
                 count: $trashedCount,
                 icon: 'far-trash-can',
-                tone: 'danger',
+                color: 'danger',
                 isActive: $activeFilter === 'trashed',
             );
         }
 
-        return $stats;
+        return [
+            'items' => $items,
+        ];
     }
 
     /**
-     * @return Stat
+     * @return array{key: string, label: string, count: int, icon: ?string, color: string, isActive: bool, url: string}
      */
-    private function makeStat(
+    private function makeItem(
         string $key,
         string $label,
         int $count,
         ?string $icon,
-        string $tone,
+        string $color,
         bool $isActive,
-    ): Stat {
-        return Stat::make($label, (string) $count)
-            ->icon($icon)
-            ->color($tone)
-            ->url($this->getFilterUrl($key))
-            ->extraAttributes([
-                'wire:navigate' => true,
-                'class' => implode(' ', array_filter([
-                    'transition',
-                    'hover:bg-gray-50',
-                    'dark:hover:bg-white/5',
-                    $isActive ? 'ring-2 ring-primary-500/40 bg-primary-50/70 dark:bg-primary-500/10' : null,
-                ])),
-            ]);
+    ): array {
+        return [
+            'key' => $key,
+            'label' => $label,
+            'count' => $count,
+            'icon' => $icon,
+            'color' => $color,
+            'isActive' => $isActive,
+            'url' => $this->getFilterUrl($key),
+        ];
     }
 
     private function getActiveFilter(): string
