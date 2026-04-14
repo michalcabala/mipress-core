@@ -212,9 +212,7 @@ class EntryForm
                                                     ->success()
                                                     ->send();
 
-                                                $livewire->redirect(EntryResource::getUrl('index', [
-                                                    'collection' => $record->collection?->handle,
-                                                ]));
+                                                $livewire->redirect(EntryResource::getUrl('index', EntryResource::collectionUrlParameters($record->collection?->handle)));
                                             }),
 
                                         Action::make('deletePermanently')
@@ -226,7 +224,7 @@ class EntryForm
                                             ->modalHeading(fn (Entry $record): string => 'Trvale smazat položku "'.$record->title.'"?')
                                             ->modalDescription('Tato akce položku nevratně odstraní ze systému včetně jejího aktuálního stavu.')
                                             ->action(function (EditRecord $livewire, Entry $record): void {
-                                                $collectionHandle = $record->collection?->handle;
+                                                $collectionHandle = EntryResource::normalizeCollectionHandle($record->collection?->handle);
                                                 $recordTitle = $record->title;
                                                 $record->forceDelete();
                                                 Notification::make()
@@ -235,9 +233,7 @@ class EntryForm
                                                     ->success()
                                                     ->send();
 
-                                                $livewire->redirect(EntryResource::getUrl('index', [
-                                                    'collection' => $collectionHandle,
-                                                ]));
+                                                $livewire->redirect(EntryResource::getUrl('index', EntryResource::collectionUrlParameters($collectionHandle)));
                                             }),
                                     ])->fullWidth(),
 
@@ -262,7 +258,7 @@ class EntryForm
                                                     ->send();
                                                 $livewire->redirect(EntryResource::getUrl('edit', [
                                                     'record' => $copy,
-                                                    'collection' => $copy->collection?->handle,
+                                                    ...EntryResource::collectionUrlParameters($copy->collection?->handle),
                                                 ]));
                                             }),
                                     ])->fullWidth(),

@@ -171,7 +171,7 @@ class EntriesTable
     {
         return EntryResource::getUrl('edit', [
             'record' => $record,
-            'collection' => $record->collection?->handle,
+            ...EntryResource::collectionUrlParameters($record->collection?->handle),
         ]);
     }
 

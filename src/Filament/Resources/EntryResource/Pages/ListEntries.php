@@ -32,14 +32,9 @@ class ListEntries extends ListRecords
     {
         if (blank($this->collectionHandle)) {
             $this->collectionHandle = $collection ?: (string) request()->query('collection', '');
-
-            if (blank($this->collectionHandle)) {
-                $this->collectionHandle = (string) Collection::query()
-                    ->where('handle', '!=', 'pages')
-                    ->ordered()
-                    ->value('handle');
-            }
         }
+
+        $this->ensureAccessibleCollectionHandle();
 
         parent::mount();
     }
@@ -51,6 +46,8 @@ class ListEntries extends ListRecords
 
     public function table(Table $table): Table
     {
+        $this->ensureAccessibleCollectionHandle();
+
         $collection = $this->resolveCollection();
         $suffix = filled($this->collectionHandle) ? str($this->collectionHandle)->studly()->toString() : 'Index';
 
@@ -69,6 +66,8 @@ class ListEntries extends ListRecords
 
     protected function getHeaderWidgets(): array
     {
+        $this->ensureAccessibleCollectionHandle();
+
         return [
             EntryPublicationStatusOverview::make([
                 'collectionId' => $this->resolveCollection()?->id,
@@ -79,21 +78,25 @@ class ListEntries extends ListRecords
 
     protected function getHeaderActions(): array
     {
+        $this->ensureAccessibleCollectionHandle();
+
         return [
             CreateAction::make()
-                ->url(fn () => static::$resource::getUrl('create', [
-                    'collection' => $this->collectionHandle ?: null,
-                ])),
+                ->url(fn () => static::$resource::getUrl('create', static::$resource::collectionUrlParameters($this->collectionHandle))),
         ];
     }
 
     public function getTitle(): string
     {
+        $this->ensureAccessibleCollectionHandle();
+
         return $this->resolveCollection()?->name ?? 'PoloĹľky';
     }
 
     private function resolveCollection(): ?Collection
     {
+        $this->ensureAccessibleCollectionHandle();
+
         if ($this->hasResolvedCollection) {
             return $this->resolvedCollection;
         }
@@ -113,5 +116,18 @@ class ListEntries extends ListRecords
         $this->resolvedCollection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         return $this->resolvedCollection;
+    }
+
+    private function ensureAccessibleCollectionHandle(): void
+    {
+        $normalizedHandle = EntryResource::resolveAccessibleCollectionHandle($this->collectionHandle);
+
+        if ($normalizedHandle === $this->collectionHandle) {
+            return;
+        }
+
+        $this->collectionHandle = $normalizedHandle;
+        $this->hasResolvedCollection = false;
+        $this->resolvedCollection = null;
     }
 }

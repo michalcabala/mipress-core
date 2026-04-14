@@ -143,9 +143,7 @@ class EntryPublicationStatusOverview extends Widget
 
     private function getFilterUrl(string $key): string
     {
-        $url = EntryResource::getUrl('index', [
-            'collection' => filled($this->collectionHandle) ? $this->collectionHandle : null,
-        ]);
+        $url = EntryResource::getUrl('index', EntryResource::collectionUrlParameters($this->collectionHandle));
 
         $query = request()->query();
         $filtersProperty = $this->getTableFiltersQueryStringProperty();

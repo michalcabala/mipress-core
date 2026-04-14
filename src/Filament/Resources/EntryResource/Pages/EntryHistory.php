@@ -77,8 +77,14 @@ class EntryHistory extends ManageRelatedRecords
             return parent::getResourceBreadcrumbs();
         }
 
+        $collectionHandle = EntryResource::normalizeCollectionHandle($collection->handle);
+
+        if ($collectionHandle === null) {
+            return parent::getResourceBreadcrumbs();
+        }
+
         $breadcrumbs = [
-            static::getResource()::getUrl('index', ['collection' => $collection->handle]) => $collection->name,
+            static::getResource()::getUrl('index', static::getResource()::collectionUrlParameters($collectionHandle)) => $collection->name,
         ];
 
         if (filled($cluster = static::getCluster())) {

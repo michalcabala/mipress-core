@@ -31,6 +31,8 @@ class CreateEntry extends CreateRecord
             $this->collectionHandle = $collection ?: (string) request()->query('collection', '');
         }
 
+        $this->ensureAccessibleCollectionHandle();
+
         parent::mount();
     }
 
@@ -38,9 +40,9 @@ class CreateEntry extends CreateRecord
 
     protected function getRedirectUrl(): string
     {
-        return static::$resource::getUrl('index', [
-            'collection' => $this->collectionHandle,
-        ]);
+        $this->ensureAccessibleCollectionHandle();
+
+        return static::$resource::getUrl('index', static::$resource::collectionUrlParameters($this->collectionHandle));
     }
 
     /**
@@ -49,6 +51,8 @@ class CreateEntry extends CreateRecord
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        $this->ensureAccessibleCollectionHandle();
+
         $collection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         if ($collection && empty($data['collection_id'])) {
@@ -80,6 +84,8 @@ class CreateEntry extends CreateRecord
 
     public function getTitle(): string
     {
+        $this->ensureAccessibleCollectionHandle();
+
         $collection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         return $collection
@@ -102,10 +108,10 @@ class CreateEntry extends CreateRecord
             permission: 'entry.publish',
             title: 'Nový obsah ke schválení',
             body: 'Položka "'.$record->title.'" čeká na schválení publikace.',
-            editUrl: EntryResource::getUrl('edit', [
+                editUrl: EntryResource::getUrl('edit', [
                 'record' => $record,
-                'collection' => $record->collection?->handle,
-            ]),
+                    ...EntryResource::collectionUrlParameters($record->collection?->handle),
+                ]),
             previewRouteName: 'preview.entry',
             previewRouteParameterName: 'entry',
         );
@@ -120,5 +126,10 @@ class CreateEntry extends CreateRecord
         }
 
         app(EntryTaxonomySyncService::class)->syncFromFormState($record, $this->form->getRawState());
+    }
+
+    private function ensureAccessibleCollectionHandle(): void
+    {
+        $this->collectionHandle = EntryResource::resolveAccessibleCollectionHandle($this->collectionHandle);
     }
 }

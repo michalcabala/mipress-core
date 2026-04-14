@@ -72,8 +72,14 @@ class EditEntry extends EditRecord
             return parent::getResourceBreadcrumbs();
         }
 
+        $collectionHandle = EntryResource::normalizeCollectionHandle($collection->handle);
+
+        if ($collectionHandle === null) {
+            return parent::getResourceBreadcrumbs();
+        }
+
         $breadcrumbs = [
-            static::getResource()::getUrl('index', ['collection' => $collection->handle]) => $collection->name,
+            static::getResource()::getUrl('index', static::getResource()::collectionUrlParameters($collectionHandle)) => $collection->name,
         ];
 
         if (filled($cluster = static::getCluster())) {
@@ -137,7 +143,7 @@ class EditEntry extends EditRecord
                     body: 'Položka "'.$record->title.'" čeká na schválení publikace.',
                     editUrl: EntryResource::getUrl('edit', [
                         'record' => $record,
-                        'collection' => $record->collection?->handle,
+                        ...EntryResource::collectionUrlParameters($record->collection?->handle),
                     ]),
                     previewRouteName: 'preview.entry',
                     previewRouteParameterName: 'entry',
@@ -213,7 +219,7 @@ class EditEntry extends EditRecord
 
         return EntryResource::getUrl('edit', [
             'record' => $record,
-            'collection' => $collection?->handle,
+            ...EntryResource::collectionUrlParameters($collection?->handle),
         ]);
     }
 
@@ -222,9 +228,7 @@ class EditEntry extends EditRecord
         $record = $this->getRecord();
         $collection = $record instanceof Entry ? $record->collection : null;
 
-        return EntryResource::getUrl('index', [
-            'collection' => $collection?->handle,
-        ]);
+        return EntryResource::getUrl('index', EntryResource::collectionUrlParameters($collection?->handle));
     }
 
     /**

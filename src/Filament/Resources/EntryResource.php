@@ -26,6 +26,8 @@ use MiPress\Core\Models\Entry;
 
 class EntryResource extends Resource
 {
+    private const RESERVED_COLLECTION_HANDLE = 'pages';
+
     protected static ?string $model = Entry::class;
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-file-lines';
@@ -43,7 +45,7 @@ class EntryResource extends Resource
     public static function getNavigationItems(): array
     {
         $collections = Collection::ordered()
-            ->where('handle', '!=', 'pages')
+            ->where('handle', '!=', self::RESERVED_COLLECTION_HANDLE)
             ->get();
 
         $inReviewCounts = [];
@@ -78,9 +80,57 @@ class EntryResource extends Resource
         return auth()->user()?->hasPermissionTo('entry.publish') === true;
     }
 
-    public static function resolveCollectionByHandle(?string $handle): ?Collection
+    public static function isReservedCollectionHandle(?string $handle): bool
+    {
+        return is_string($handle)
+            && filled($handle)
+            && ($handle === self::RESERVED_COLLECTION_HANDLE);
+    }
+
+    public static function normalizeCollectionHandle(?string $handle): ?string
     {
         if (! is_string($handle) || blank($handle)) {
+            return null;
+        }
+
+        return static::isReservedCollectionHandle($handle)
+            ? null
+            : $handle;
+    }
+
+    public static function resolveAccessibleCollectionHandle(?string $handle): string
+    {
+        return static::normalizeCollectionHandle($handle)
+            ?? static::getDefaultCollectionHandle()
+            ?? '';
+    }
+
+    public static function getDefaultCollectionHandle(): ?string
+    {
+        $handle = Collection::ordered()
+            ->where('handle', '!=', self::RESERVED_COLLECTION_HANDLE)
+            ->value('handle');
+
+        return is_string($handle) && filled($handle)
+            ? $handle
+            : null;
+    }
+
+    /**
+     * @return array{collection: ?string}
+     */
+    public static function collectionUrlParameters(?string $handle): array
+    {
+        return [
+            'collection' => static::normalizeCollectionHandle($handle),
+        ];
+    }
+
+    public static function resolveCollectionByHandle(?string $handle): ?Collection
+    {
+        $handle = static::normalizeCollectionHandle($handle);
+
+        if ($handle === null) {
             return null;
         }
 
