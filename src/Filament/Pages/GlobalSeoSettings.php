@@ -221,18 +221,18 @@ class GlobalSeoSettings extends Page
                     ->description(__('mipress::admin.pages.global_seo.descriptions.verification_and_analytics'))
                     ->schema([
                         TextInput::make('verification.google')
-                            ->label('Google site verification'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.verification_google')),
                         TextInput::make('verification.bing')
-                            ->label('Bing Webmaster Tools'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.verification_bing')),
                         TextInput::make('verification.seznam')
-                            ->label('Seznam Webmaster'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.verification_seznam')),
                         TextInput::make('verification.facebook_domain')
-                            ->label('Facebook domain verification'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.verification_facebook_domain')),
                         TextInput::make('analytics.google_analytics_id')
-                            ->label('GA4 Measurement ID')
+                            ->label(__('mipress::admin.pages.global_seo.fields.analytics_google_analytics_id'))
                             ->placeholder('G-XXXXXXXXXX'),
                         TextInput::make('analytics.google_tag_manager_id')
-                            ->label('Google Tag Manager ID')
+                            ->label(__('mipress::admin.pages.global_seo.fields.analytics_google_tag_manager_id'))
                             ->placeholder('GTM-XXXXXXX'),
                     ])
                     ->columns(2),

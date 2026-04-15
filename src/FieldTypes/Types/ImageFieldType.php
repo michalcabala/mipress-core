@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MiPress\Core\FieldTypes\Types;
 
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\FieldTypes\AbstractFieldType;
 use MiPress\Core\FieldTypes\FieldCategory;
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 
 class ImageFieldType extends AbstractFieldType
 {
@@ -17,7 +17,7 @@ class ImageFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Obrázek';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

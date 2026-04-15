@@ -18,7 +18,7 @@ class TagsFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Štítky';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

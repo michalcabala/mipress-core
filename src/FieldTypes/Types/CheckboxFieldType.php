@@ -19,7 +19,7 @@ class CheckboxFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Checkbox';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

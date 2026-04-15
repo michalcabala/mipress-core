@@ -18,7 +18,7 @@ class DateFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Datum';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

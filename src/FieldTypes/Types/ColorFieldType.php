@@ -18,7 +18,7 @@ class ColorFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Barva';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

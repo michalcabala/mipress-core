@@ -17,7 +17,7 @@ class MarkdownFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Markdown';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

@@ -19,15 +19,15 @@ enum FieldCategory: string
     public function label(): string
     {
         return match ($this) {
-            self::Text => 'Text',
-            self::Numeric => 'Čísla',
-            self::Boolean => 'Logické',
-            self::Selection => 'Výběr',
-            self::DateTime => 'Datum a čas',
-            self::Media => 'Média',
-            self::Structured => 'Strukturované',
-            self::Taxonomy => 'Taxonomie',
-            self::Presentation => 'Prezentační',
+            self::Text => __('mipress::admin.field_types.categories.text'),
+            self::Numeric => __('mipress::admin.field_types.categories.numeric'),
+            self::Boolean => __('mipress::admin.field_types.categories.boolean'),
+            self::Selection => __('mipress::admin.field_types.categories.selection'),
+            self::DateTime => __('mipress::admin.field_types.categories.datetime'),
+            self::Media => __('mipress::admin.field_types.categories.media'),
+            self::Structured => __('mipress::admin.field_types.categories.structured'),
+            self::Taxonomy => __('mipress::admin.field_types.categories.taxonomy'),
+            self::Presentation => __('mipress::admin.field_types.categories.presentation'),
         };
     }
 }

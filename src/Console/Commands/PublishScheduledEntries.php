@@ -56,8 +56,8 @@ class PublishScheduledEntries extends Command
 
             if ($entry->author !== null && Schema::hasTable('notifications')) {
                 Notification::make()
-                    ->title('Položka byla publikována')
-                    ->body('Položka "'.$entry->title.'" byla automaticky publikována podle plánu.')
+                    ->title(__('mipress::admin.scheduled_publication.entry.title'))
+                    ->body(__('mipress::admin.scheduled_publication.entry.body', ['title' => $entry->title]))
                     ->success()
                     ->sendToDatabase($entry->author);
             }

@@ -17,7 +17,7 @@ class KeyValueFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Klíč–hodnota';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

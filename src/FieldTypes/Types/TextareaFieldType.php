@@ -19,7 +19,7 @@ class TextareaFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Textarea';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string
@@ -52,7 +52,7 @@ class TextareaFieldType extends AbstractFieldType
     {
         return [
             TextInput::make('config.rows')
-                ->label('Počet řádků')
+                ->label(static::translateSettingLabel('rows'))
                 ->numeric()
                 ->default(4),
         ];

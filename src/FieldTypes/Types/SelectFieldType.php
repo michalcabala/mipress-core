@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace MiPress\Core\FieldTypes\Types;
 
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use MiPress\Core\FieldTypes\AbstractFieldType;
 use MiPress\Core\FieldTypes\FieldCategory;
 
@@ -21,7 +20,7 @@ class SelectFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Výběr';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string
@@ -52,7 +51,7 @@ class SelectFieldType extends AbstractFieldType
 
     public function toFilter(string $handle, string $label, array $config): mixed
     {
-        return \Filament\Tables\Filters\SelectFilter::make($handle)
+        return SelectFilter::make($handle)
             ->label($label)
             ->options($config['options'] ?? []);
     }
@@ -61,10 +60,13 @@ class SelectFieldType extends AbstractFieldType
     {
         return [
             KeyValue::make('config.options')
-                ->label('Možnosti (klíč → hodnota)'),
+                ->label(static::translateSettingLabel('options_key_value')),
             Select::make('config.multiple')
-                ->label('Vícenásobný výběr')
-                ->options(['0' => 'Ne', '1' => 'Ano'])
+                ->label(static::translateSettingLabel('multiple'))
+                ->options([
+                    '0' => __('mipress::admin.common.no'),
+                    '1' => __('mipress::admin.common.yes'),
+                ])
                 ->default('0'),
         ];
     }

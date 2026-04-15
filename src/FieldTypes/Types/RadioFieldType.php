@@ -19,7 +19,7 @@ class RadioFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Radio';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string
@@ -51,7 +51,7 @@ class RadioFieldType extends AbstractFieldType
     {
         return [
             KeyValue::make('config.options')
-                ->label('Možnosti (klíč → hodnota)'),
+                ->label(static::translateSettingLabel('options_key_value')),
         ];
     }
 }

@@ -20,7 +20,7 @@ class InsightGridBrick extends Brick
 
     public static function getLabel(): string
     {
-        return 'Blok poznatků';
+        return __('mipress::admin.mason_bricks.insight_grid.label');
     }
 
     public static function getIcon(): string
@@ -44,31 +44,31 @@ class InsightGridBrick extends Brick
             ->slideOver()
             ->schema([
                 TextInput::make('heading')
-                    ->label('Nadpis')
+                    ->label(__('mipress::admin.mason_bricks.insight_grid.fields.heading'))
                     ->required(),
                 Textarea::make('intro')
-                    ->label('Úvod')
+                    ->label(__('mipress::admin.mason_bricks.insight_grid.fields.intro'))
                     ->rows(3),
                 Select::make('columns')
-                    ->label('Počet sloupců')
+                    ->label(__('mipress::admin.mason_bricks.insight_grid.fields.columns'))
                     ->options([
-                        '2' => '2 sloupce',
-                        '3' => '3 sloupce',
+                        '2' => __('mipress::admin.mason_bricks.insight_grid.options.columns_2'),
+                        '3' => __('mipress::admin.mason_bricks.insight_grid.options.columns_3'),
                     ])
                     ->default('3'),
                 Repeater::make('items')
-                    ->label('Karty')
+                    ->label(__('mipress::admin.mason_bricks.insight_grid.fields.items'))
                     ->defaultItems(3)
                     ->schema([
                         TextInput::make('label')
-                            ->label('Štítek')
+                            ->label(__('mipress::admin.mason_bricks.insight_grid.fields.label'))
                             ->maxLength(80),
                         TextInput::make('title')
-                            ->label('Titulek')
+                            ->label(__('mipress::admin.mason_bricks.insight_grid.fields.title'))
                             ->required()
                             ->maxLength(120),
                         Textarea::make('text')
-                            ->label('Text')
+                            ->label(__('mipress::admin.mason_bricks.insight_grid.fields.text'))
                             ->rows(3),
                     ])
                     ->columnSpanFull(),

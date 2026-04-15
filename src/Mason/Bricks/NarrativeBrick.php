@@ -19,7 +19,7 @@ class NarrativeBrick extends Brick
 
     public static function getLabel(): string
     {
-        return 'Textový blok';
+        return __('mipress::admin.mason_bricks.narrative.label');
     }
 
     public static function getIcon(): string
@@ -44,28 +44,28 @@ class NarrativeBrick extends Brick
             ->slideOver()
             ->schema([
                 TextInput::make('eyebrow')
-                    ->label('Štítek')
+                    ->label(__('mipress::admin.mason_bricks.narrative.fields.eyebrow'))
                     ->maxLength(80),
                 TextInput::make('heading')
-                    ->label('Nadpis')
+                    ->label(__('mipress::admin.mason_bricks.narrative.fields.heading'))
                     ->maxLength(140),
                 Select::make('tone')
-                    ->label('Tón bloku')
+                    ->label(__('mipress::admin.mason_bricks.narrative.fields.tone'))
                     ->options([
-                        'default' => 'Standard',
-                        'muted' => 'Zvýrazněný panel',
-                        'accent' => 'Akcentní panel',
+                        'default' => __('mipress::admin.mason_bricks.narrative.options.tone_default'),
+                        'muted' => __('mipress::admin.mason_bricks.narrative.options.tone_muted'),
+                        'accent' => __('mipress::admin.mason_bricks.narrative.options.tone_accent'),
                     ])
                     ->default('default'),
                 Select::make('width')
-                    ->label('Šířka textu')
+                    ->label(__('mipress::admin.mason_bricks.narrative.fields.width'))
                     ->options([
-                        'narrow' => 'Úzká sazba',
-                        'wide' => 'Široká sazba',
+                        'narrow' => __('mipress::admin.mason_bricks.narrative.options.width_narrow'),
+                        'wide' => __('mipress::admin.mason_bricks.narrative.options.width_wide'),
                     ])
                     ->default('wide'),
                 RichEditor::make('content')
-                    ->label('Obsah')
+                    ->label(__('mipress::admin.mason_bricks.narrative.fields.content'))
                     ->required()
                     ->columnSpanFull(),
             ]);

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MiPress\Core\FieldTypes\Types;
 
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\FieldTypes\AbstractFieldType;
 use MiPress\Core\FieldTypes\FieldCategory;
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 
 class FileFieldType extends AbstractFieldType
 {
@@ -17,7 +17,7 @@ class FileFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Soubor';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

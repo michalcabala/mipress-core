@@ -19,7 +19,7 @@ class RepeaterFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Opakovač';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string
@@ -38,7 +38,7 @@ class RepeaterFieldType extends AbstractFieldType
             ->label($label)
             ->required($required)
             ->schema(static::resolveSubFields($config))
-            ->addActionLabel('Přidat záznam');
+            ->addActionLabel(static::translateSettingLabel('add_item'));
     }
 
     /**
@@ -51,7 +51,7 @@ class RepeaterFieldType extends AbstractFieldType
 
         if (! is_array($fieldDefinitions) || $fieldDefinitions === []) {
             return [
-                TextInput::make('value')->label('Hodnota'),
+                TextInput::make('value')->label(static::translateSettingLabel('value')),
             ];
         }
 
@@ -83,6 +83,6 @@ class RepeaterFieldType extends AbstractFieldType
 
         return $components !== []
             ? $components
-            : [TextInput::make('value')->label('Hodnota')];
+            : [TextInput::make('value')->label(static::translateSettingLabel('value'))];
     }
 }

@@ -18,7 +18,7 @@ class TextFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Text';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string
@@ -51,11 +51,11 @@ class TextFieldType extends AbstractFieldType
     {
         return [
             TextInput::make('config.maxLength')
-                ->label('Max. délka')
+                ->label(static::translateSettingLabel('max_length'))
                 ->numeric()
                 ->default(255),
             TextInput::make('config.placeholder')
-                ->label('Placeholder'),
+                ->label(static::translateSettingLabel('placeholder')),
         ];
     }
 }

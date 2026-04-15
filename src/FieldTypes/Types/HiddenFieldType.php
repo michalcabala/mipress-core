@@ -17,7 +17,7 @@ class HiddenFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Skryté';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

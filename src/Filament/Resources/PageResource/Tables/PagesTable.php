@@ -66,7 +66,7 @@ class PagesTable
                         return $parts === [] ? null : implode(' · ', $parts);
                     }),
                 TextColumn::make('slug')
-                    ->label('Slug')
+                    ->label(__('mipress::admin.resources.page.table.columns.slug'))
                     ->searchable()
                     ->sortable()
                     ->copyable()

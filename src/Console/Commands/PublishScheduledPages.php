@@ -54,8 +54,8 @@ class PublishScheduledPages extends Command
 
             if ($page->author !== null && Schema::hasTable('notifications')) {
                 Notification::make()
-                    ->title('Stránka byla publikována')
-                    ->body('Stránka "'.$page->title.'" byla automaticky publikována podle plánu.')
+                    ->title(__('mipress::admin.scheduled_publication.page.title'))
+                    ->body(__('mipress::admin.scheduled_publication.page.body', ['title' => $page->title]))
                     ->success()
                     ->sendToDatabase($page->author);
             }

@@ -113,12 +113,12 @@ trait ConfiguresRevisionTable
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel(__('mipress::admin.revisions.actions.diff.close')),
                 Action::make('restore')
-                    ->label('Obnovit verzi')
+                    ->label(__('mipress::admin.revisions.actions.restore.label'))
                     ->icon('far-rotate-left')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->modalHeading(fn (Revision $record): string => 'Obnovit revizi z '.$record->created_at?->format('j. n. Y H:i:s').'?')
-                    ->modalDescription(fn (): string => 'Obsah záznamu „'.$this->resolveRevisionOwnerTitle($this->resolveRevisionOwner()).'“ bude nahrazen daty z této revize. Aktuální stav se předtím uloží jako nová revize, takže se k němu budete moci vrátit.')
+                    ->modalHeading(fn (Revision $record): string => __('mipress::admin.revisions.actions.restore.heading', ['date' => $record->created_at?->format('j. n. Y H:i:s')]))
+                    ->modalDescription(fn (): string => __('mipress::admin.revisions.actions.restore.description', ['title' => $this->resolveRevisionOwnerTitle($this->resolveRevisionOwner())]))
                     ->visible(fn (): bool => method_exists($this->resolveRevisionOwner(), 'restoreRevision'))
                     ->action(function (Revision $record): void {
                         $owner = $this->resolveRevisionOwner();
@@ -127,8 +127,11 @@ trait ConfiguresRevisionTable
                             $owner->restoreRevision($record->getKey());
 
                             Notification::make()
-                                ->title('Revize byla obnovena')
-                                ->body('Záznam „'.$this->resolveRevisionOwnerTitle($owner).'“ byl obnoven podle verze z '.$record->created_at?->format('j. n. Y H:i:s').'.')
+                                ->title(__('mipress::admin.revisions.actions.restore.success_title'))
+                                ->body(__('mipress::admin.revisions.actions.restore.success_body', [
+                                    'title' => $this->resolveRevisionOwnerTitle($owner),
+                                    'date' => $record->created_at?->format('j. n. Y H:i:s'),
+                                ]))
                                 ->success()
                                 ->send();
                         }

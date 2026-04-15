@@ -19,7 +19,7 @@ class PullQuoteBrick extends Brick
 
     public static function getLabel(): string
     {
-        return 'Citace';
+        return __('mipress::admin.mason_bricks.pull_quote.label');
     }
 
     public static function getIcon(): string
@@ -43,18 +43,18 @@ class PullQuoteBrick extends Brick
             ->slideOver()
             ->schema([
                 Textarea::make('quote')
-                    ->label('Citace')
+                    ->label(__('mipress::admin.mason_bricks.pull_quote.fields.quote'))
                     ->required()
                     ->rows(4),
                 TextInput::make('author')
-                    ->label('Autor'),
+                    ->label(__('mipress::admin.mason_bricks.pull_quote.fields.author')),
                 TextInput::make('role')
-                    ->label('Role / kontext'),
+                    ->label(__('mipress::admin.mason_bricks.pull_quote.fields.role')),
                 Select::make('alignment')
-                    ->label('Zarovnání')
+                    ->label(__('mipress::admin.mason_bricks.pull_quote.fields.alignment'))
                     ->options([
-                        'start' => 'Vlevo',
-                        'center' => 'Na střed',
+                        'start' => __('mipress::admin.mason_bricks.pull_quote.options.alignment_start'),
+                        'center' => __('mipress::admin.mason_bricks.pull_quote.options.alignment_center'),
                     ])
                     ->default('center'),
             ]);

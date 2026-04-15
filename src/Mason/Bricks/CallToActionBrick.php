@@ -6,8 +6,8 @@ namespace MiPress\Core\Mason\Bricks;
 
 use Awcodes\Mason\Brick;
 use Filament\Actions\Action;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 
 class CallToActionBrick extends Brick
 {
@@ -18,7 +18,7 @@ class CallToActionBrick extends Brick
 
     public static function getLabel(): string
     {
-        return 'Výzva k akci';
+        return __('mipress::admin.mason_bricks.call_to_action.label');
     }
 
     public static function getIcon(): string
@@ -45,22 +45,22 @@ class CallToActionBrick extends Brick
             ->slideOver()
             ->schema([
                 TextInput::make('eyebrow')
-                    ->label('Štítek'),
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.eyebrow')),
                 TextInput::make('title')
-                    ->label('Titulek')
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.title'))
                     ->required(),
                 Textarea::make('text')
-                    ->label('Text')
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.text'))
                     ->rows(4),
                 TextInput::make('primary_label')
-                    ->label('Primární tlačítko'),
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.primary_label')),
                 TextInput::make('primary_url')
-                    ->label('Primární odkaz')
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.primary_url'))
                     ->url(),
                 TextInput::make('secondary_label')
-                    ->label('Sekundární tlačítko'),
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.secondary_label')),
                 TextInput::make('secondary_url')
-                    ->label('Sekundární odkaz')
+                    ->label(__('mipress::admin.mason_bricks.call_to_action.fields.secondary_url'))
                     ->url(),
             ]);
     }

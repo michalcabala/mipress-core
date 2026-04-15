@@ -18,7 +18,7 @@ class DateTimeFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Datum a čas';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string

@@ -18,7 +18,7 @@ class NumberFieldType extends AbstractFieldType
 
     public static function label(): string
     {
-        return 'Číslo';
+        return static::translateTypeLabel();
     }
 
     public static function icon(): string
@@ -52,10 +52,10 @@ class NumberFieldType extends AbstractFieldType
     {
         return [
             TextInput::make('config.min')
-                ->label('Minimum')
+                ->label(static::translateSettingLabel('min'))
                 ->numeric(),
             TextInput::make('config.max')
-                ->label('Maximum')
+                ->label(static::translateSettingLabel('max'))
                 ->numeric(),
         ];
     }

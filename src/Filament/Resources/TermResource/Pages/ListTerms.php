@@ -65,7 +65,7 @@ class ListTerms extends ListRecords
             return $taxonomy->title;
         }
 
-        return 'Štítky';
+        return __('mipress::admin.resources.term.plural_model_label');
     }
 
     private function resolveTaxonomy(): ?Taxonomy
