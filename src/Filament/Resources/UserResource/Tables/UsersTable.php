@@ -38,22 +38,22 @@ class UsersTable
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['roles']))
             ->columns([
                 UserColumn::make('name')
-                    ->label('Uživatel')
+                    ->label(__('mipress::admin.resources.user.table.columns.user'))
                     ->state(fn (User $record): User => $record)
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('email')
-                    ->label('E-mail')
+                    ->label(__('mipress::admin.resources.user.table.columns.email'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('roles.name')
-                    ->label('Role')
+                    ->label(__('mipress::admin.resources.user.table.columns.role'))
                     ->badge()
                     ->formatStateUsing(fn (?string $state): string => $state
                         ? (UserRole::tryFrom($state)?->getLabel() ?? $state)
-                        : '—'
+                        : __('mipress::admin.common.empty')
                     )
                     ->color(fn (?string $state): string => match ($state) {
                         UserRole::SuperAdmin->value => 'danger',
@@ -64,14 +64,14 @@ class UsersTable
                     }),
 
                 IconColumn::make('email_verified_at')
-                    ->label('Ověřen')
+                    ->label(__('mipress::admin.resources.user.table.columns.verified'))
                     ->boolean()
                     ->trueIcon('fal-badge-check')
                     ->falseIcon('fal-circle-xmark')
                     ->state(fn (User $record): bool => $record->email_verified_at !== null),
 
                 IconColumn::make('has_email_authentication')
-                    ->label('MFA')
+                    ->label(__('mipress::admin.resources.user.table.columns.mfa'))
                     ->boolean()
                     ->trueIcon('fal-shield-check')
                     ->falseIcon('fal-shield-xmark')
@@ -79,13 +79,13 @@ class UsersTable
                     ->falseColor('gray'),
 
                 TextColumn::make('created_at')
-                    ->label('Vytvořen')
+                    ->label(__('mipress::admin.resources.user.table.columns.created_at'))
                     ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(),
 
                 TextColumn::make('deleted_at')
-                    ->label('Smazán')
+                    ->label(__('mipress::admin.resources.user.table.columns.deleted_at'))
                     ->isoDateTime('LLL')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -93,7 +93,7 @@ class UsersTable
             ->defaultSort('created_at', 'desc')
             ->filters([
                 SelectFilter::make('role')
-                    ->label('Role')
+                    ->label(__('mipress::admin.resources.user.table.columns.role'))
                     ->options(UserRole::class)
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         $data['value'],
@@ -130,13 +130,13 @@ class UsersTable
     private static function makeSendPasswordResetAction(): Action
     {
         return Action::make('sendPasswordReset')
-            ->label('Odeslat reset hesla')
+            ->label(__('mipress::admin.resources.user.actions.send_password_reset.label'))
             ->icon('far-key')
             ->color('gray')
             ->requiresConfirmation()
-            ->modalHeading(fn (User $record): string => 'Odeslat reset hesla uživateli "'.$record->name.'"?')
-            ->modalDescription('Uživateli bude na e-mail odeslán odkaz pro nastavení nového hesla.')
-            ->modalSubmitActionLabel('Odeslat')
+            ->modalHeading(fn (User $record): string => __('mipress::admin.resources.user.actions.send_password_reset.modal_heading', ['name' => $record->name]))
+            ->modalDescription(__('mipress::admin.resources.user.actions.send_password_reset.modal_description'))
+            ->modalSubmitActionLabel(__('mipress::admin.resources.user.actions.send_password_reset.modal_submit'))
             ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed())
             ->action(function (User $record): void {
                 $status = Password::broker(Filament::getAuthPasswordBroker())->sendResetLink(
@@ -150,7 +150,7 @@ class UsersTable
 
                 if ($status === Password::RESET_LINK_SENT) {
                     Notification::make()
-                        ->title('E-mail pro reset hesla odeslán')
+                        ->title(__('mipress::admin.resources.user.notifications.password_reset_sent'))
                         ->success()
                         ->send();
 
@@ -158,7 +158,7 @@ class UsersTable
                 }
 
                 Notification::make()
-                    ->title('E-mail se nepodařilo odeslat')
+                    ->title(__('mipress::admin.resources.user.notifications.email_send_failed'))
                     ->body(trans($status))
                     ->danger()
                     ->send();
@@ -168,13 +168,13 @@ class UsersTable
     private static function makeResendInvitationAction(): Action
     {
         return Action::make('resendInvitation')
-            ->label('Znovu poslat pozvánku')
+            ->label(__('mipress::admin.resources.user.actions.resend_invitation.label'))
             ->icon('far-envelope')
             ->color('gray')
             ->requiresConfirmation()
-            ->modalHeading(fn (User $record): string => 'Znovu poslat pozvánku uživateli "'.$record->name.'"?')
-            ->modalDescription('Uživateli bude znovu odeslán uvítací e-mail s odkazy pro ověření e-mailu a nastavení hesla.')
-            ->modalSubmitActionLabel('Odeslat')
+            ->modalHeading(fn (User $record): string => __('mipress::admin.resources.user.actions.resend_invitation.modal_heading', ['name' => $record->name]))
+            ->modalDescription(__('mipress::admin.resources.user.actions.resend_invitation.modal_description'))
+            ->modalSubmitActionLabel(__('mipress::admin.resources.user.actions.resend_invitation.modal_submit'))
             ->visible(fn (User $record): bool => self::canManageUsers() && ! $record->trashed() && $record->email_verified_at === null)
             ->action(function (User $record): void {
                 $status = Password::broker(Filament::getAuthPasswordBroker())->sendResetLink(
@@ -189,7 +189,7 @@ class UsersTable
 
                 if ($status === Password::RESET_LINK_SENT) {
                     Notification::make()
-                        ->title('Pozvánka byla znovu odeslána')
+                        ->title(__('mipress::admin.resources.user.notifications.invitation_resent'))
                         ->success()
                         ->send();
 
@@ -197,7 +197,7 @@ class UsersTable
                 }
 
                 Notification::make()
-                    ->title('E-mail se nepodařilo odeslat')
+                    ->title(__('mipress::admin.resources.user.notifications.email_send_failed'))
                     ->body(trans($status))
                     ->danger()
                     ->send();

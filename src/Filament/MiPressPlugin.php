@@ -17,7 +17,6 @@ use MiPress\Core\Filament\Pages\ThemeSettings;
 use MiPress\Core\Filament\Plugins\BotlyPlugin;
 use MiPress\Core\Filament\Resources\BlueprintResource;
 use MiPress\Core\Filament\Resources\CollectionResource;
-use MiPress\Core\Filament\Resources\CuratorMediaResource;
 use MiPress\Core\Filament\Resources\EntryResource;
 use MiPress\Core\Filament\Resources\PageResource;
 use MiPress\Core\Filament\Resources\TaxonomyResource;
@@ -41,11 +40,11 @@ class MiPressPlugin implements Plugin
         $panel
             ->discoverClusters(in: __DIR__.'/Clusters', for: 'MiPress\\Core\\Filament\\Clusters')
             ->navigationGroups([
-                'Obsah',
-                'Formuláře',
-                'Sociální sítě',
-                'Nastavení',
-                'Uživatelé',
+                __('mipress::admin.plugin.navigation_groups.content'),
+                __('mipress::admin.plugin.navigation_groups.forms'),
+                __('mipress::admin.plugin.navigation_groups.social_feeds'),
+                __('mipress::admin.plugin.navigation_groups.settings'),
+                __('mipress::admin.plugin.navigation_groups.users'),
             ])
             ->resources([
                 UserResource::class,
@@ -65,13 +64,13 @@ class MiPressPlugin implements Plugin
             ->plugin(
                 BotlyPlugin::make()
                     ->navigationIcon('fal-user-robot')
-                    ->title('Správa robots.txt')
+                    ->title(__('mipress::admin.plugin.botly_title'))
             )
             ->plugin(
                 CuratorPlugin::make()
-                    ->label('Médium')
-                    ->pluralLabel('Knihovna médií')
-                    ->navigationGroup('Obsah')
+                    ->label(__('mipress::admin.plugin.curator.label'))
+                    ->pluralLabel(__('mipress::admin.plugin.curator.plural_label'))
+                    ->navigationGroup(__('mipress::admin.plugin.curator.navigation_group'))
                     ->navigationIcon('fal-photo-film-music')
                     ->navigationSort(90)
                     ->curations()

@@ -16,10 +16,10 @@ enum UserRole: string implements HasLabel
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::SuperAdmin => 'Superadministrátor',
-            self::Admin => 'Administrátor',
-            self::Editor => 'Editor',
-            self::Contributor => 'Přispěvatel',
+            self::SuperAdmin => __('mipress::admin.enums.user_role.super_admin'),
+            self::Admin => __('mipress::admin.enums.user_role.admin'),
+            self::Editor => __('mipress::admin.enums.user_role.editor'),
+            self::Contributor => __('mipress::admin.enums.user_role.contributor'),
         };
     }
 }

@@ -14,25 +14,25 @@ class GlobalSetForm
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Základní informace')->schema([
+            Section::make(__('mipress::admin.resources.global_set.form.sections.basic_information'))->schema([
                 TextInput::make('title')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.global_set.form.fields.title'))
                     ->required()
                     ->maxLength(255),
                 TextInput::make('handle')
-                    ->label('Handle')
+                    ->label(__('mipress::admin.resources.global_set.form.fields.handle'))
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(255)
                     ->regex('/^[a-z0-9_]+$/')
-                    ->helperText('Pouze malá písmena, číslice a podtržítka.')
+                    ->helperText(__('mipress::admin.resources.global_set.form.help.handle'))
                     ->disabled(fn (?string $operation): bool => $operation === 'edit'),
             ]),
-            Section::make('Data')->schema([
+            Section::make(__('mipress::admin.resources.global_set.form.sections.data'))->schema([
                 KeyValue::make('data')
-                    ->label('Klíč-hodnota')
-                    ->keyLabel('Klíč')
-                    ->valueLabel('Hodnota')
+                    ->label(__('mipress::admin.resources.global_set.form.fields.data'))
+                    ->keyLabel(__('mipress::admin.resources.global_set.form.fields.key'))
+                    ->valueLabel(__('mipress::admin.resources.global_set.form.fields.value'))
                     ->reorderable(),
             ]),
         ]);

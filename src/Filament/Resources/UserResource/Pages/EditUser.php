@@ -29,13 +29,13 @@ class EditUser extends EditRecord
     {
         return [
             Action::make('sendPasswordReset')
-                ->label('Odeslat reset hesla')
+                ->label(__('mipress::admin.resources.user.actions.send_password_reset.label'))
                 ->icon('far-key')
                 ->color('gray')
                 ->requiresConfirmation()
-                ->modalHeading(fn (): string => 'Odeslat reset hesla uživateli "'.$this->record->name.'"?')
-                ->modalDescription('Uživateli bude na e-mail odeslán odkaz pro nastavení nového hesla.')
-                ->modalSubmitActionLabel('Odeslat')
+                ->modalHeading(fn (): string => __('mipress::admin.resources.user.actions.send_password_reset.modal_heading', ['name' => $this->record->name]))
+                ->modalDescription(__('mipress::admin.resources.user.actions.send_password_reset.modal_description'))
+                ->modalSubmitActionLabel(__('mipress::admin.resources.user.actions.send_password_reset.modal_submit'))
                 ->visible(fn (): bool => ! $this->record->trashed())
                 ->action(function (): void {
                     $status = Password::broker(Filament::getAuthPasswordBroker())->sendResetLink(
@@ -49,7 +49,7 @@ class EditUser extends EditRecord
 
                     if ($status === Password::RESET_LINK_SENT) {
                         Notification::make()
-                            ->title('E-mail pro reset hesla odeslán')
+                            ->title(__('mipress::admin.resources.user.notifications.password_reset_sent'))
                             ->success()
                             ->send();
 
@@ -57,20 +57,20 @@ class EditUser extends EditRecord
                     }
 
                     Notification::make()
-                        ->title('E-mail se nepodařilo odeslat')
+                        ->title(__('mipress::admin.resources.user.notifications.email_send_failed'))
                         ->body(trans($status))
                         ->danger()
                         ->send();
                 }),
 
             Action::make('resendInvitation')
-                ->label('Znovu poslat pozvánku')
+                ->label(__('mipress::admin.resources.user.actions.resend_invitation.label'))
                 ->icon('far-envelope')
                 ->color('gray')
                 ->requiresConfirmation()
-                ->modalHeading(fn (): string => 'Znovu poslat pozvánku uživateli "'.$this->record->name.'"?')
-                ->modalDescription('Uživateli bude znovu odeslán uvítací e-mail s odkazy pro ověření e-mailu a nastavení hesla.')
-                ->modalSubmitActionLabel('Odeslat')
+                ->modalHeading(fn (): string => __('mipress::admin.resources.user.actions.resend_invitation.modal_heading', ['name' => $this->record->name]))
+                ->modalDescription(__('mipress::admin.resources.user.actions.resend_invitation.modal_description'))
+                ->modalSubmitActionLabel(__('mipress::admin.resources.user.actions.resend_invitation.modal_submit'))
                 ->visible(fn (): bool => ! $this->record->trashed() && $this->record->email_verified_at === null)
                 ->action(function (): void {
                     $status = Password::broker(Filament::getAuthPasswordBroker())->sendResetLink(
@@ -85,7 +85,7 @@ class EditUser extends EditRecord
 
                     if ($status === Password::RESET_LINK_SENT) {
                         Notification::make()
-                            ->title('Pozvánka byla znovu odeslána')
+                            ->title(__('mipress::admin.resources.user.notifications.invitation_resent'))
                             ->success()
                             ->send();
 
@@ -93,16 +93,16 @@ class EditUser extends EditRecord
                     }
 
                     Notification::make()
-                        ->title('E-mail se nepodařilo odeslat')
+                        ->title(__('mipress::admin.resources.user.notifications.email_send_failed'))
                         ->body(trans($status))
                         ->danger()
                         ->send();
                 }),
 
             DeleteAction::make()
-                ->modalHeading(fn (): string => 'Smazat uživatele "'.$this->record->name.'"?')
-                ->modalDescription('Účet uživatele "'.$this->record->name.'" bude přesunut do koše a půjde obnovit, pokud není trvale smazán.')
-                ->successNotificationTitle('Uživatel byl smazán')
+                ->modalHeading(fn (): string => __('mipress::admin.resources.user.actions.delete.modal_heading', ['name' => $this->record->name]))
+                ->modalDescription(fn (): string => __('mipress::admin.resources.user.actions.delete.modal_description', ['name' => $this->record->name]))
+                ->successNotificationTitle(__('mipress::admin.resources.user.actions.delete.success_title'))
                 ->hidden(fn (): bool => $this->record->isSuperAdmin()),
         ];
     }
@@ -128,8 +128,8 @@ class EditUser extends EditRecord
         // Prevent degrading SuperAdmin role
         if ($this->record->isSuperAdmin() && $this->pendingRole !== UserRole::SuperAdmin->value) {
             Notification::make()
-                ->title('Roli superadministrátora nelze změnit')
-                ->body('Uživatel "'.$this->record->name.'" musí zůstat superadministrátorem.')
+                ->title(__('mipress::admin.resources.user.notifications.change_super_admin_role_forbidden.title'))
+                ->body(__('mipress::admin.resources.user.notifications.change_super_admin_role_forbidden.body', ['name' => $this->record->name]))
                 ->danger()
                 ->send();
 
@@ -144,8 +144,8 @@ class EditUser extends EditRecord
 
             if ($conflictExists) {
                 Notification::make()
-                    ->title('Roli superadministrátora nelze přiřadit')
-                    ->body('Uživateli "'.$this->record->name.'" nelze roli přiřadit, protože jiný superadministrátor už existuje.')
+                    ->title(__('mipress::admin.resources.user.notifications.assign_super_admin_role_forbidden.title'))
+                    ->body(__('mipress::admin.resources.user.notifications.assign_super_admin_role_forbidden.body', ['name' => $this->record->name]))
                     ->danger()
                     ->send();
 

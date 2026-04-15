@@ -28,9 +28,9 @@ class SitemapSettings extends Page
 
     protected static ?string $cluster = SeoCluster::class;
 
-    protected static ?string $navigationLabel = 'Správa sitemapy';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $title = 'Nastavení sitemapy';
+    protected static ?string $title = null;
 
     protected static ?int $navigationSort = 30;
 
@@ -40,6 +40,16 @@ class SitemapSettings extends Page
     public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null
     {
         return 'fal-sitemap';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.pages.sitemap.navigation_label');
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('mipress::admin.pages.sitemap.title');
     }
 
     public static function canAccess(): bool
@@ -65,51 +75,51 @@ class SitemapSettings extends Page
     {
         return $form
             ->schema([
-                Section::make('Obecné')
+                Section::make(__('mipress::admin.pages.sitemap.sections.general'))
                     ->schema([
                         Toggle::make('enabled')
-                            ->label('Sitemap aktivní')
-                            ->helperText('Povolí generování souboru sitemap.xml.')
+                            ->label(__('mipress::admin.pages.sitemap.fields.enabled'))
+                            ->helperText(__('mipress::admin.pages.sitemap.fields.enabled_helper'))
                             ->default(true),
                         Toggle::make('auto_generate')
-                            ->label('Generovat při publikaci')
-                            ->helperText('Automaticky přegeneruje sitemapu při publikaci nebo zrušení publikace obsahu.')
+                            ->label(__('mipress::admin.pages.sitemap.fields.auto_generate'))
+                            ->helperText(__('mipress::admin.pages.sitemap.fields.auto_generate_helper'))
                             ->default(true),
                     ])
                     ->columns(2),
 
-                Section::make('Statické URL')
-                    ->description('URL adresy, které nejsou generovány z obsahu (např. homepage, kontakt).')
+                Section::make(__('mipress::admin.pages.sitemap.sections.static_urls'))
+                    ->description(__('mipress::admin.pages.sitemap.sections.static_urls_description'))
                     ->schema([
                         Repeater::make('static_urls')
                             ->label('')
                             ->schema([
                                 TextInput::make('url')
-                                    ->label('URL cesta')
+                                    ->label(__('mipress::admin.pages.sitemap.fields.url'))
                                     ->placeholder('/')
                                     ->required()
                                     ->maxLength(500),
                                 Select::make('changefreq')
-                                    ->label('Frekvence změn')
+                                    ->label(__('mipress::admin.pages.sitemap.fields.changefreq'))
                                     ->options([
-                                        'always' => 'Vždy',
-                                        'hourly' => 'Každou hodinu',
-                                        'daily' => 'Denně',
-                                        'weekly' => 'Týdně',
-                                        'monthly' => 'Měsíčně',
-                                        'yearly' => 'Ročně',
-                                        'never' => 'Nikdy',
+                                        'always' => __('mipress::admin.pages.sitemap.changefreq.always'),
+                                        'hourly' => __('mipress::admin.pages.sitemap.changefreq.hourly'),
+                                        'daily' => __('mipress::admin.pages.sitemap.changefreq.daily'),
+                                        'weekly' => __('mipress::admin.pages.sitemap.changefreq.weekly'),
+                                        'monthly' => __('mipress::admin.pages.sitemap.changefreq.monthly'),
+                                        'yearly' => __('mipress::admin.pages.sitemap.changefreq.yearly'),
+                                        'never' => __('mipress::admin.pages.sitemap.changefreq.never'),
                                     ])
                                     ->default('weekly'),
                                 Select::make('priority')
-                                    ->label('Priorita')
+                                    ->label(__('mipress::admin.pages.sitemap.fields.priority'))
                                     ->options([
-                                        '1.0' => '1.0 — Nejvyšší',
-                                        '0.8' => '0.8 — Vysoká',
-                                        '0.6' => '0.6 — Střední',
-                                        '0.5' => '0.5 — Výchozí',
-                                        '0.3' => '0.3 — Nízká',
-                                        '0.1' => '0.1 — Nejnižší',
+                                        '1.0' => __('mipress::admin.pages.sitemap.priority.1_0'),
+                                        '0.8' => __('mipress::admin.pages.sitemap.priority.0_8'),
+                                        '0.6' => __('mipress::admin.pages.sitemap.priority.0_6'),
+                                        '0.5' => __('mipress::admin.pages.sitemap.priority.0_5'),
+                                        '0.3' => __('mipress::admin.pages.sitemap.priority.0_3'),
+                                        '0.1' => __('mipress::admin.pages.sitemap.priority.0_1'),
                                     ])
                                     ->default('0.5'),
                             ])
@@ -130,12 +140,12 @@ class SitemapSettings extends Page
     {
         return [
             Action::make('save')
-                ->label('Uložit nastavení')
+                ->label(__('mipress::admin.pages.sitemap.actions.save'))
                 ->action('save')
                 ->icon('fal-floppy-disk'),
 
             Action::make('generate')
-                ->label('Generovat sitemapu')
+                ->label(__('mipress::admin.pages.sitemap.actions.generate'))
                 ->action('generateSitemap')
                 ->icon('fal-rotate')
                 ->color('gray'),
@@ -151,8 +161,8 @@ class SitemapSettings extends Page
         Setting::putValue('sitemap.static_urls', json_encode($state['static_urls'] ?? [], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
 
         Notification::make()
-            ->title('Nastavení sitemapy uloženo')
-            ->body('Konfigurace generování sitemap.xml byla úspěšně uložena.')
+            ->title(__('mipress::admin.pages.sitemap.saved_title'))
+            ->body(__('mipress::admin.pages.sitemap.saved_body'))
             ->success()
             ->send();
     }
@@ -162,8 +172,8 @@ class SitemapSettings extends Page
         GenerateSitemapJob::dispatch();
 
         Notification::make()
-            ->title('Generování sitemapy spuštěno')
-            ->body('Soubor sitemap.xml bude přegenerován na pozadí podle aktuální konfigurace.')
+            ->title(__('mipress::admin.pages.sitemap.generated_title'))
+            ->body(__('mipress::admin.pages.sitemap.generated_body'))
             ->success()
             ->send();
     }
@@ -178,6 +188,6 @@ class SitemapSettings extends Page
 
         $count = Setting::getValue('sitemap.last_url_count', '0');
 
-        return "Poslední generování: {$at} ({$count} URL)";
+        return __('mipress::admin.pages.sitemap.last_generated', ['at' => $at, 'count' => $count]);
     }
 }

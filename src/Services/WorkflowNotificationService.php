@@ -41,13 +41,13 @@ class WorkflowNotificationService
             ->warning()
             ->actions([
                 Action::make('approve')
-                    ->label('Schválit')
+                    ->label(__('mipress::admin.workflow_notifications.actions.approve'))
                     ->button()
                     ->color('success')
                     ->url($editUrl, shouldOpenInNewTab: true)
                     ->markAsRead(),
                 Action::make('view')
-                    ->label('Zobrazit')
+                    ->label(__('mipress::admin.workflow_notifications.actions.view'))
                     ->button()
                     ->color('gray')
                     ->url(
@@ -60,7 +60,7 @@ class WorkflowNotificationService
                     )
                     ->markAsRead(),
                 Action::make('edit')
-                    ->label('Upravit')
+                    ->label(__('mipress::admin.workflow_notifications.actions.edit'))
                     ->button()
                     ->color('primary')
                     ->url($editUrl, shouldOpenInNewTab: true)

@@ -46,6 +46,6 @@ class ListPages extends ListRecords
 
     public function getTitle(): string
     {
-        return 'Stránky';
+        return __('mipress::admin.resources.page.pages.list_title');
     }
 }

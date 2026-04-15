@@ -36,7 +36,7 @@ trait HasWorkflowActions
 
         if ($secondaryActions !== []) {
             $actions[] = ActionGroup::make($secondaryActions)
-                ->label('Další akce')
+                ->label(__('mipress::admin.workflow_actions.more_actions'))
                 ->icon('far-ellipsis')
                 ->color('gray')
                 ->button();
@@ -98,17 +98,17 @@ trait HasWorkflowActions
 
         return match ($record->status) {
             ContentStatus::Draft => $isContributor
-                ? $this->makeSubmitForReviewAction('Odeslat ke schválení')
-                : ($canPublish ? $this->makePublishAction('Publikovat') : null),
+                ? $this->makeSubmitForReviewAction(__('mipress::admin.workflow_actions.primary.submit_for_review'))
+                : ($canPublish ? $this->makePublishAction(__('mipress::admin.workflow_actions.primary.publish')) : null),
             ContentStatus::InReview => $canPublish
-                ? $this->makePublishAction('Schválit a publikovat')
+                ? $this->makePublishAction(__('mipress::admin.workflow_actions.primary.approve_and_publish'))
                 : null,
             ContentStatus::Published, ContentStatus::Scheduled => $isContributor && $isOwner
-                ? $this->makeSubmitForReviewAction('Odeslat změny ke schválení')
+                ? $this->makeSubmitForReviewAction(__('mipress::admin.workflow_actions.primary.submit_changes_for_review'))
                 : $this->makeUpdateAction(),
             ContentStatus::Rejected => $isContributor && $isOwner
                 ? $this->makeResubmitRejectedAction()
-                : ($canPublish ? $this->makePublishAction('Publikovat') : null),
+                : ($canPublish ? $this->makePublishAction(__('mipress::admin.workflow_actions.primary.publish')) : null),
         };
     }
 
@@ -134,7 +134,7 @@ trait HasWorkflowActions
 
         if ($record->status === ContentStatus::InReview && $canPublish) {
             $actions[] = $this->makeRejectAction();
-            $actions[] = $this->makeReturnToDraftAction('Uložit koncept');
+            $actions[] = $this->makeReturnToDraftAction(__('mipress::admin.workflow_actions.save_draft'));
         }
 
         if ($record->status === ContentStatus::Published && $canPublish) {
@@ -170,14 +170,14 @@ trait HasWorkflowActions
 
         if ($record->status === ContentStatus::Published && filled($record->getPublicUrl())) {
             return Action::make('viewLive')
-                ->label('Zobrazit na webu')
+                ->label(__('mipress::admin.workflow_actions.view_live'))
                 ->icon('far-arrow-up-right-from-square')
                 ->color('gray')
                 ->url($record->getPublicUrl(), shouldOpenInNewTab: true);
         }
 
         return Action::make('preview')
-            ->label('Náhled')
+            ->label(__('mipress::admin.workflow_actions.preview'))
             ->icon('far-eye')
             ->color('gray')
             ->url(
@@ -193,7 +193,7 @@ trait HasWorkflowActions
     private function makeUpdateAction(): Action
     {
         return Action::make($this->workflowUpdateActionName())
-            ->label('Aktualizovat')
+            ->label(__('mipress::admin.workflow_actions.update'))
             ->color('primary')
             ->icon('far-floppy-disk')
             ->action(fn () => $this->save());
@@ -202,7 +202,7 @@ trait HasWorkflowActions
     private function makeSaveDraftAction(): Action
     {
         return Action::make('saveDraft')
-            ->label('Uložit koncept')
+            ->label(__('mipress::admin.workflow_actions.save_draft'))
             ->icon(ContentStatus::Draft->getIcon())
             ->color(ContentStatus::Draft->getColor())
             ->action(function (): void {
@@ -218,7 +218,7 @@ trait HasWorkflowActions
                 $transition = $this->workflowTransitions()->saveDraft($record);
 
                 Notification::make()
-                    ->title('Koncept uložen')
+                    ->title(__('mipress::admin.workflow_actions.draft_saved'))
                     ->success()
                     ->send();
             });
@@ -257,7 +257,7 @@ trait HasWorkflowActions
                 );
 
                 Notification::make()
-                    ->title('Odesláno ke schválení')
+                    ->title(__('mipress::admin.workflow_actions.review_sent'))
                     ->success()
                     ->send();
             });
@@ -286,7 +286,7 @@ trait HasWorkflowActions
 
                 if ($transition->isScheduled()) {
                     Notification::make()
-                        ->title('Publikace naplánována')
+                        ->title(__('mipress::admin.workflow_actions.scheduled_title'))
                         ->body($this->workflowScheduledNotificationBody($transition->scheduledFor ?? now()))
                         ->success()
                         ->send();
@@ -315,12 +315,12 @@ trait HasWorkflowActions
     private function makeRejectAction(): Action
     {
         return Action::make($this->workflowRejectActionName())
-            ->label('Zamítnout')
+            ->label(__('mipress::admin.workflow_actions.reject'))
             ->icon(ContentStatus::Rejected->getIcon())
             ->color(ContentStatus::Rejected->getColor())
             ->schema([
                 Textarea::make('reason')
-                    ->label('Důvod zamítnutí')
+                    ->label(__('mipress::admin.workflow_actions.reject_reason'))
                     ->required()
                     ->rows(3),
             ])
@@ -357,7 +357,7 @@ trait HasWorkflowActions
                 $transition = $this->workflowTransitions()->saveDraft($record);
 
                 Notification::make()
-                    ->title('Vráceno do konceptu')
+                    ->title(__('mipress::admin.workflow_actions.returned_to_draft'))
                     ->success()
                     ->send();
             });
@@ -366,7 +366,7 @@ trait HasWorkflowActions
     private function makeUnpublishAction(): Action
     {
         return Action::make('unpublish')
-            ->label('Zrušit publikaci')
+            ->label(__('mipress::admin.workflow_actions.unpublish'))
             ->icon(ContentStatus::Draft->getIcon())
             ->color(ContentStatus::Draft->getColor())
             ->requiresConfirmation()
@@ -380,7 +380,7 @@ trait HasWorkflowActions
                 $transition = $this->workflowTransitions()->unpublish($record);
 
                 Notification::make()
-                    ->title('Publikace zrušena')
+                    ->title(__('mipress::admin.workflow_actions.unpublished'))
                     ->success()
                     ->send();
             });
@@ -389,7 +389,7 @@ trait HasWorkflowActions
     private function makeCancelScheduleAction(): Action
     {
         return Action::make('cancelSchedule')
-            ->label('Zrušit plánování')
+            ->label(__('mipress::admin.workflow_actions.cancel_schedule'))
             ->icon(ContentStatus::Draft->getIcon())
             ->color(ContentStatus::Draft->getColor())
             ->requiresConfirmation()
@@ -403,7 +403,7 @@ trait HasWorkflowActions
                 $transition = $this->workflowTransitions()->cancelSchedule($record);
 
                 Notification::make()
-                    ->title('Plánování zrušeno')
+                    ->title(__('mipress::admin.workflow_actions.schedule_canceled'))
                     ->success()
                     ->send();
             });
@@ -412,7 +412,7 @@ trait HasWorkflowActions
     private function makePublishNowAction(): Action
     {
         return Action::make('publishNow')
-            ->label('Publikovat ihned')
+            ->label(__('mipress::admin.workflow_actions.publish_now'))
             ->icon(ContentStatus::Published->getIcon())
             ->color(ContentStatus::Published->getColor())
             ->requiresConfirmation()
@@ -435,7 +435,7 @@ trait HasWorkflowActions
     private function makeResubmitRejectedAction(): Action
     {
         return Action::make('resubmitRejected')
-            ->label('Upravit a znovu odeslat')
+            ->label(__('mipress::admin.workflow_actions.resubmit_rejected'))
             ->icon(ContentStatus::InReview->getIcon())
             ->color(ContentStatus::InReview->getColor())
             ->requiresConfirmation()
@@ -462,7 +462,7 @@ trait HasWorkflowActions
                 );
 
                 Notification::make()
-                    ->title('Odesláno ke schválení')
+                    ->title(__('mipress::admin.workflow_actions.review_sent'))
                     ->success()
                     ->send();
             });

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MiPress\Core\Filament\Resources\EntryResource\Pages;
 
 use Carbon\CarbonInterface;
-use Filament\Actions\Action;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
@@ -30,13 +29,18 @@ class EditEntry extends EditRecord
 
     protected static string $resource = EntryResource::class;
 
-    protected static ?string $navigationLabel = 'Editace';
+    protected static ?string $navigationLabel = null;
 
     protected static string|\BackedEnum|null $navigationIcon = 'far-pen-to-square';
 
     protected Width|string|null $maxWidth = Width::Full;
 
     protected ?ContentStatus $statusBeforeSave = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.common.edit');
+    }
 
     protected function getFormActions(): array
     {
@@ -139,8 +143,8 @@ class EditEntry extends EditRecord
                 app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
                     record: $record,
                     permission: 'entry.publish',
-                    title: 'Nový obsah ke schválení',
-                    body: 'Položka "'.$record->title.'" čeká na schválení publikace.',
+                    title: __('mipress::admin.resources.entry.workflow.review_request_title'),
+                    body: __('mipress::admin.resources.entry.workflow.review_request_body', ['title' => $record->title]),
                     editUrl: EntryResource::getUrl('edit', [
                         'record' => $record,
                         ...EntryResource::collectionUrlParameters($record->collection?->handle),
@@ -176,31 +180,31 @@ class EditEntry extends EditRecord
 
     protected function workflowPublishedNotificationTitle(): string
     {
-        return 'Položka publikována';
+        return __('mipress::admin.resources.entry.workflow.published_title');
     }
 
     protected function workflowRejectedNotificationTitle(): string
     {
-        return 'Položka zamítnuta';
+        return __('mipress::admin.resources.entry.workflow.rejected_title');
     }
 
     protected function workflowScheduledNotificationBody(CarbonInterface $scheduleAt): string
     {
-        return 'Publikace položky je naplánována na '.$scheduleAt->format('j. n. Y H:i').'.';
+        return __('mipress::admin.resources.entry.workflow.scheduled_body', ['date' => $scheduleAt->format('j. n. Y H:i')]);
     }
 
     protected function workflowReviewNotificationTitle(): string
     {
-        return 'Nový obsah ke schválení';
+        return __('mipress::admin.resources.entry.workflow.review_request_title');
     }
 
     protected function workflowReviewNotificationBody(Model $record): string
     {
         if (! $record instanceof Entry) {
-            return 'Položka čeká na schválení publikace.';
+            return __('mipress::admin.resources.entry.workflow.review_fallback_body');
         }
 
-        return 'Položka "'.$record->title.'" čeká na schválení publikace.';
+        return __('mipress::admin.resources.entry.workflow.review_request_body', ['title' => $record->title]);
     }
 
     protected function workflowPreviewRouteName(): string

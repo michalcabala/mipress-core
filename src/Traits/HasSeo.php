@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Traits;
 
+use Awcodes\Curator\Models\Media;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Section;
-use Awcodes\Curator\Models\Media;
 
 trait HasSeo
 {
@@ -58,20 +58,20 @@ trait HasSeo
 
     public static function seoFormSchema(): Section
     {
-        return Section::make('SEO')
+        return Section::make(__('mipress::admin.seo.section'))
             ->icon('fal-magnifying-glass')
             ->collapsible()
             ->collapsed()
             ->schema([
                 TextInput::make('meta_title')
-                    ->label('SEO titulek')
+                    ->label(__('mipress::admin.seo.meta_title'))
                     ->maxLength(60)
-                    ->helperText('Doporučeno 50–60 znaků. Prázdné = použije se titulek stránky.'),
+                    ->helperText(__('mipress::admin.seo.meta_title_helper')),
                 Textarea::make('meta_description')
-                    ->label('SEO popis')
+                    ->label(__('mipress::admin.seo.meta_description'))
                     ->maxLength(160)
                     ->rows(3)
-                    ->helperText('Doporučeno 120–160 znaků.'),
+                    ->helperText(__('mipress::admin.seo.meta_description_helper')),
             ]);
     }
 

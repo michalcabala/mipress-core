@@ -16,6 +16,8 @@ use MiPress\Core\Console\Commands\GenerateSitemap;
 use MiPress\Core\Console\Commands\PublishScheduledEntries;
 use MiPress\Core\Console\Commands\PublishScheduledPages;
 use MiPress\Core\Console\Commands\PublishThemeAssets;
+use MiPress\Core\FieldTypes\FieldTypeRegistry;
+use MiPress\Core\FieldTypes\Types;
 use MiPress\Core\Models\Blueprint;
 use MiPress\Core\Models\Collection;
 use MiPress\Core\Models\CuratorMedia;
@@ -33,8 +35,6 @@ use MiPress\Core\Policies\GlobalSetPolicy;
 use MiPress\Core\Policies\PagePolicy;
 use MiPress\Core\Policies\TaxonomyPolicy;
 use MiPress\Core\Policies\TermPolicy;
-use MiPress\Core\FieldTypes\FieldTypeRegistry;
-use MiPress\Core\FieldTypes\Types;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
 use MiPress\Core\Services\MediaUrlGenerator;
@@ -94,6 +94,7 @@ class MiPressServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'mipress');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'mipress');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
@@ -114,27 +115,27 @@ class MiPressServiceProvider extends ServiceProvider
         ]);
 
         Curation::presets([
-            CurationPreset::make('Náhled')
+            CurationPreset::make(__('mipress::admin.curations.preview'))
                 ->width(400)
                 ->height(400)
                 ->format('webp')
                 ->quality(85),
-            CurationPreset::make('Open Graph')
+            CurationPreset::make(__('mipress::admin.curations.open_graph'))
                 ->width(1200)
                 ->height(630)
                 ->format('webp')
                 ->quality(85),
-            CurationPreset::make('Čtverec')
+            CurationPreset::make(__('mipress::admin.curations.square'))
                 ->width(1200)
                 ->height(1200)
                 ->format('webp')
                 ->quality(85),
-            CurationPreset::make('16:9')
+            CurationPreset::make(__('mipress::admin.curations.widescreen'))
                 ->width(1600)
                 ->height(900)
                 ->format('webp')
                 ->quality(85),
-            CurationPreset::make('4:3')
+            CurationPreset::make(__('mipress::admin.curations.standard'))
                 ->width(1600)
                 ->height(1200)
                 ->format('webp')

@@ -8,8 +8,8 @@ use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -32,16 +32,16 @@ class CollectionForm
             ->components([
                 Group::make()
                     ->schema([
-                        Section::make('Základní informace')
-                            ->description('Definujte identitu sekce a základní nastavení editoru.')
+                        Section::make(__('mipress::admin.resources.collection.form.sections.basic_information'))
+                            ->description(__('mipress::admin.resources.collection.form.descriptions.basic_information'))
                             ->schema([
                                 Grid::make(2)
                                     ->schema([
                                         TextInput::make('name')
-                                            ->label('Název')
+                                            ->label(__('mipress::admin.resources.collection.form.fields.name'))
                                             ->required()
                                             ->maxLength(255)
-                                            ->placeholder('Např. Články')
+                                            ->placeholder(__('mipress::admin.resources.collection.form.placeholders.name'))
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state): void {
                                                 $currentHandle = trim((string) ($get('handle') ?? ''));
@@ -54,7 +54,7 @@ class CollectionForm
                                                 $set('handle', Str::slug((string) $state));
                                             }),
                                         TextInput::make('handle')
-                                            ->label('Handle')
+                                            ->label(__('mipress::admin.resources.collection.form.fields.handle'))
                                             ->required()
                                             ->unique(ignoreRecord: true)
                                             ->rules([
@@ -63,34 +63,34 @@ class CollectionForm
                                                 },
                                             ])
                                             ->maxLength(255)
-                                            ->placeholder('articles')
-                                            ->helperText('Interní identifikátor sekce, například `articles` nebo `journal`. Handle `pages` je rezervovaný pro samostatné stránky.'),
+                                            ->placeholder(__('mipress::admin.resources.collection.form.placeholders.handle'))
+                                            ->helperText(__('mipress::admin.resources.collection.form.help.handle')),
                                     ]),
                                 Grid::make(2)
                                     ->schema([
                                         Select::make('blueprint_id')
-                                            ->label('Šablona')
+                                            ->label(__('mipress::admin.resources.collection.form.fields.blueprint'))
                                             ->relationship('blueprint', 'name')
                                             ->searchable()
                                             ->preload()
                                             ->native(false)
                                             ->nullable()
-                                            ->helperText('Volitelné výchozí pole pro záznamy této sekce.'),
+                                            ->helperText(__('mipress::admin.resources.collection.form.help.blueprint')),
                                         TextInput::make('icon')
-                                            ->label('Ikona')
+                                            ->label(__('mipress::admin.resources.collection.form.fields.icon'))
                                             ->nullable()
                                             ->maxLength(100)
-                                            ->placeholder('fal-file-lines')
-                                            ->helperText('Blade icon alias pro navigaci a přehledy.'),
+                                            ->placeholder(__('mipress::admin.resources.collection.form.placeholders.icon'))
+                                            ->helperText(__('mipress::admin.resources.collection.form.help.icon')),
                                     ]),
                             ]),
-                        Section::make('URL a řazení')
-                            ->description('Nastavte veřejnou URL strukturu a výchozí pořadí záznamů.')
+                        Section::make(__('mipress::admin.resources.collection.form.sections.url_and_sorting'))
+                            ->description(__('mipress::admin.resources.collection.form.descriptions.url_and_sorting'))
                             ->schema([
                                 Grid::make(2)
                                     ->schema([
                                         TextInput::make('route')
-                                            ->label('URL vzor')
+                                            ->label(__('mipress::admin.resources.collection.form.fields.route'))
                                             ->nullable()
                                             ->rules([
                                                 static function (string $attribute, mixed $value, Closure $fail) use ($currentRecord): void {
@@ -98,15 +98,17 @@ class CollectionForm
                                                 },
                                             ])
                                             ->maxLength(255)
-                                            ->placeholder(fn (Get $get): string => (bool) $get('slugs') ? '/articles/{slug}' : '/articles')
+                                            ->placeholder(fn (Get $get): string => (bool) $get('slugs')
+                                                ? __('mipress::admin.resources.collection.form.placeholders.route_with_slug')
+                                                : __('mipress::admin.resources.collection.form.placeholders.route_without_slug'))
                                             ->helperText(fn (Get $get): string => (bool) $get('slugs')
-                                                ? 'Pro detail záznamu použijte placeholder `{slug}`. Kořenový vzor `/{slug}` je rezervovaný pro Pages.'
-                                                : 'Když jsou slugy vypnuté, můžete použít i pevnou URL bez placeholderů.'),
+                                                ? __('mipress::admin.resources.collection.form.help.route_with_slug')
+                                                : __('mipress::admin.resources.collection.form.help.route_without_slug')),
                                         Select::make('sort_direction')
-                                            ->label('Směr řazení')
+                                            ->label(__('mipress::admin.resources.collection.form.fields.sort_direction'))
                                             ->options([
-                                                'asc' => 'Vzestupně',
-                                                'desc' => 'Sestupně',
+                                                'asc' => __('mipress::admin.resources.collection.form.options.sort_direction.asc'),
+                                                'desc' => __('mipress::admin.resources.collection.form.options.sort_direction.desc'),
                                             ])
                                             ->default('asc')
                                             ->native(false),
@@ -116,34 +118,34 @@ class CollectionForm
                     ->columnSpan(['lg' => 2]),
                 Group::make()
                     ->schema([
-                        Section::make('Chování sekce')
+                        Section::make(__('mipress::admin.resources.collection.form.sections.behavior'))
                             ->schema([
                                 Toggle::make('dated')
-                                    ->label('Datovaný obsah')
-                                    ->helperText('Záznamy budou počítat s datem publikování.')
+                                    ->label(__('mipress::admin.resources.collection.form.fields.dated'))
+                                    ->helperText(__('mipress::admin.resources.collection.form.help.dated'))
                                     ->inline(false),
                                 Toggle::make('slugs')
-                                    ->label('Používat slug')
+                                    ->label(__('mipress::admin.resources.collection.form.fields.slugs'))
                                     ->default(true)
                                     ->live()
-                                    ->helperText('Zapněte pro vlastní detail URL jednotlivých záznamů.')
+                                    ->helperText(__('mipress::admin.resources.collection.form.help.slugs'))
                                     ->inline(false),
                                 Toggle::make('hierarchical')
-                                    ->label('Hierarchická struktura')
+                                    ->label(__('mipress::admin.resources.collection.form.fields.hierarchical'))
                                     ->default(false)
-                                    ->helperText('Vhodné pro sekce typu stránky nebo dokumentace.')
+                                    ->helperText(__('mipress::admin.resources.collection.form.help.hierarchical'))
                                     ->inline(false),
                                 TextInput::make('sort_order')
-                                    ->label('Pořadí v navigaci')
+                                    ->label(__('mipress::admin.resources.collection.form.fields.sort_order'))
                                     ->numeric()
                                     ->default(0)
-                                    ->helperText('Nižší číslo = dříve v administraci.'),
+                                    ->helperText(__('mipress::admin.resources.collection.form.help.sort_order')),
                             ]),
-                        Section::make('Třídění')
-                            ->description('Vyberte taxonomie dostupné při editaci záznamů této sekce.')
+                        Section::make(__('mipress::admin.resources.collection.form.sections.taxonomy_assignment'))
+                            ->description(__('mipress::admin.resources.collection.form.descriptions.taxonomy_assignment'))
                             ->schema([
                                 Select::make('taxonomies')
-                                    ->label('Přiřazená třídění')
+                                    ->label(__('mipress::admin.resources.collection.form.fields.taxonomies'))
                                     ->relationship('taxonomies', 'title')
                                     ->multiple()
                                     ->searchable()
@@ -173,7 +175,7 @@ class CollectionForm
             return;
         }
 
-        $fail('Handle `pages` je rezervovaný pro samostatné stránky a nelze jej použít pro collection.');
+        $fail(__('mipress::admin.resources.collection.validation.reserved_handle'));
     }
 
     private static function validateReservedRoutePattern(?Collection $record, mixed $value, Closure $fail): void
@@ -192,7 +194,7 @@ class CollectionForm
             return;
         }
 
-        $fail('Collection route `/{slug}` je rezervovaný pro samostatné stránky. Použijte route s pevným prefixem, například `/articles/{slug}`.');
+        $fail(__('mipress::admin.resources.collection.validation.reserved_route_pattern'));
     }
 
     private static function normalizeRoutePattern(string $route): string

@@ -24,13 +24,23 @@ class TaxonomyResource extends Resource
 
     protected static ?string $cluster = ContentCluster::class;
 
-    protected static ?string $modelLabel = 'Taxonomie';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Taxonomie';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?string $recordTitleAttribute = 'title';
 
     protected static ?int $navigationSort = 30;
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.taxonomy.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.taxonomy.plural_model_label');
+    }
 
     public static function form(Schema $schema): Schema
     {

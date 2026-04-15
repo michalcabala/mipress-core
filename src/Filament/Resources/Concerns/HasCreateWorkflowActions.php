@@ -33,7 +33,7 @@ trait HasCreateWorkflowActions
             $actions[] = ActionGroup::make([
                 $this->makeCreateDraftAction(),
             ])
-                ->label('Další akce')
+                ->label(__('mipress::admin.create_workflow.more_actions'))
                 ->icon('far-ellipsis')
                 ->color('gray')
                 ->button();
@@ -47,7 +47,7 @@ trait HasCreateWorkflowActions
             $actions[] = ActionGroup::make([
                 $this->makeCreateDraftAction(),
             ])
-                ->label('Další akce')
+                ->label(__('mipress::admin.create_workflow.more_actions'))
                 ->icon('far-ellipsis')
                 ->color('gray')
                 ->button();
@@ -96,7 +96,7 @@ trait HasCreateWorkflowActions
     private function makeCreateDraftAction(): Action
     {
         return Action::make('createDraft')
-            ->label('Uložit koncept')
+            ->label(__('mipress::admin.create_workflow.save_draft'))
             ->icon(ContentStatus::Draft->getIcon())
             ->color(ContentStatus::Draft->getColor())
             ->submit('createAsDraft')
@@ -106,7 +106,7 @@ trait HasCreateWorkflowActions
     private function makeCreateReviewAction(): Action
     {
         return Action::make('createReview')
-            ->label('Odeslat ke schválení')
+            ->label(__('mipress::admin.create_workflow.submit_for_review'))
             ->icon(ContentStatus::InReview->getIcon())
             ->color(ContentStatus::InReview->getColor())
             ->submit('createAndSubmitForReview')
@@ -116,7 +116,7 @@ trait HasCreateWorkflowActions
     private function makeCreatePublishAction(): Action
     {
         return Action::make('createPublish')
-            ->label('Publikovat')
+            ->label(__('mipress::admin.create_workflow.publish'))
             ->icon(ContentStatus::Published->getIcon())
             ->color(ContentStatus::Published->getColor())
             ->submit('createAndPublish')
@@ -126,7 +126,7 @@ trait HasCreateWorkflowActions
     private function makeCancelAction(): Action
     {
         return Action::make('cancel')
-            ->label('Zrušit')
+            ->label(__('mipress::admin.create_workflow.cancel'))
             ->icon('far-xmark')
             ->color('gray')
             ->action(function (): void {

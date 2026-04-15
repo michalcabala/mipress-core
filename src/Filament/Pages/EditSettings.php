@@ -15,8 +15,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
-use MiPress\Core\Filament\Clusters\WebCluster;
 use MiPress\Core\Enums\UserRole;
+use MiPress\Core\Filament\Clusters\WebCluster;
 use MiPress\Core\Models\Setting;
 use MiPress\Core\Services\BlueprintFieldResolver;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
@@ -35,7 +35,7 @@ class EditSettings extends Page
 
     protected static ?string $slug = 'settings/{handle}';
 
-    protected static ?string $navigationLabel = 'Nastavení';
+    protected static ?string $navigationLabel = null;
 
     protected static ?int $navigationSort = 10;
 
@@ -55,6 +55,11 @@ class EditSettings extends Page
     public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null
     {
         return 'fal-gear';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.pages.edit_settings.navigation_label');
     }
 
     public static function canAccess(): bool
@@ -157,8 +162,8 @@ class EditSettings extends Page
         app(SettingsManager::class)->flush();
 
         Notification::make()
-            ->title('Nastavení bylo uloženo')
-            ->body('Sekce "'.$setting->name.'" byla úspěšně uložena.')
+            ->title(__('mipress::admin.pages.edit_settings.saved_title'))
+            ->body(__('mipress::admin.pages.edit_settings.saved_body', ['section' => $setting->name]))
             ->success()
             ->send();
     }
@@ -199,7 +204,7 @@ class EditSettings extends Page
     {
         return [
             Action::make('save')
-                ->label('Uložit nastavení')
+                ->label(__('mipress::admin.pages.edit_settings.save_action'))
                 ->icon('fal-floppy-disk')
                 ->action('save'),
         ];
@@ -213,13 +218,13 @@ class EditSettings extends Page
     private function resolveSetting(): Setting
     {
         if (in_array($this->handle, [GlobalSeoSettingsManager::HANDLE, 'site', 'sitemap'], true)) {
-            throw new NotFoundHttpException();
+            throw new NotFoundHttpException;
         }
 
         $setting = app(SettingsManager::class)->find($this->handle);
 
         if ($setting === null) {
-            throw new NotFoundHttpException();
+            throw new NotFoundHttpException;
         }
 
         return $setting;

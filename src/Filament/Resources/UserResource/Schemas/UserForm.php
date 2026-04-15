@@ -19,11 +19,11 @@ class UserForm
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            Section::make('Základní informace')
+            Section::make(__('mipress::admin.resources.user.form.sections.basic_information'))
                 ->schema([
                     FileUpload::make('avatar_path')
-                        ->label('Avatar')
-                        ->helperText('Profilová fotka uživatele v administraci.')
+                        ->label(__('mipress::admin.resources.user.form.fields.avatar'))
+                        ->helperText(__('mipress::admin.resources.user.form.help.avatar'))
                         ->avatar()
                         ->imageEditor()
                         ->circleCropper()
@@ -37,12 +37,12 @@ class UserForm
                     Grid::make(2)
                         ->schema([
                             TextInput::make('name')
-                                ->label('Jméno')
+                                ->label(__('mipress::admin.resources.user.form.fields.name'))
                                 ->required()
                                 ->maxLength(255),
 
                             TextInput::make('email')
-                                ->label('E-mail')
+                                ->label(__('mipress::admin.resources.user.form.fields.email'))
                                 ->email()
                                 ->required()
                                 ->maxLength(255)
@@ -50,10 +50,10 @@ class UserForm
                         ]),
                 ]),
 
-            Section::make('Role a oprávnění')
+            Section::make(__('mipress::admin.resources.user.form.sections.roles_and_permissions'))
                 ->schema([
                     Select::make('role')
-                        ->label('Role')
+                        ->label(__('mipress::admin.resources.user.form.fields.role'))
                         ->options(UserRole::class)
                         ->required()
                         ->disabled(fn (?Model $record): bool => (bool) $record?->isSuperAdmin()),

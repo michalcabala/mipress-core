@@ -59,7 +59,7 @@ class CreatePage extends CreateRecord
 
     public function getTitle(): string
     {
-        return 'Nová stránka';
+        return __('mipress::admin.resources.page.pages.create_title');
     }
 
     protected function afterCreate(): void
@@ -73,8 +73,8 @@ class CreatePage extends CreateRecord
         app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
             record: $record,
             permission: 'entry.publish',
-            title: 'Nová stránka ke schválení',
-            body: 'Stránka "'.$record->title.'" čeká na schválení publikace.',
+            title: __('mipress::admin.resources.page.workflow.review_request_title'),
+            body: __('mipress::admin.resources.page.workflow.review_request_body', ['title' => $record->title]),
             editUrl: PageResource::getUrl('edit', ['record' => $record]),
             previewRouteName: 'preview.page',
             previewRouteParameterName: 'page',

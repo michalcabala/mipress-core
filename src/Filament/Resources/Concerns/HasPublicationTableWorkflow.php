@@ -50,7 +50,7 @@ trait HasPublicationTableWorkflow
         $modelClass = static::getContentModelClass();
 
         return Action::make('viewLive')
-            ->label('Zobrazit na webu')
+            ->label(__('mipress::admin.publication_workflow.view_live'))
             ->icon('far-arrow-up-right-from-square')
             ->color('gray')
             ->url(fn (Model $record): ?string => $record->getPublicUrl(), shouldOpenInNewTab: true)
@@ -66,7 +66,7 @@ trait HasPublicationTableWorkflow
         $modelClass = static::getContentModelClass();
 
         return Action::make('preview')
-            ->label('Náhled')
+            ->label(__('mipress::admin.publication_workflow.preview'))
             ->icon('far-eye')
             ->color('gray')
             ->url(
@@ -89,14 +89,14 @@ trait HasPublicationTableWorkflow
 
         return static::refreshesPublicationStatusOverview(
             Action::make('togglePublicationStatus')
-                ->label('Změnit publikaci')
+                ->label(__('mipress::admin.publication_workflow.change_publication'))
                 ->icon('far-arrows-rotate')
                 ->color('gray')
                 ->visible(fn (Model $record): bool => $record instanceof $modelClass
                     && auth()->user()?->can('publish', $record) === true
                     && ! $record->trashed())
-                ->modalHeading(fn (Model $record): string => 'Změnit publikaci: '.$record->title)
-                ->modalSubmitActionLabel('Uložit změny')
+                ->modalHeading(fn (Model $record): string => __('mipress::admin.publication_workflow.modal_heading', ['title' => $record->title]))
+                ->modalSubmitActionLabel(__('mipress::admin.publication_workflow.save_changes'))
                 ->fillForm(fn (Model $record): array => [
                     'status' => $record->status->value,
                     'published_at' => $record->scheduled_at ?? $record->published_at,
@@ -107,7 +107,7 @@ trait HasPublicationTableWorkflow
 
                     if (! static::applyPublicationWorkflowData($record, $data)) {
                         Notification::make()
-                            ->title('Bez změny')
+                            ->title(__('mipress::admin.publication_workflow.no_change'))
                             ->warning()
                             ->send();
 
@@ -132,11 +132,11 @@ trait HasPublicationTableWorkflow
 
         return static::refreshesPublicationStatusOverviewBulkAction(
             BulkAction::make('changePublicationStatus')
-                ->label('Změnit publikaci')
+                ->label(__('mipress::admin.publication_workflow.change_publication'))
                 ->icon('far-arrows-rotate')
                 ->visible(fn (): bool => auth()->user()?->hasPermissionTo(static::getPublishPermission()) === true)
-                ->modalHeading("Změnit publikaci vybraných {$label}")
-                ->modalSubmitActionLabel('Uložit změny')
+                ->modalHeading(__('mipress::admin.publication_workflow.bulk_modal_heading', ['label' => $label]))
+                ->modalSubmitActionLabel(__('mipress::admin.publication_workflow.save_changes'))
                 ->schema(static::getPublicationWorkflowSchema())
                 ->action(function (EloquentCollection $records, array $data) use ($modelClass): void {
                     $updated = 0;
@@ -164,8 +164,8 @@ trait HasPublicationTableWorkflow
                     }
 
                     Notification::make()
-                        ->title($updated > 0 ? 'Stav publikace změněn' : 'Bez změny')
-                        ->body("Aktualizováno {$updated} položek, přeskočeno {$skipped}.")
+                        ->title($updated > 0 ? __('mipress::admin.publication_workflow.changed_title') : __('mipress::admin.publication_workflow.no_change'))
+                        ->body(__('mipress::admin.publication_workflow.bulk_result', ['updated' => $updated, 'skipped' => $skipped]))
                         ->{$updated > 0 ? 'success' : 'warning'}()
                         ->send();
                 })
@@ -211,7 +211,7 @@ trait HasPublicationTableWorkflow
     {
         return self::configureReactivePublicationStatusField(
             ToggleButtons::make('status')
-                ->label('Stav publikování')
+                ->label(__('mipress::admin.publication_workflow.publication_state'))
                 ->options(static::getPublicationStatusOptions($record))
                 ->colors(static::getPublicationStatusColors())
                 ->icons(static::getPublicationStatusIcons())
@@ -226,10 +226,10 @@ trait HasPublicationTableWorkflow
     {
         return self::configureReactivePublicationDateField(
             DateTimePicker::make('published_at')
-                ->label('Datum publikace')
+                ->label(__('mipress::admin.publication_workflow.publication_date'))
                 ->nullable()
                 ->disabled(fn (): bool => ! static::canPublishRecord($record))
-                ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
+                ->helperText(__('mipress::admin.publication_workflow.publication_date_helper')),
             static::canPublishRecord($record),
         );
     }
@@ -291,14 +291,14 @@ trait HasPublicationTableWorkflow
         $modelClass = static::getContentModelClass();
 
         if (static::canPublishRecord($record)) {
-            return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
+            return __('mipress::admin.entry_like_form.publication_helper.can_publish');
         }
 
         if ($record instanceof $modelClass && in_array($record->status, [ContentStatus::Published, ContentStatus::Scheduled], true)) {
-            return 'Po uložení budou změny odeslány ke schválení.';
+            return __('mipress::admin.entry_like_form.publication_helper.needs_review_after_publish');
         }
 
-        return 'Vyberte, zda obsah uložit jako koncept nebo odeslat ke schválení.';
+        return __('mipress::admin.entry_like_form.publication_helper.choose_state');
     }
 
     protected static function canPublishRecord(?Model $record): bool
@@ -390,8 +390,8 @@ trait HasPublicationTableWorkflow
         app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
             record: $record,
             permission: static::getPublishPermission(),
-            title: "Nový obsah ke schválení",
-            body: "{$contentLabel} \"{$record->title}\" čeká na schválení publikace.",
+            title: __('mipress::admin.publication_workflow.review_request_title'),
+            body: __('mipress::admin.publication_workflow.review_request_body', ['label' => $contentLabel, 'title' => $record->title]),
             editUrl: static::getEditUrl($record),
             previewRouteName: static::getPreviewRouteName(),
             previewRouteParameterName: static::getPreviewRouteParameterName(),
@@ -403,20 +403,20 @@ trait HasPublicationTableWorkflow
         $label = static::getContentLabel();
 
         return match ($currentStatus) {
-            ContentStatus::Published => "{$label} publikována",
-            ContentStatus::Scheduled => 'Publikace naplánována',
-            ContentStatus::InReview => 'Odesláno ke schválení',
-            ContentStatus::Rejected => "{$label} zamítnuta",
+            ContentStatus::Published => __('mipress::admin.publication_workflow.status_changed.published', ['label' => $label]),
+            ContentStatus::Scheduled => __('mipress::admin.publication_workflow.status_changed.scheduled'),
+            ContentStatus::InReview => __('mipress::admin.publication_workflow.status_changed.in_review'),
+            ContentStatus::Rejected => __('mipress::admin.publication_workflow.status_changed.rejected', ['label' => $label]),
             ContentStatus::Draft => in_array($previousStatus, [ContentStatus::Published, ContentStatus::Scheduled], true)
-                ? 'Publikace zrušena'
-                : 'Uloženo jako koncept',
+                ? __('mipress::admin.publication_workflow.status_changed.unpublished')
+                : __('mipress::admin.publication_workflow.status_changed.saved_draft'),
         };
     }
 
     protected static function getPublicationNotificationBody(Model $record): ?string
     {
         return match ($record->status) {
-            ContentStatus::Scheduled => 'Publikace je naplánována na '.(($record->scheduled_at ?? $record->published_at)?->format('j. n. Y H:i') ?? '—').'.',
+            ContentStatus::Scheduled => __('mipress::admin.publication_workflow.scheduled_body', ['date' => ($record->scheduled_at ?? $record->published_at)?->format('j. n. Y H:i') ?? '—']),
             default => null,
         };
     }

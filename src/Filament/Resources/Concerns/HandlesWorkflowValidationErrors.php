@@ -33,11 +33,11 @@ trait HandlesWorkflowValidationErrors
 
         $actionLabel = is_string($actionLabel) && trim($actionLabel) !== ''
             ? trim($actionLabel)
-            : 'zvolenou akci';
+            : __('mipress::admin.validation.action_fallback');
 
         Notification::make()
-            ->title('Formulář obsahuje chyby')
-            ->body('Akci „'.$actionLabel.'“ nebylo možné dokončit. Doplňte povinná pole označená červeně a zkuste to znovu.')
+            ->title(__('mipress::admin.validation.form_has_errors'))
+            ->body(__('mipress::admin.validation.body', ['action' => $actionLabel]))
             ->danger()
             ->send();
     }

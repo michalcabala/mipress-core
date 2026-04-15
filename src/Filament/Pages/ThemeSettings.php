@@ -21,11 +21,21 @@ class ThemeSettings extends Page
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-palette';
 
-    protected static ?string $navigationLabel = 'Témata';
+    protected static ?string $navigationLabel = null;
 
     protected static ?int $navigationSort = 90;
 
-    protected static ?string $title = 'Správa témat';
+    protected static ?string $title = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.pages.theme.navigation_label');
+    }
+
+    public function getTitle(): string
+    {
+        return __('mipress::admin.pages.theme.title');
+    }
 
     public static function canAccess(): bool
     {
@@ -67,13 +77,13 @@ class ThemeSettings extends Page
             app(ThemeManager::class)->activate($slug);
 
             Notification::make()
-                ->title('Téma aktivováno')
-                ->body('Aktivní téma bylo změněno na "'.$slug.'".')
+                ->title(__('mipress::admin.pages.theme.activated_title'))
+                ->body(__('mipress::admin.pages.theme.activated_body', ['slug' => $slug]))
                 ->success()
                 ->send();
         } catch (InvalidArgumentException $e) {
             Notification::make()
-                ->title('Chyba aktivace tématu')
+                ->title(__('mipress::admin.pages.theme.activation_error_title'))
                 ->body($e->getMessage())
                 ->danger()
                 ->send();

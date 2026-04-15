@@ -21,13 +21,28 @@ class GlobalSetResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-globe';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Nastavení';
+    protected static string|\UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $modelLabel = 'Globální sada';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Globální sady';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?int $navigationSort = 30;
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return __('mipress::admin.resources.global_set.navigation_group');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.global_set.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.global_set.plural_model_label');
+    }
 
     public static function canAccess(): bool
     {

@@ -19,11 +19,11 @@ enum ContentStatus: string implements HasColor, HasIcon, HasLabel
     public function getLabel(): string
     {
         return match ($this) {
-            self::Draft => 'Koncept',
-            self::InReview => 'Ke schválení',
-            self::Published => 'Publikováno',
-            self::Scheduled => 'Naplánováno',
-            self::Rejected => 'Zamítnuto',
+            self::Draft => __('mipress::admin.enums.content_status.draft'),
+            self::InReview => __('mipress::admin.enums.content_status.in_review'),
+            self::Published => __('mipress::admin.enums.content_status.published'),
+            self::Scheduled => __('mipress::admin.enums.content_status.scheduled'),
+            self::Rejected => __('mipress::admin.enums.content_status.rejected'),
         };
     }
 

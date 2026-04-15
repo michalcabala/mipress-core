@@ -90,7 +90,7 @@ class ListEntries extends ListRecords
     {
         $this->ensureAccessibleCollectionHandle();
 
-        return $this->resolveCollection()?->name ?? 'PoloĹľky';
+        return $this->resolveCollection()?->name ?? __('mipress::admin.resources.entry.pages.list_title');
     }
 
     private function resolveCollection(): ?Collection

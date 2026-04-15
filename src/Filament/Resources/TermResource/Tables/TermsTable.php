@@ -30,25 +30,25 @@ class TermsTable
         return $table
             ->columns([
                 TextColumn::make('title')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.term.table.columns.title'))
                     ->searchable()
                     ->formatStateUsing(fn (Term $record): string => static::formatHierarchyTitle($record->title, static::getTermDepth($record)))
                     ->sortable(),
                 TextColumn::make('slug')
-                    ->label('Slug')
+                    ->label(__('mipress::admin.resources.term.table.columns.slug'))
                     ->searchable(),
                 TextColumn::make('parent.title')
-                    ->label('Nadřazený')
-                    ->default('—'),
+                    ->label(__('mipress::admin.resources.term.table.columns.parent'))
+                    ->default(__('mipress::admin.common.empty')),
                 TextColumn::make('entries_count')
                     ->counts('entries')
-                    ->label('Položek')
+                    ->label(__('mipress::admin.resources.term.table.columns.entries_count'))
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->label('Datum')
+                    ->label(__('mipress::admin.resources.term.table.columns.updated_at'))
                     ->isoDateTime('LLL')
                     ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                        ? 'Vytvořeno ' . $record->created_at->isoFormat('LLL')
+                        ? __('mipress::admin.common.created_at_description', ['date' => $record->created_at->isoFormat('LLL')])
                         : null)
                     ->sortable()
                     ->toggleable(),

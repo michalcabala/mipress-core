@@ -19,7 +19,6 @@ use Filament\Notifications\Notification;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use MiPress\Core\Enums\ContentStatus;
@@ -46,10 +45,10 @@ class PagesTable
         return $table
             ->columns([
                 CuratorColumn::make('featured_image_id')
-                    ->label('Obrázek')
+                    ->label(__('mipress::admin.resources.page.table.columns.image'))
                     ->size(40),
                 TextColumn::make('title')
-                    ->label('Titulek')
+                    ->label(__('mipress::admin.resources.page.table.columns.title'))
                     ->searchable()
                     ->sortable()
                     ->formatStateUsing(fn (Page $record): string => static::formatHierarchyTitle($record->title, static::getPageDepth($record)))
@@ -57,7 +56,7 @@ class PagesTable
                         $parts = [];
 
                         if (((string) $record->getKey()) === $homepageId) {
-                            $parts[] = 'Domovská stránka';
+                            $parts[] = __('mipress::admin.resources.page.table.homepage.badge');
                         }
 
                         if (filled($record->slug)) {
@@ -72,12 +71,12 @@ class PagesTable
                     ->sortable()
                     ->copyable()
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->default('—'),
+                    ->default(__('mipress::admin.common.empty')),
                 TextColumn::make('parent.title')
-                    ->label('Nadřazená')
+                    ->label(__('mipress::admin.resources.page.table.columns.parent'))
                     ->sortable()
                     ->toggleable()
-                    ->default('—'),
+                    ->default(__('mipress::admin.common.empty')),
                 EntryLikeTableBuilders::makeStatusColumn(),
                 EntryLikeTableBuilders::makeAuthorColumn(),
                 EntryLikeTableBuilders::makeUpdatedAtColumn(),
@@ -100,8 +99,8 @@ class PagesTable
                         Action::make('toggleHomepage')
                             ->label(function (Page $record) use ($homepageId): string {
                                 return ((string) $record->getKey()) === $homepageId
-                                    ? 'Zrušit homepage'
-                                    : 'Nastavit jako homepage';
+                                    ? __('mipress::admin.resources.page.table.homepage.deactivate_label')
+                                    : __('mipress::admin.resources.page.table.homepage.activate_label');
                             })
                             ->icon(function (Page $record) use ($homepageId): string {
                                 return ((string) $record->getKey()) === $homepageId
@@ -114,13 +113,13 @@ class PagesTable
                             ->requiresConfirmation()
                             ->modalHeading(function (Page $record) use ($homepageId): string {
                                 return ((string) $record->getKey()) === $homepageId
-                                    ? 'Zrušit stránce "'.$record->title.'" status homepage?'
-                                    : 'Nastavit stránku "'.$record->title.'" jako homepage?';
+                                    ? __('mipress::admin.resources.page.table.homepage.deactivate_modal_heading', ['title' => $record->title])
+                                    : __('mipress::admin.resources.page.table.homepage.activate_modal_heading', ['title' => $record->title]);
                             })
                             ->modalDescription(function (Page $record) use ($homepageId): string {
                                 return ((string) $record->getKey()) === $homepageId
-                                    ? 'Stránka přestane být domovskou stránkou webu.'
-                                    : 'Tato stránka se nastaví jako výchozí domovská stránka webu.';
+                                    ? __('mipress::admin.resources.page.table.homepage.deactivate_modal_description')
+                                    : __('mipress::admin.resources.page.table.homepage.activate_modal_description');
                             })
                             ->action(function (Page $record): void {
                                 $record->refresh();
@@ -132,8 +131,8 @@ class PagesTable
                                     static::storeHomepagePageId(null);
 
                                     Notification::make()
-                                        ->title('Homepage zrušena')
-                                        ->body('Stránka "'.$record->title.'" již není domovskou stránkou.')
+                                        ->title(__('mipress::admin.resources.page.table.homepage.deactivated_title'))
+                                        ->body(__('mipress::admin.resources.page.table.homepage.deactivated_body', ['title' => $record->title]))
                                         ->success()
                                         ->send();
 
@@ -146,8 +145,8 @@ class PagesTable
                                     || $record->published_at->isFuture()
                                 ) {
                                     Notification::make()
-                                        ->title('Nelze nastavit jako homepage')
-                                        ->body('Domovskou stránku lze nastavit pouze na publikovanou stránku.')
+                                        ->title(__('mipress::admin.resources.page.table.homepage.forbidden_title'))
+                                        ->body(__('mipress::admin.resources.page.table.homepage.forbidden_body'))
                                         ->danger()
                                         ->send();
 
@@ -157,8 +156,8 @@ class PagesTable
                                 static::storeHomepagePageId((string) $record->getKey());
 
                                 Notification::make()
-                                    ->title('Homepage nastavena')
-                                    ->body('Stránka "'.$record->title.'" je nyní domovskou stránkou.')
+                                    ->title(__('mipress::admin.resources.page.table.homepage.activated_title'))
+                                    ->body(__('mipress::admin.resources.page.table.homepage.activated_body', ['title' => $record->title]))
                                     ->success()
                                     ->send();
                             })
@@ -219,12 +218,12 @@ class PagesTable
 
     protected static function getContentLabel(): string
     {
-        return 'Stránka';
+        return __('mipress::admin.resources.page.content_label');
     }
 
     protected static function getContentLabelPlural(): string
     {
-        return 'stránek';
+        return __('mipress::admin.resources.page.content_label_plural');
     }
 
     private static function getHomepagePageId(): ?string

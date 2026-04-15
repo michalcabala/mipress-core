@@ -21,39 +21,39 @@ class TaxonomiesTable
         return $table
             ->columns([
                 TextColumn::make('title')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.title'))
                     ->searchable()
                     ->sortable()
                     ->description(fn (Taxonomy $record): ?string => filled($record->description) ? (string) str($record->description)->limit(90) : null),
                 TextColumn::make('handle')
-                    ->label('Handle')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.handle'))
                     ->searchable()
                     ->sortable()
                     ->badge()
                     ->copyable(),
                 TextColumn::make('collection.name')
-                    ->label('Kolekce')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.collection'))
                     ->sortable()
                     ->toggleable()
-                    ->default('—'),
+                    ->default(__('mipress::admin.common.empty')),
                 IconColumn::make('is_hierarchical')
-                    ->label('Hierarchie')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.hierarchical'))
                     ->boolean()
                     ->toggleable(),
                 TextColumn::make('blueprint.name')
-                    ->label('Šablona')
-                    ->default('—')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.blueprint'))
+                    ->default(__('mipress::admin.common.empty'))
                     ->sortable()
                     ->toggleable(),
                 TextColumn::make('terms_count')
-                    ->label('Termů')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.terms_count'))
                     ->counts('terms')
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->label('Datum')
+                    ->label(__('mipress::admin.resources.taxonomy.table.columns.updated_at'))
                     ->isoDateTime('LLL')
                     ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                        ? 'Vytvořeno '.$record->created_at->isoFormat('LLL')
+                        ? __('mipress::admin.common.created_at_description', ['date' => $record->created_at->isoFormat('LLL')])
                         : null)
                     ->sortable()
                     ->toggleable(),

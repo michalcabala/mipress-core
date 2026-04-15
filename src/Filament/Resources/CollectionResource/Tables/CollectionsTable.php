@@ -27,36 +27,36 @@ class CollectionsTable
                         : '')
                     ->width('40px'),
                 TextColumn::make('name')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.collection.table.columns.name'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('handle')
-                    ->label('Handle')
+                    ->label(__('mipress::admin.resources.collection.table.columns.handle'))
                     ->searchable()
                     ->sortable()
                     ->copyable()
                     ->badge(),
                 TextColumn::make('blueprint.name')
-                    ->label('Šablona')
+                    ->label(__('mipress::admin.resources.collection.table.columns.blueprint'))
                     ->sortable()
                     ->toggleable(),
                 IconColumn::make('dated')
-                    ->label('Datovaný')
+                    ->label(__('mipress::admin.resources.collection.table.columns.dated'))
                     ->boolean(),
                 IconColumn::make('hierarchical')
-                    ->label('Hierarchie')
+                    ->label(__('mipress::admin.resources.collection.table.columns.hierarchical'))
                     ->boolean(),
                 TextColumn::make('route')
-                    ->label('URL vzor')
+                    ->label(__('mipress::admin.resources.collection.table.columns.route'))
                     ->copyable()
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->default('—'),
+                    ->default(__('mipress::admin.common.empty')),
                 TextColumn::make('entries_count')
-                    ->label('Záznamů')
+                    ->label(__('mipress::admin.resources.collection.table.columns.entries_count'))
                     ->counts('entries')
                     ->sortable(),
                 TextColumn::make('sort_order')
-                    ->label('Pořadí')
+                    ->label(__('mipress::admin.resources.collection.table.columns.sort_order'))
                     ->sortable(),
             ])
             ->defaultSort('sort_order')

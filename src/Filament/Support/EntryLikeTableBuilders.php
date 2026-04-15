@@ -22,7 +22,7 @@ class EntryLikeTableBuilders
     public static function makeSlugColumn(): TextColumn
     {
         return TextColumn::make('slug')
-            ->label('Slug')
+            ->label(__('mipress::admin.entry_like_table.slug'))
             ->searchable()
             ->sortable()
             ->copyable()
@@ -33,7 +33,7 @@ class EntryLikeTableBuilders
     public static function makeStatusColumn(): TextColumn
     {
         return TextColumn::make('status')
-            ->label('Stav')
+            ->label(__('mipress::admin.entry_like_table.status'))
             ->badge()
             ->icon(fn (ContentStatus $state): ?string => $state->getIcon())
             ->color(fn (ContentStatus $state) => $state->getColor())
@@ -43,10 +43,10 @@ class EntryLikeTableBuilders
     public static function makeUpdatedAtColumn(): TextColumn
     {
         return TextColumn::make('updated_at')
-            ->label('Datum')
+            ->label(__('mipress::admin.entry_like_table.date'))
             ->isoDateTime('LLL')
             ->description(fn (Model $record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                ? 'Vytvořeno '.$record->created_at->isoFormat('LLL')
+                ? __('mipress::admin.entry_like_table.created_at_description', ['date' => $record->created_at->isoFormat('LLL')])
                 : null)
             ->sortable()
             ->toggleable();
@@ -55,7 +55,7 @@ class EntryLikeTableBuilders
     public static function makeAuthorColumn(): UserColumn
     {
         return UserColumn::make('author.name')
-            ->label('Autor')
+            ->label(__('mipress::admin.entry_like_table.author'))
             ->state(fn (Model $record): mixed => $record->author)
             ->sortable()
             ->toggleable()
@@ -65,14 +65,14 @@ class EntryLikeTableBuilders
     public static function makeStatusFilter(): SelectFilter
     {
         return SelectFilter::make('status')
-            ->label('Stav')
+            ->label(__('mipress::admin.entry_like_table.status'))
             ->options(ContentStatus::class);
     }
 
     public static function makeAuthorFilter(Closure $optionsResolver): UserSelectFilter
     {
         return UserSelectFilter::make('author_id')
-            ->label('Autor')
+            ->label(__('mipress::admin.entry_like_table.author'))
             ->options($optionsResolver)
             ->multiple()
             ->searchable();
@@ -81,7 +81,7 @@ class EntryLikeTableBuilders
     public static function makeCreatedMonthFilter(Closure $optionsResolver): SelectFilter
     {
         return SelectFilter::make('created_month')
-            ->label('Měsíc')
+            ->label(__('mipress::admin.entry_like_table.month'))
             ->options($optionsResolver)
             ->query(function (Builder $query, array $data): Builder {
                 $value = $data['value'] ?? null;
@@ -113,7 +113,7 @@ class EntryLikeTableBuilders
         ]));
 
         if ($publicationFilters !== []) {
-            $sections[] = Section::make('Publikace')
+            $sections[] = Section::make(__('mipress::admin.entry_like_table.sections.publication'))
                 ->schema($publicationFilters);
         }
 
@@ -123,7 +123,7 @@ class EntryLikeTableBuilders
         ]));
 
         if ($metadataFilters !== []) {
-            $sections[] = Section::make('Metadata')
+            $sections[] = Section::make(__('mipress::admin.entry_like_table.sections.metadata'))
                 ->schema($metadataFilters);
         }
 
@@ -178,7 +178,7 @@ class EntryLikeTableBuilders
         foreach ($values as $value) {
             try {
                 $date = Carbon::createFromFormat('Y-m', $value);
-                $date->locale('cs_CZ');
+                $date->locale(app()->getLocale());
                 $options[$value] = (string) str($date->translatedFormat('F Y'))->ucfirst();
             } catch (\Throwable) {
                 $options[$value] = $value;

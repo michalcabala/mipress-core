@@ -41,8 +41,8 @@ class CreateUser extends CreateRecord
         if ($this->pendingRole === UserRole::SuperAdmin->value) {
             if (User::role(UserRole::SuperAdmin->value)->exists()) {
                 Notification::make()
-                    ->title('Dalšího superadministrátora nelze vytvořit')
-                    ->body('Účet s rolí superadministrátora už v systému existuje. Povolena je pouze jedna taková role.')
+                    ->title(__('mipress::admin.resources.user.notifications.create_super_admin_forbidden.title'))
+                    ->body(__('mipress::admin.resources.user.notifications.create_super_admin_forbidden.body'))
                     ->danger()
                     ->send();
 

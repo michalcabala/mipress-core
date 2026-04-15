@@ -32,15 +32,30 @@ class EntryResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-file-lines';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Obsah';
+    protected static string|\UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $modelLabel = 'Položka';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Položky';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?string $recordTitleAttribute = 'title';
 
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return __('mipress::admin.resources.entry.navigation_group');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.entry.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.entry.plural_model_label');
+    }
 
     public static function getNavigationItems(): array
     {
@@ -63,7 +78,7 @@ class EntryResource extends Resource
         return $collections
             ->map(fn (Collection $collection) => NavigationItem::make($collection->name)
                 ->icon($collection->icon ?? 'fal-file-lines')
-                ->group('Obsah')
+                ->group(__('mipress::admin.resources.entry.navigation_group'))
                 ->sort($collection->sort_order)
                 ->url(static::getUrl('index', ['collection' => $collection->handle]))
                 ->isActiveWhen(fn () => static::getCurrentCollection()?->handle === $collection->handle)
@@ -196,8 +211,8 @@ class EntryResource extends Resource
     {
         /** @var Entry $record */
         return [
-            'Sekce' => $record->collection?->name ?? '—',
-            'Stav' => $record->status->getLabel(),
+            __('mipress::admin.resources.entry.global_search.collection') => $record->collection?->name ?? __('mipress::admin.common.empty'),
+            __('mipress::admin.resources.entry.global_search.status') => $record->status->getLabel(),
         ];
     }
 

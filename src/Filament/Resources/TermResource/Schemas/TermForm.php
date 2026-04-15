@@ -19,19 +19,19 @@ class TermForm
         $taxonomy = self::getTaxonomy($schema);
 
         return $schema->components([
-            Section::make('Základní informace')->schema([
+            Section::make(__('mipress::admin.resources.term.form.sections.basic_information'))->schema([
                 TextInput::make('title')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.term.form.fields.title'))
                     ->required()
                     ->maxLength(255)
                     ->live(onBlur: true),
                 TextInput::make('slug')
-                    ->label('Slug')
+                    ->label(__('mipress::admin.resources.term.form.fields.slug'))
                     ->unique(table: 'terms', column: 'slug', ignoreRecord: true)
                     ->maxLength(255)
-                    ->helperText('Automaticky z názvu. Lze upravit.'),
+                    ->helperText(__('mipress::admin.resources.term.form.help.slug')),
                 Select::make('parent_id')
-                    ->label('Nadřazený term')
+                    ->label(__('mipress::admin.resources.term.form.fields.parent'))
                     ->options(fn ($record): array => Term::query()
                         ->when($taxonomy, fn ($q) => $q->where('taxonomy_id', $taxonomy?->getKey()))
                         ->whereNull('parent_id')

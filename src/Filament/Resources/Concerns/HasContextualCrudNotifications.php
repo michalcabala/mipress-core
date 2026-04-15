@@ -14,7 +14,7 @@ trait HasContextualCrudNotifications
     {
         return Notification::make()
             ->success()
-            ->title('Záznam byl vytvořen')
+            ->title(__('mipress::admin.crud.created'))
             ->body($this->getContextualCrudNotificationBody());
     }
 
@@ -22,7 +22,7 @@ trait HasContextualCrudNotifications
     {
         return Notification::make()
             ->success()
-            ->title('Změny byly uloženy')
+            ->title(__('mipress::admin.crud.saved'))
             ->body($this->getContextualCrudNotificationBody());
     }
 

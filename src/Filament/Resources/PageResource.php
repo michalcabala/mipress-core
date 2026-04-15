@@ -26,11 +26,11 @@ class PageResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-file-lines';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Obsah';
+    protected static string|\UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $modelLabel = 'Stránka';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Stránky';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?string $recordTitleAttribute = 'title';
 
@@ -39,6 +39,21 @@ class PageResource extends Resource
     protected static ?string $slug = 'pages';
 
     protected static ?SubNavigationPosition $subNavigationPosition = SubNavigationPosition::Top;
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return __('mipress::admin.resources.page.navigation_group');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.page.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.page.plural_model_label');
+    }
 
     public static function getEloquentQuery(): Builder
     {

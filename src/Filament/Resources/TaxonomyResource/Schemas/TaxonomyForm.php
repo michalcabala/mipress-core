@@ -28,15 +28,15 @@ class TaxonomyForm
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 3])
                         ->schema([
-                            Section::make('Základní informace')
+                            Section::make(__('mipress::admin.resources.taxonomy.form.sections.basic_information'))
                                 ->icon('fal-tag')
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('title')
-                                            ->label('Název')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.title'))
                                             ->required()
                                             ->maxLength(255)
-                                            ->placeholder('Např. Kategorie')
+                                            ->placeholder(__('mipress::admin.resources.taxonomy.form.placeholders.title'))
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state): void {
                                                 if (($get('handle') ?? '') !== Str::slug($old)) {
@@ -46,59 +46,59 @@ class TaxonomyForm
                                                 $set('handle', Str::slug($state));
                                             }),
                                         TextInput::make('handle')
-                                            ->label('Handle')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.handle'))
                                             ->unique(ignoreRecord: true)
                                             ->maxLength(255)
-                                            ->placeholder('kategorie')
-                                            ->helperText('Automaticky z názvu. Lze upravit při vytváření.')
+                                            ->placeholder(__('mipress::admin.resources.taxonomy.form.placeholders.handle'))
+                                            ->helperText(__('mipress::admin.resources.taxonomy.form.help.handle'))
                                             ->disabled(fn ($record): bool => $record !== null),
                                     ]),
                                     Textarea::make('description')
-                                        ->label('Popis')
+                                        ->label(__('mipress::admin.resources.taxonomy.form.fields.description'))
                                         ->nullable()
                                         ->rows(3)
-                                        ->helperText('Krátké vysvětlení, kde a jak se taxonomie používá.'),
+                                        ->helperText(__('mipress::admin.resources.taxonomy.form.help.description')),
                                 ]),
-                            Section::make('Zobrazení v Entries tabulce')
+                            Section::make(__('mipress::admin.resources.taxonomy.form.sections.entries_table'))
                                 ->icon('fal-table-columns')
                                 ->collapsible()
                                 ->schema([
                                     Grid::make(2)->schema([
                                         Toggle::make('show_in_entries_table')
-                                            ->label('Zobrazit sloupec')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.show_in_entries_table'))
                                             ->default(true),
                                         Toggle::make('show_in_entries_filter')
-                                            ->label('Zobrazit filtr')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.show_in_entries_filter'))
                                             ->default(true),
                                     ]),
                                     Grid::make(2)->schema([
                                         Toggle::make('searchable_in_entries_table')
-                                            ->label('Sloupec je prohledávatelný')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.searchable_in_entries_table'))
                                             ->default(false),
                                         Toggle::make('sortable_in_entries_table')
-                                            ->label('Sloupec je řaditelný')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.sortable_in_entries_table'))
                                             ->default(false),
                                     ]),
                                     Grid::make(2)->schema([
                                         Select::make('entries_table_display_mode')
-                                            ->label('Režim zobrazení')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.entries_table_display_mode'))
                                             ->options([
-                                                'badges' => 'Štítky',
-                                                'text' => 'Text',
+                                                'badges' => __('mipress::admin.resources.taxonomy.form.options.display_mode.badges'),
+                                                'text' => __('mipress::admin.resources.taxonomy.form.options.display_mode.text'),
                                             ])
                                             ->default('badges')
                                             ->required()
                                             ->native(false)
                                             ->live(),
                                         Select::make('entries_table_badge_palette')
-                                            ->label('Paleta štítků')
+                                            ->label(__('mipress::admin.resources.taxonomy.form.fields.entries_table_badge_palette'))
                                             ->options([
-                                                'neutral' => 'Neutrální',
-                                                'primary' => 'Primární',
-                                                'success' => 'Úspěch',
-                                                'warning' => 'Upozornění',
-                                                'danger' => 'Nebezpečí',
-                                                'info' => 'Informace',
+                                                'neutral' => __('mipress::admin.resources.taxonomy.form.options.badge_palette.neutral'),
+                                                'primary' => __('mipress::admin.resources.taxonomy.form.options.badge_palette.primary'),
+                                                'success' => __('mipress::admin.resources.taxonomy.form.options.badge_palette.success'),
+                                                'warning' => __('mipress::admin.resources.taxonomy.form.options.badge_palette.warning'),
+                                                'danger' => __('mipress::admin.resources.taxonomy.form.options.badge_palette.danger'),
+                                                'info' => __('mipress::admin.resources.taxonomy.form.options.badge_palette.info'),
                                             ])
                                             ->default('neutral')
                                             ->required()
@@ -110,32 +110,32 @@ class TaxonomyForm
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 1])
                         ->schema([
-                            Section::make('Nastavení')
+                            Section::make(__('mipress::admin.resources.taxonomy.form.sections.settings'))
                                 ->icon('fal-gear')
                                 ->schema([
                                     Toggle::make('is_hierarchical')
-                                        ->label('Hierarchická struktura')
-                                        ->helperText('Termy mohou mít podtermy.'),
+                                        ->label(__('mipress::admin.resources.taxonomy.form.fields.is_hierarchical'))
+                                        ->helperText(__('mipress::admin.resources.taxonomy.form.help.hierarchical')),
                                     Select::make('blueprint_id')
-                                        ->label('Šablona termů')
+                                        ->label(__('mipress::admin.resources.taxonomy.form.fields.blueprint'))
                                         ->relationship('blueprint', 'name')
                                         ->searchable()
                                         ->preload()
                                         ->native(false)
                                         ->nullable()
-                                        ->helperText('Prázdné = termy mají jen název a slug.'),
+                                        ->helperText(__('mipress::admin.resources.taxonomy.form.help.blueprint')),
                                 ]),
-                            Section::make('Přiřazení ke kolekci')
+                            Section::make(__('mipress::admin.resources.taxonomy.form.sections.collection_assignment'))
                                 ->icon('fal-folder-tree')
                                 ->schema([
                                     Select::make('collection_id')
-                                        ->label('Kolekce')
+                                        ->label(__('mipress::admin.resources.taxonomy.form.fields.collection'))
                                         ->relationship('collection', 'name')
                                         ->searchable()
                                         ->preload()
                                         ->native(false)
                                         ->nullable()
-                                        ->helperText('Vyberte kolekci, ve které se taxonomie zobrazí.'),
+                                        ->helperText(__('mipress::admin.resources.taxonomy.form.help.collection')),
                                 ]),
                         ]),
                 ]),

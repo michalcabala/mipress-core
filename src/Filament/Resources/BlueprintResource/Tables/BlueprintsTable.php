@@ -19,22 +19,22 @@ class BlueprintsTable
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.blueprint.table.columns.name'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('handle')
-                    ->label('Handle')
+                    ->label(__('mipress::admin.resources.blueprint.table.columns.handle'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('collections_count')
-                    ->label('Sekcí')
+                    ->label(__('mipress::admin.resources.blueprint.table.columns.collections_count'))
                     ->counts('collections')
                     ->sortable(),
                 TextColumn::make('updated_at')
-                    ->label('Datum')
+                    ->label(__('mipress::admin.resources.blueprint.table.columns.updated_at'))
                     ->isoDateTime('LLL')
                     ->description(fn ($record): ?string => filled($record->created_at) && filled($record->updated_at) && $record->updated_at->gt($record->created_at)
-                        ? 'Vytvořeno ' . $record->created_at->isoFormat('LLL')
+                        ? __('mipress::admin.common.created_at_description', ['date' => $record->created_at->isoFormat('LLL')])
                         : null)
                     ->sortable()
                     ->toggleable(),

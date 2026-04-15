@@ -35,7 +35,7 @@ class PageForm
         $isEdit = $record instanceof Page;
 
         $components = [];
-        $seoSection = EntryLikeFormBuilders::makeSeoSection('stránky');
+        $seoSection = EntryLikeFormBuilders::makeSeoSection(__('mipress::admin.resources.page.seo_subject'));
 
         $components[] =
             Grid::make([
@@ -47,14 +47,14 @@ class PageForm
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 3])
                         ->schema([
-                            Section::make('Základ')
+                            Section::make(__('mipress::admin.entry_like_form.sections.basic'))
                                 ->schema([
                                     Grid::make(2)->schema([
                                         TextInput::make('title')
-                                            ->label('Titulek')
+                                            ->label(__('mipress::admin.entry_like_form.fields.title'))
                                             ->required()
                                             ->maxLength(255)
-                                            ->placeholder('Např. O nás')
+                                            ->placeholder(__('mipress::admin.resources.page.form.placeholders.title'))
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state): void {
                                                 if (($get('slug') ?? '') !== Str::slug($old)) {
@@ -65,20 +65,20 @@ class PageForm
                                             }),
 
                                         TextInput::make('slug')
-                                            ->label('Slug')
+                                            ->label(__('mipress::admin.entry_like_form.fields.slug'))
                                             ->required()
                                             ->maxLength(200)
-                                            ->placeholder('o-nas')
-                                            ->helperText('Používá se v URL stránky.')
+                                            ->placeholder(__('mipress::admin.resources.page.form.placeholders.slug'))
+                                            ->helperText(__('mipress::admin.resources.page.form.help.slug'))
                                             ->rules(['alpha_dash']),
                                     ]),
                                 ]),
 
-                            Section::make('Obsah')
+                            Section::make(__('mipress::admin.entry_like_form.sections.content'))
                                 ->icon('fal-file-lines')
                                 ->schema([
                                     Mason::make('content')
-                                        ->label('Obsah')
+                                        ->label(__('mipress::admin.entry_like_form.fields.content'))
                                         ->bricks(EditorialBrickCollection::make())
                                         ->previewLayout('layouts.mason-preview')
                                         ->colorModeToggle()
@@ -96,42 +96,42 @@ class PageForm
                     Grid::make(1)
                         ->columnSpan(['default' => 1, 'lg' => 1])
                         ->schema([
-                            Section::make('Publikace')
+                            Section::make(__('mipress::admin.entry_like_form.sections.publication'))
                                 ->icon('fal-calendar')
                                 ->schema(EntryLikeFormBuilders::makePublicationFields(
                                     $record,
                                     [
-                                    Select::make('parent_id')
-                                        ->label('Nadřazená stránka')
-                                        ->options(fn (): array => self::getParentOptions($record))
-                                        ->searchable()
-                                        ->preload()
-                                        ->native(false)
-                                        ->nullable()
-                                        ->helperText('Vyberte nadřazenou stránku pro vytvoření hierarchie.'),
+                                        Select::make('parent_id')
+                                            ->label(__('mipress::admin.resources.page.form.fields.parent'))
+                                            ->options(fn (): array => self::getParentOptions($record))
+                                            ->searchable()
+                                            ->preload()
+                                            ->native(false)
+                                            ->nullable()
+                                            ->helperText(__('mipress::admin.resources.page.form.help.parent')),
                                     ],
                                 )),
 
                             EntryLikeFormBuilders::makeFeaturedImageSection(),
 
-                            Section::make('Stav')
+                            Section::make(__('mipress::admin.entry_like_form.sections.status'))
                                 ->visible($isEdit)
                                 ->schema([
                                     ...EntryLikeFormBuilders::makeStatusOverviewEntries('published_status_at'),
 
                                     Actions::make([
                                         Action::make('moveToTrash')
-                                            ->label('Přesunout do koše')
+                                            ->label(__('mipress::admin.resources.page.form.actions.move_to_trash.label'))
                                             ->icon('far-trash-can')
                                             ->color('warning')
                                             ->requiresConfirmation()
-                                            ->modalHeading(fn (Page $record): string => 'Přesunout stránku "'.$record->title.'" do koše?')
-                                            ->modalDescription('Stránka nebude trvale smazána a bude ji možné obnovit z koše.')
+                                            ->modalHeading(fn (Page $record): string => __('mipress::admin.resources.page.form.actions.move_to_trash.modal_heading', ['title' => $record->title]))
+                                            ->modalDescription(__('mipress::admin.resources.page.form.actions.move_to_trash.modal_description'))
                                             ->action(function (EditRecord $livewire, Page $record): void {
                                                 $record->delete();
                                                 Notification::make()
-                                                    ->title('Stránka byla přesunuta do koše')
-                                                    ->body('Stránka "'.$record->title.'" byla přesunuta do koše.')
+                                                    ->title(__('mipress::admin.resources.page.form.actions.move_to_trash.success_title'))
+                                                    ->body(__('mipress::admin.resources.page.form.actions.move_to_trash.success_body', ['title' => $record->title]))
                                                     ->success()
                                                     ->send();
 
@@ -139,19 +139,19 @@ class PageForm
                                             }),
 
                                         Action::make('deletePermanently')
-                                            ->label('Smazat trvale')
+                                            ->label(__('mipress::admin.resources.page.form.actions.delete_permanently.label'))
                                             ->icon('far-trash-xmark')
                                             ->color('danger')
                                             ->visible(fn (): bool => auth()->user()?->isSuperAdmin() || auth()->user()?->isAdmin())
                                             ->requiresConfirmation()
-                                            ->modalHeading(fn (Page $record): string => 'Trvale smazat stránku "'.$record->title.'"?')
-                                            ->modalDescription('Tato akce stránku nevratně odstraní ze systému včetně jejího aktuálního stavu.')
+                                            ->modalHeading(fn (Page $record): string => __('mipress::admin.resources.page.form.actions.delete_permanently.modal_heading', ['title' => $record->title]))
+                                            ->modalDescription(__('mipress::admin.resources.page.form.actions.delete_permanently.modal_description'))
                                             ->action(function (EditRecord $livewire, Page $record): void {
                                                 $recordTitle = $record->title;
                                                 $record->forceDelete();
                                                 Notification::make()
-                                                    ->title('Stránka byla trvale smazána')
-                                                    ->body('Stránka "'.$recordTitle.'" byla ze systému odstraněna natrvalo.')
+                                                    ->title(__('mipress::admin.resources.page.form.actions.delete_permanently.success_title'))
+                                                    ->body(__('mipress::admin.resources.page.form.actions.delete_permanently.success_body', ['title' => $recordTitle]))
                                                     ->success()
                                                     ->send();
 
@@ -161,12 +161,12 @@ class PageForm
 
                                     Actions::make([
                                         Action::make('duplicate')
-                                            ->label('Duplikovat')
+                                            ->label(__('mipress::admin.resources.page.form.actions.duplicate.label'))
                                             ->icon('far-copy')
                                             ->color('info')
                                             ->action(function (EditRecord $livewire, Page $record): void {
                                                 $copy = $record->replicate();
-                                                $copy->title = str($record->title)->append(' (kopie)')->toString();
+                                                $copy->title = str($record->title)->append(__('mipress::admin.resources.page.form.actions.duplicate.copy_suffix'))->toString();
                                                 $copy->status = ContentStatus::Draft;
                                                 $copy->slug = null;
                                                 $copy->published_at = null;
@@ -174,8 +174,8 @@ class PageForm
                                                 $copy->save();
 
                                                 Notification::make()
-                                                    ->title('Kopie stránky byla vytvořena')
-                                                    ->body('Nová stránka "'.$copy->title.'" vznikla ze stránky "'.$record->title.'".')
+                                                    ->title(__('mipress::admin.resources.page.form.actions.duplicate.success_title'))
+                                                    ->body(__('mipress::admin.resources.page.form.actions.duplicate.success_body', ['copy' => $copy->title, 'original' => $record->title]))
                                                     ->success()
                                                     ->send();
                                                 $livewire->redirect(PageResource::getUrl('edit', ['record' => $copy]));
@@ -183,21 +183,21 @@ class PageForm
                                     ])->fullWidth(),
                                 ]),
 
-                            Section::make('Detaily stránky')
+                            Section::make(__('mipress::admin.resources.page.form.sections.details'))
                                 ->visible($isEdit)
                                 ->schema([
                                     TextEntry::make('page_id')
-                                        ->label('ID')
+                                        ->label(__('mipress::admin.resources.page.form.fields.id'))
                                         ->state(fn (Page $record): string => (string) $record->id),
                                     TextEntry::make('created_info')
-                                        ->label('Vytvořeno')
-                                        ->state(fn (Page $record): string => ($record->created_at?->format('j. n. Y H:i') ?? '—').' — '.($record->author?->name ?? '—')),
+                                        ->label(__('mipress::admin.resources.page.form.fields.created'))
+                                        ->state(fn (Page $record): string => ($record->created_at?->format('j. n. Y H:i') ?? __('mipress::admin.common.empty')).' — '.($record->author?->name ?? __('mipress::admin.common.empty'))),
                                     TextEntry::make('updated_info')
-                                        ->label('Upraveno')
-                                        ->state(fn (Page $record): string => ($record->updated_at?->format('j. n. Y H:i') ?? '—').' — '.($record->author?->name ?? '—')),
+                                        ->label(__('mipress::admin.resources.page.form.fields.updated'))
+                                        ->state(fn (Page $record): string => ($record->updated_at?->format('j. n. Y H:i') ?? __('mipress::admin.common.empty')).' — '.($record->author?->name ?? __('mipress::admin.common.empty'))),
                                     TextEntry::make('published_info')
-                                        ->label('Publikováno')
-                                        ->state(fn (Page $record): string => $record->published_at?->format('j. n. Y H:i') ?? '—'),
+                                        ->label(__('mipress::admin.resources.page.form.fields.published'))
+                                        ->state(fn (Page $record): string => $record->published_at?->format('j. n. Y H:i') ?? __('mipress::admin.common.empty')),
                                 ]),
                         ]),
                 ]);

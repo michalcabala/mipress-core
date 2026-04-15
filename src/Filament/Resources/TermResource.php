@@ -24,11 +24,21 @@ class TermResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-tag';
 
-    protected static ?string $modelLabel = 'Štítek';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Štítky';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?string $recordTitleAttribute = 'title';
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.term.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.term.plural_model_label');
+    }
 
     public static function getCurrentTaxonomyIdentifier(): int|string|null
     {
@@ -66,7 +76,7 @@ class TermResource extends Resource
 
             $items[] = NavigationItem::make($taxonomy->title)
                 ->icon('fal-tag')
-                ->group('Obsah')
+                ->group(__('mipress::admin.resources.term.navigation_group'))
                 ->parentItem($collection->name)
                 ->sort($collection->sort_order + 1)
                 ->url(static::getUrl('index', ['taxonomy' => $taxonomy->handle]))

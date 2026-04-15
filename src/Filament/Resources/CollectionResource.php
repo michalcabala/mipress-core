@@ -23,11 +23,21 @@ class CollectionResource extends Resource
 
     protected static ?string $cluster = ContentCluster::class;
 
-    protected static ?string $modelLabel = 'Typ obsahu';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Typy obsahu';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?int $navigationSort = 10;
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.collection.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.collection.plural_model_label');
+    }
 
     public static function form(Schema $schema): Schema
     {

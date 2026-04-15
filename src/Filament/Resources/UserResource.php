@@ -24,15 +24,30 @@ class UserResource extends Resource
 
     protected static string|\BackedEnum|null $navigationIcon = 'fal-user-group-crown';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Uživatelé';
+    protected static string|\UnitEnum|null $navigationGroup = null;
 
-    protected static ?string $modelLabel = 'Uživatel';
+    protected static ?string $modelLabel = null;
 
-    protected static ?string $pluralModelLabel = 'Uživatelé';
+    protected static ?string $pluralModelLabel = null;
 
     protected static ?int $navigationSort = 10;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getNavigationGroup(): string|\UnitEnum|null
+    {
+        return __('mipress::admin.resources.user.navigation_group');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('mipress::admin.resources.user.model_label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('mipress::admin.resources.user.plural_model_label');
+    }
 
     public static function getGloballySearchableAttributes(): array
     {

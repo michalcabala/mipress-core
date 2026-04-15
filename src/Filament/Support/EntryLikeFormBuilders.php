@@ -34,23 +34,23 @@ class EntryLikeFormBuilders
     ): Section {
         $schema = [
             TextInput::make('meta_title')
-                ->label('SEO titulek')
+                ->label(__('mipress::admin.entry_like_form.meta_title'))
                 ->maxLength(60)
-                ->helperText('Doporučeno 50-60 znaků. Pokud zůstane prázdný, použije se titulek '.$titleFallbackSubject.'.'),
+                ->helperText(__('mipress::admin.entry_like_form.meta_title_helper', ['subject' => $titleFallbackSubject])),
             Textarea::make('meta_description')
-                ->label('SEO popis')
+                ->label(__('mipress::admin.entry_like_form.meta_description'))
                 ->maxLength(160)
                 ->rows(3)
-                ->helperText('Krátký popis pro výsledky vyhledávání a sdílení.'),
+                ->helperText(__('mipress::admin.entry_like_form.meta_description_helper')),
         ];
 
         if ($includeOgImage) {
             $schema[] = CuratorPicker::make('og_image_id')
-                ->label('OG obrázek')
-                ->helperText('Obrázek pro sdílení na sociálních sítích.');
+                ->label(__('mipress::admin.entry_like_form.og_image'))
+                ->helperText(__('mipress::admin.entry_like_form.og_image_helper'));
         }
 
-        $section = Section::make('SEO')
+        $section = Section::make(__('mipress::admin.entry_like_form.seo_section'))
             ->icon('fal-magnifying-glass')
             ->schema($schema);
 
@@ -67,7 +67,7 @@ class EntryLikeFormBuilders
 
     public static function makeFeaturedImageSection(): Section
     {
-        return Section::make('Hlavní obrázek')
+        return Section::make(__('mipress::admin.entry_like_form.featured_image_section'))
             ->icon('fal-image')
             ->schema([
                 CuratorPicker::make('featured_image_id')
@@ -87,7 +87,7 @@ class EntryLikeFormBuilders
             self::makePublicationStatusField($record, $canPublish),
             self::makePublicationDateField($canPublish),
             UserSelect::make('author_id')
-                ->label('Autor')
+                ->label(__('mipress::admin.entry_like_form.author'))
                 ->relationship('author', 'name')
                 ->searchable()
                 ->preload()
@@ -95,7 +95,7 @@ class EntryLikeFormBuilders
                 ->required()
                 ->default(fn () => auth()->id()),
             TextInput::make('sort_order')
-                ->label('Pořadí')
+                ->label(__('mipress::admin.entry_like_form.sort_order'))
                 ->numeric()
                 ->default(0),
             ...$extraFields,
@@ -109,16 +109,16 @@ class EntryLikeFormBuilders
     {
         return [
             TextEntry::make('status_badge')
-                ->label('Stav publikace')
+                ->label(__('mipress::admin.entry_like_form.publication_status'))
                 ->state(fn (Entry|Page $record): HtmlString => self::renderStatusBadge($record->status)),
 
             TextEntry::make('status_meta')
-                ->label('Detail stavu')
+                ->label(__('mipress::admin.entry_like_form.status_detail'))
                 ->visible(fn (Entry|Page $record): bool => self::renderStatusMeta($record) !== '')
                 ->state(fn (Entry|Page $record): HtmlString => new HtmlString(self::renderStatusMeta($record))),
 
             TextEntry::make($publishedDateFieldName)
-                ->label('Datum publikace')
+                ->label(__('mipress::admin.entry_like_form.publication_date'))
                 ->state(fn (Entry|Page $record): string => self::formatPublicationDate($record)),
         ];
     }
@@ -165,10 +165,10 @@ class EntryLikeFormBuilders
         $scheduledAt = $record->scheduled_at ?? $record->published_at;
 
         return match ($record->status) {
-            ContentStatus::Published => 'Publikováno',
-            ContentStatus::Rejected => 'Zamítnuto<br><strong>Důvod:</strong> '.e($record->review_note ?? '—'),
-            ContentStatus::Scheduled => 'Naplánováno na '.e($scheduledAt?->format('j. n. Y H:i') ?? '—'),
-            ContentStatus::InReview => 'Odesláno ke schválení',
+            ContentStatus::Published => __('mipress::admin.entry_like_form.status_meta.published'),
+            ContentStatus::Rejected => __('mipress::admin.entry_like_form.status_meta.rejected', ['reason' => e($record->review_note ?? '—')]),
+            ContentStatus::Scheduled => __('mipress::admin.entry_like_form.status_meta.scheduled', ['date' => e($scheduledAt?->format('j. n. Y H:i') ?? '—')]),
+            ContentStatus::InReview => __('mipress::admin.entry_like_form.status_meta.in_review'),
             default => '',
         };
     }
@@ -177,7 +177,7 @@ class EntryLikeFormBuilders
     {
         return self::configureReactivePublicationStatusField(
             ToggleButtons::make('status')
-                ->label('Stav publikování')
+                ->label(__('mipress::admin.entry_like_form.publication_state'))
                 ->options(self::getPublicationStatusOptions($record, $canPublish))
                 ->colors(self::getPublicationStatusColors())
                 ->icons(self::getPublicationStatusIcons())
@@ -193,10 +193,10 @@ class EntryLikeFormBuilders
     {
         return self::configureReactivePublicationDateField(
             DateTimePicker::make('published_at')
-                ->label('Datum publikace')
+                ->label(__('mipress::admin.entry_like_form.publication_date_field'))
                 ->nullable()
                 ->disabled(fn (): bool => ! $canPublish)
-                ->helperText('Pokud nastavíte budoucí datum a čas, obsah se uloží jako naplánovaný.'),
+                ->helperText(__('mipress::admin.entry_like_form.publication_date_helper')),
             $canPublish,
         );
     }
@@ -254,14 +254,14 @@ class EntryLikeFormBuilders
     private static function publicationStatusHelperText(Entry|Page|null $record, bool $canPublish): string
     {
         if ($canPublish) {
-            return 'Budoucí datum a čas uloží obsah jako naplánovaný.';
+            return __('mipress::admin.entry_like_form.publication_helper.can_publish');
         }
 
         if ($record !== null && in_array($record->status, [ContentStatus::Published, ContentStatus::Scheduled], true)) {
-            return 'Po uložení budou změny odeslány ke schválení.';
+            return __('mipress::admin.entry_like_form.publication_helper.needs_review_after_publish');
         }
 
-        return 'Vyberte, zda obsah uložit jako koncept nebo odeslat ke schválení.';
+        return __('mipress::admin.entry_like_form.publication_helper.choose_state');
     }
 
     private static function canPublish(Entry|Page|null $record): bool

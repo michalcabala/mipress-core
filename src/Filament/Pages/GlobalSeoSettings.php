@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace MiPress\Core\Filament\Pages;
 
+use Awcodes\Curator\Components\Forms\CuratorPicker;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
-use Filament\Infolists\Components\TextEntry;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
@@ -18,7 +19,6 @@ use Filament\Schemas\Schema;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\HtmlString;
 use MiPress\Core\Filament\Clusters\SeoCluster;
-use Awcodes\Curator\Components\Forms\CuratorPicker;
 use MiPress\Core\Services\GlobalSeoSettingsManager;
 use MiPress\Core\Services\SeoResolver;
 
@@ -30,9 +30,9 @@ class GlobalSeoSettings extends Page
 
     protected static ?string $slug = 'seo';
 
-    protected static ?string $navigationLabel = 'Globální SEO';
+    protected static ?string $navigationLabel = null;
 
-    protected static ?string $title = 'Globální SEO';
+    protected static ?string $title = null;
 
     protected static ?int $navigationSort = 10;
 
@@ -42,6 +42,16 @@ class GlobalSeoSettings extends Page
     public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null
     {
         return 'fal-magnifying-glass';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.pages.global_seo.navigation_label');
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('mipress::admin.pages.global_seo.title');
     }
 
     public static function canAccess(): bool
@@ -59,156 +69,156 @@ class GlobalSeoSettings extends Page
     {
         return $form
             ->schema([
-                Section::make('Výchozí metadata')
-                    ->description('Výchozí title a description fallbacky pro stránky, které nemají vlastní SEO metadata.')
+                Section::make(__('mipress::admin.pages.global_seo.sections.default_metadata'))
+                    ->description(__('mipress::admin.pages.global_seo.descriptions.default_metadata'))
                     ->schema([
                         TextInput::make('metadata.default_title')
-                            ->label('Výchozí název webu')
+                            ->label(__('mipress::admin.pages.global_seo.fields.default_title'))
                             ->placeholder('MiPress Studio')
                             ->live(onBlur: true),
                         TextInput::make('metadata.homepage_title')
-                            ->label('Homepage title')
+                            ->label(__('mipress::admin.pages.global_seo.fields.homepage_title'))
                             ->placeholder('MiPress Studio | Tvorba webů')
-                            ->helperText('Použije se jen na domovské stránce.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.homepage_title'))
                             ->live(onBlur: true),
                         TextInput::make('metadata.title_suffix')
-                            ->label('Suffix titulku')
+                            ->label(__('mipress::admin.pages.global_seo.fields.title_suffix'))
                             ->placeholder(' | MiPress Studio')
-                            ->helperText('Připojuje se k běžným stránkám a položkám bez ručně napsaného suffixu.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.title_suffix'))
                             ->live(onBlur: true),
                         Textarea::make('metadata.default_description')
-                            ->label('Výchozí meta popis')
+                            ->label(__('mipress::admin.pages.global_seo.fields.default_description'))
                             ->rows(4)
                             ->maxLength(180)
-                            ->helperText('Použije se, když stránka ani obsah nemají vlastní popis ani použitelný excerpt.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.default_description'))
                             ->live(onBlur: true)
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
 
-                Section::make('Canonical a lokalizace')
-                    ->description('Nastavení preferované domény, práce s query parametry a locale značkami.')
+                Section::make(__('mipress::admin.pages.global_seo.sections.canonical_and_locale'))
+                    ->description(__('mipress::admin.pages.global_seo.descriptions.canonical_and_locale'))
                     ->schema([
                         TextInput::make('canonical.base_url')
-                            ->label('Preferovaná canonical base URL')
+                            ->label(__('mipress::admin.pages.global_seo.fields.canonical_base_url'))
                             ->placeholder('https://www.example.cz')
                             ->url()
                             ->live(onBlur: true),
                         Select::make('canonical.trailing_slash')
-                            ->label('Trailing slash')
+                            ->label(__('mipress::admin.pages.global_seo.fields.trailing_slash'))
                             ->options([
-                                'keep' => 'Ponechat podle URL',
-                                'add' => 'Vždy přidat',
-                                'remove' => 'Vždy odstranit',
+                                'keep' => __('mipress::admin.pages.global_seo.trailing_slash.keep'),
+                                'add' => __('mipress::admin.pages.global_seo.trailing_slash.add'),
+                                'remove' => __('mipress::admin.pages.global_seo.trailing_slash.remove'),
                             ])
                             ->default('keep'),
                         Toggle::make('canonical.strip_query_parameters')
-                            ->label('Odebírat query parametry z canonical URL')
+                            ->label(__('mipress::admin.pages.global_seo.fields.strip_query_parameters'))
                             ->default(true),
                         Toggle::make('canonical.force_https')
-                            ->label('Vynucovat HTTPS v canonical URL')
+                            ->label(__('mipress::admin.pages.global_seo.fields.force_https'))
                             ->default(false),
                         TextInput::make('locale.html_lang')
-                            ->label('HTML lang')
+                            ->label(__('mipress::admin.pages.global_seo.fields.html_lang'))
                             ->placeholder('cs')
-                            ->helperText('Např. cs, cs-CZ nebo en.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.html_lang'))
                             ->live(onBlur: true),
                         TextInput::make('locale.og_locale')
-                            ->label('Open Graph locale')
+                            ->label(__('mipress::admin.pages.global_seo.fields.og_locale'))
                             ->placeholder('cs_CZ')
-                            ->helperText('Např. cs_CZ nebo en_US.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.og_locale'))
                             ->live(onBlur: true),
                         TagsInput::make('locale.alternate_og_locales')
-                            ->label('Alternativní OG locale')
+                            ->label(__('mipress::admin.pages.global_seo.fields.alternate_og_locales'))
                             ->placeholder('en_US')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
 
-                Section::make('Open Graph a X')
-                    ->description('Výchozí sociální metadata pro sdílení stránky.')
+                Section::make(__('mipress::admin.pages.global_seo.sections.social'))
+                    ->description(__('mipress::admin.pages.global_seo.descriptions.social'))
                     ->schema([
                         TextInput::make('open_graph.site_name')
-                            ->label('OG site name')
+                            ->label(__('mipress::admin.pages.global_seo.fields.og_site_name'))
                             ->placeholder('MiPress Studio')
-                            ->helperText('Když necháte prázdné, použije se název webu z obecných nastavení.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.og_site_name'))
                             ->live(onBlur: true),
                         Select::make('twitter.card')
-                            ->label('Twitter card')
+                            ->label(__('mipress::admin.pages.global_seo.fields.twitter_card'))
                             ->options([
                                 'summary_large_image' => 'summary_large_image',
                                 'summary' => 'summary',
                             ])
                             ->default('summary_large_image'),
                         CuratorPicker::make('open_graph.default_image_id')
-                            ->label('Výchozí OG obrázek')
-                            ->helperText('Použije se tam, kde položka nebo stránka nemá vlastní OG nebo featured image.')
+                            ->label(__('mipress::admin.pages.global_seo.fields.default_og_image'))
+                            ->helperText(__('mipress::admin.pages.global_seo.help.default_og_image'))
                             ->columnSpanFull(),
                         TextInput::make('open_graph.default_image_alt')
-                            ->label('Alt výchozího OG obrázku')
+                            ->label(__('mipress::admin.pages.global_seo.fields.default_og_image_alt'))
                             ->placeholder('MiPress Studio')
                             ->columnSpanFull()
                             ->live(onBlur: true),
                         TextInput::make('twitter.site')
-                            ->label('X účet webu')
+                            ->label(__('mipress::admin.pages.global_seo.fields.twitter_site'))
                             ->placeholder('@mipress')
-                            ->helperText('Může být s @ i bez něj.')
+                            ->helperText(__('mipress::admin.pages.global_seo.help.twitter_site'))
                             ->live(onBlur: true),
                         TextInput::make('twitter.creator')
-                            ->label('Výchozí autor pro X')
+                            ->label(__('mipress::admin.pages.global_seo.fields.twitter_creator'))
                             ->placeholder('@michal')
                             ->live(onBlur: true),
                     ])
                     ->columns(2),
 
-                Section::make('Structured data')
-                    ->description('JSON-LD pro WebSite, Organization nebo LocalBusiness a základní WebPage nebo Article výstupy.')
+                Section::make(__('mipress::admin.pages.global_seo.sections.structured_data'))
+                    ->description(__('mipress::admin.pages.global_seo.descriptions.structured_data'))
                     ->schema([
                         Toggle::make('structured_data.enabled')
-                            ->label('Zapnout structured data')
+                            ->label(__('mipress::admin.pages.global_seo.fields.structured_data_enabled'))
                             ->default(true),
                         Select::make('structured_data.organization_type')
-                            ->label('Typ organizace')
+                            ->label(__('mipress::admin.pages.global_seo.fields.organization_type'))
                             ->options([
                                 'Organization' => 'Organization',
                                 'LocalBusiness' => 'LocalBusiness',
                             ])
                             ->default('Organization'),
                         TextInput::make('structured_data.organization_name')
-                            ->label('Název organizace')
+                            ->label(__('mipress::admin.pages.global_seo.fields.organization_name'))
                             ->placeholder('MiPress Studio s.r.o.')
                             ->live(onBlur: true),
                         TextInput::make('structured_data.organization_url')
-                            ->label('URL organizace')
+                            ->label(__('mipress::admin.pages.global_seo.fields.organization_url'))
                             ->placeholder('https://www.example.cz')
                             ->url()
                             ->live(onBlur: true),
                         CuratorPicker::make('structured_data.logo_id')
-                            ->label('Logo pro JSON-LD')
+                            ->label(__('mipress::admin.pages.global_seo.fields.logo'))
                             ->columnSpanFull(),
                         TextInput::make('structured_data.phone')
-                            ->label('Telefon'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.phone')),
                         TextInput::make('structured_data.email')
-                            ->label('E-mail')
+                            ->label(__('mipress::admin.pages.global_seo.fields.email'))
                             ->email(),
                         TextInput::make('structured_data.street_address')
-                            ->label('Ulice a číslo'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.street_address')),
                         TextInput::make('structured_data.address_locality')
-                            ->label('Město'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.address_locality')),
                         TextInput::make('structured_data.postal_code')
-                            ->label('PSČ'),
+                            ->label(__('mipress::admin.pages.global_seo.fields.postal_code')),
                         TextInput::make('structured_data.address_country')
-                            ->label('Kód země')
+                            ->label(__('mipress::admin.pages.global_seo.fields.address_country'))
                             ->placeholder('CZ'),
                         TagsInput::make('structured_data.same_as')
-                            ->label('SameAs URL')
+                            ->label(__('mipress::admin.pages.global_seo.fields.same_as'))
                             ->placeholder('https://www.facebook.com/mipress')
                             ->columnSpanFull(),
                     ])
                     ->columns(2),
 
-                Section::make('Ověření a analytika')
-                    ->description('Meta tagy pro ověření webu a volitelné vložení GA4 nebo GTM skriptů.')
+                Section::make(__('mipress::admin.pages.global_seo.sections.verification_and_analytics'))
+                    ->description(__('mipress::admin.pages.global_seo.descriptions.verification_and_analytics'))
                     ->schema([
                         TextInput::make('verification.google')
                             ->label('Google site verification'),
@@ -227,8 +237,8 @@ class GlobalSeoSettings extends Page
                     ])
                     ->columns(2),
 
-                Section::make('Náhled a kontrola')
-                    ->description('Živý přehled nad výsledným title, description, social meta a základními riziky.')
+                Section::make(__('mipress::admin.pages.global_seo.sections.preview_and_health'))
+                    ->description(__('mipress::admin.pages.global_seo.descriptions.preview_and_health'))
                     ->schema([
                         TextEntry::make('health')
                             ->hiddenLabel()
@@ -253,7 +263,7 @@ class GlobalSeoSettings extends Page
     {
         return [
             Action::make('save')
-                ->label('Uložit SEO nastavení')
+                ->label(__('mipress::admin.pages.global_seo.actions.save'))
                 ->icon('fal-floppy-disk')
                 ->action('save'),
         ];
@@ -261,7 +271,7 @@ class GlobalSeoSettings extends Page
 
     public function getSubheading(): string|Htmlable|null
     {
-        return 'Spravuje výchozí title, description, canonical, Open Graph, X, JSON-LD, verifikační tagy a volitelné GA/GTM. Robots.txt a sitemap.xml jsou další položky stejné SEO sekce.';
+        return __('mipress::admin.pages.global_seo.subheading');
     }
 
     public function save(): void
@@ -273,8 +283,8 @@ class GlobalSeoSettings extends Page
         $this->form->fill($this->data);
 
         Notification::make()
-            ->title('Globální SEO nastavení bylo uloženo')
-            ->body('Výchozí SEO metadata a náhledy pro celý web byly úspěšně uloženy.')
+            ->title(__('mipress::admin.pages.global_seo.saved_title'))
+            ->body(__('mipress::admin.pages.global_seo.saved_body'))
             ->success()
             ->send();
     }

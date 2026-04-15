@@ -36,8 +36,6 @@ class CreateEntry extends CreateRecord
         parent::mount();
     }
 
-
-
     protected function getRedirectUrl(): string
     {
         $this->ensureAccessibleCollectionHandle();
@@ -89,8 +87,8 @@ class CreateEntry extends CreateRecord
         $collection = EntryResource::resolveCollectionByHandle($this->collectionHandle);
 
         return $collection
-            ? 'Nová položka — '.$collection->name
-            : 'Nová položka';
+            ? __('mipress::admin.resources.entry.pages.create_title_with_collection', ['collection' => $collection->name])
+            : __('mipress::admin.resources.entry.pages.create_title');
     }
 
     protected function afterCreate(): void
@@ -106,12 +104,12 @@ class CreateEntry extends CreateRecord
         app(WorkflowNotificationService::class)->sendReviewRequestedDatabaseNotifications(
             record: $record,
             permission: 'entry.publish',
-            title: 'Nový obsah ke schválení',
-            body: 'Položka "'.$record->title.'" čeká na schválení publikace.',
-                editUrl: EntryResource::getUrl('edit', [
+            title: __('mipress::admin.resources.entry.workflow.review_request_title'),
+            body: __('mipress::admin.resources.entry.workflow.review_request_body', ['title' => $record->title]),
+            editUrl: EntryResource::getUrl('edit', [
                 'record' => $record,
-                    ...EntryResource::collectionUrlParameters($record->collection?->handle),
-                ]),
+                ...EntryResource::collectionUrlParameters($record->collection?->handle),
+            ]),
             previewRouteName: 'preview.entry',
             previewRouteParameterName: 'entry',
         );

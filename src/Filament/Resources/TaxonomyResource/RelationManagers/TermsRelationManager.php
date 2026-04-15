@@ -13,29 +13,35 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 use MiPress\Core\Models\Term;
 
 class TermsRelationManager extends RelationManager
 {
     protected static string $relationship = 'terms';
 
-    protected static ?string $title = 'Termy';
+    protected static ?string $title = null;
 
     protected static \BackedEnum|string|null $icon = 'fal-tags';
+
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
+    {
+        return __('mipress::admin.resources.taxonomy.relation_managers.terms.title');
+    }
 
     public function form(Schema $schema): Schema
     {
         return $schema->components([
             TextInput::make('title')
-                ->label('Název')
+                ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.fields.title'))
                 ->required()
                 ->maxLength(255),
             TextInput::make('slug')
-                ->label('Slug')
+                ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.fields.slug'))
                 ->maxLength(255)
-                ->helperText('Automaticky z názvu. Lze upravit.'),
+                ->helperText(__('mipress::admin.resources.taxonomy.relation_managers.terms.help.slug')),
             Select::make('parent_id')
-                ->label('Nadřazený term')
+                ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.fields.parent'))
                 ->options(fn (): array => Term::query()
                     ->where('taxonomy_id', $this->getOwnerRecord()->getKey())
                     ->whereNull('parent_id')
@@ -46,7 +52,7 @@ class TermsRelationManager extends RelationManager
                 ->searchable()
                 ->visible(fn (): bool => (bool) $this->getOwnerRecord()->is_hierarchical),
             TextInput::make('sort_order')
-                ->label('Pořadí')
+                ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.fields.sort_order'))
                 ->numeric()
                 ->default(0),
         ]);
@@ -60,18 +66,18 @@ class TermsRelationManager extends RelationManager
             ->defaultSort('sort_order')
             ->columns([
                 TextColumn::make('title')
-                    ->label('Název')
+                    ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.columns.title'))
                     ->searchable()
                     ->sortable(),
                 TextColumn::make('slug')
-                    ->label('Slug')
+                    ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.columns.slug'))
                     ->searchable(),
                 TextColumn::make('parent.title')
-                    ->label('Nadřazený')
-                    ->default('—'),
+                    ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.columns.parent'))
+                    ->default(__('mipress::admin.common.empty')),
                 TextColumn::make('entries_count')
                     ->counts('entries')
-                    ->label('Položek')
+                    ->label(__('mipress::admin.resources.taxonomy.relation_managers.terms.columns.entries_count'))
                     ->sortable(),
             ])
             ->headerActions([
