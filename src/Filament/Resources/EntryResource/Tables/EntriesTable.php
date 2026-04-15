@@ -82,20 +82,26 @@ class EntriesTable
                     static::makeTogglePublicationAction(),
                     EditAction::make()
                         ->visible(fn (Entry $record): bool => auth()->user()?->can('update', $record) === true && ! $record->trashed()),
-                    RestoreAction::make()
-                        ->visible(fn (Entry $record): bool => auth()->user()?->can('restore', $record) === true && $record->trashed()),
-                    DeleteAction::make()
-                        ->visible(fn (Entry $record): bool => auth()->user()?->can('delete', $record) === true && ! $record->trashed()),
-                    ForceDeleteAction::make()
-                        ->visible(fn (Entry $record): bool => auth()->user()?->can('forceDelete', $record) === true && $record->trashed()),
+                    static::refreshesPublicationStatusOverview(
+                        RestoreAction::make()
+                            ->visible(fn (Entry $record): bool => auth()->user()?->can('restore', $record) === true && $record->trashed())
+                    ),
+                    static::refreshesPublicationStatusOverview(
+                        DeleteAction::make()
+                            ->visible(fn (Entry $record): bool => auth()->user()?->can('delete', $record) === true && ! $record->trashed())
+                    ),
+                    static::refreshesPublicationStatusOverview(
+                        ForceDeleteAction::make()
+                            ->visible(fn (Entry $record): bool => auth()->user()?->can('forceDelete', $record) === true && $record->trashed())
+                    ),
                 ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     static::makeBulkPublicationAction(),
-                    DeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    static::refreshesPublicationStatusOverviewBulkAction(DeleteBulkAction::make()),
+                    static::refreshesPublicationStatusOverviewBulkAction(RestoreBulkAction::make()),
+                    static::refreshesPublicationStatusOverviewBulkAction(ForceDeleteBulkAction::make()),
                 ]),
             ]);
     }

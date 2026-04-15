@@ -96,88 +96,96 @@ class PagesTable
                     static::makeViewLiveAction(),
                     static::makePreviewAction(),
                     static::makeTogglePublicationAction(),
-                    Action::make('toggleHomepage')
-                        ->label(function (Page $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId
-                                ? 'Zrušit homepage'
-                                : 'Nastavit jako homepage';
-                        })
-                        ->icon(function (Page $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId
-                                ? 'fal-house-circle-xmark'
-                                : 'fal-house';
-                        })
-                        ->color(function (Page $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId ? 'danger' : 'gray';
-                        })
-                        ->requiresConfirmation()
-                        ->modalHeading(function (Page $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId
-                                ? 'Zrušit stránce "'.$record->title.'" status homepage?'
-                                : 'Nastavit stránku "'.$record->title.'" jako homepage?';
-                        })
-                        ->modalDescription(function (Page $record) use ($homepageId): string {
-                            return ((string) $record->getKey()) === $homepageId
-                                ? 'Stránka přestane být domovskou stránkou webu.'
-                                : 'Tato stránka se nastaví jako výchozí domovská stránka webu.';
-                        })
-                        ->action(function (Page $record): void {
-                            $record->refresh();
+                    static::refreshesPublicationStatusOverview(
+                        Action::make('toggleHomepage')
+                            ->label(function (Page $record) use ($homepageId): string {
+                                return ((string) $record->getKey()) === $homepageId
+                                    ? 'Zrušit homepage'
+                                    : 'Nastavit jako homepage';
+                            })
+                            ->icon(function (Page $record) use ($homepageId): string {
+                                return ((string) $record->getKey()) === $homepageId
+                                    ? 'fal-house-circle-xmark'
+                                    : 'fal-house';
+                            })
+                            ->color(function (Page $record) use ($homepageId): string {
+                                return ((string) $record->getKey()) === $homepageId ? 'danger' : 'gray';
+                            })
+                            ->requiresConfirmation()
+                            ->modalHeading(function (Page $record) use ($homepageId): string {
+                                return ((string) $record->getKey()) === $homepageId
+                                    ? 'Zrušit stránce "'.$record->title.'" status homepage?'
+                                    : 'Nastavit stránku "'.$record->title.'" jako homepage?';
+                            })
+                            ->modalDescription(function (Page $record) use ($homepageId): string {
+                                return ((string) $record->getKey()) === $homepageId
+                                    ? 'Stránka přestane být domovskou stránkou webu.'
+                                    : 'Tato stránka se nastaví jako výchozí domovská stránka webu.';
+                            })
+                            ->action(function (Page $record): void {
+                                $record->refresh();
 
-                            $homepageId = static::getHomepagePageId();
-                            $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;
+                                $homepageId = static::getHomepagePageId();
+                                $isCurrentHomepage = ((string) $record->getKey()) === $homepageId;
 
-                            if ($isCurrentHomepage) {
-                                static::storeHomepagePageId(null);
+                                if ($isCurrentHomepage) {
+                                    static::storeHomepagePageId(null);
+
+                                    Notification::make()
+                                        ->title('Homepage zrušena')
+                                        ->body('Stránka "'.$record->title.'" již není domovskou stránkou.')
+                                        ->success()
+                                        ->send();
+
+                                    return;
+                                }
+
+                                if (
+                                    $record->status !== ContentStatus::Published
+                                    || ! ($record->published_at instanceof Carbon)
+                                    || $record->published_at->isFuture()
+                                ) {
+                                    Notification::make()
+                                        ->title('Nelze nastavit jako homepage')
+                                        ->body('Domovskou stránku lze nastavit pouze na publikovanou stránku.')
+                                        ->danger()
+                                        ->send();
+
+                                    return;
+                                }
+
+                                static::storeHomepagePageId((string) $record->getKey());
 
                                 Notification::make()
-                                    ->title('Homepage zrušena')
-                                    ->body('Stránka "'.$record->title.'" již není domovskou stránkou.')
+                                    ->title('Homepage nastavena')
+                                    ->body('Stránka "'.$record->title.'" je nyní domovskou stránkou.')
                                     ->success()
                                     ->send();
-
-                                return;
-                            }
-
-                            if (
-                                $record->status !== ContentStatus::Published
-                                || ! ($record->published_at instanceof Carbon)
-                                || $record->published_at->isFuture()
-                            ) {
-                                Notification::make()
-                                    ->title('Nelze nastavit jako homepage')
-                                    ->body('Domovskou stránku lze nastavit pouze na publikovanou stránku.')
-                                    ->danger()
-                                    ->send();
-
-                                return;
-                            }
-
-                            static::storeHomepagePageId((string) $record->getKey());
-
-                            Notification::make()
-                                ->title('Homepage nastavena')
-                                ->body('Stránka "'.$record->title.'" je nyní domovskou stránkou.')
-                                ->success()
-                                ->send();
-                        })
-                        ->visible(fn (Page $record): bool => auth()->user()?->can('publish', $record) === true),
+                            })
+                            ->visible(fn (Page $record): bool => auth()->user()?->can('publish', $record) === true)
+                    ),
                     EditAction::make()
                         ->visible(fn (Page $record): bool => auth()->user()?->can('update', $record) === true && ! $record->trashed()),
-                    RestoreAction::make()
-                        ->visible(fn (Page $record): bool => auth()->user()?->can('restore', $record) === true && $record->trashed()),
-                    DeleteAction::make()
-                        ->visible(fn (Page $record): bool => auth()->user()?->can('delete', $record) === true && ! $record->trashed()),
-                    ForceDeleteAction::make()
-                        ->visible(fn (Page $record): bool => auth()->user()?->can('forceDelete', $record) === true && $record->trashed()),
+                    static::refreshesPublicationStatusOverview(
+                        RestoreAction::make()
+                            ->visible(fn (Page $record): bool => auth()->user()?->can('restore', $record) === true && $record->trashed())
+                    ),
+                    static::refreshesPublicationStatusOverview(
+                        DeleteAction::make()
+                            ->visible(fn (Page $record): bool => auth()->user()?->can('delete', $record) === true && ! $record->trashed())
+                    ),
+                    static::refreshesPublicationStatusOverview(
+                        ForceDeleteAction::make()
+                            ->visible(fn (Page $record): bool => auth()->user()?->can('forceDelete', $record) === true && $record->trashed())
+                    ),
                 ]),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     static::makeBulkPublicationAction(),
-                    DeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
+                    static::refreshesPublicationStatusOverviewBulkAction(DeleteBulkAction::make()),
+                    static::refreshesPublicationStatusOverviewBulkAction(RestoreBulkAction::make()),
+                    static::refreshesPublicationStatusOverviewBulkAction(ForceDeleteBulkAction::make()),
                 ]),
             ]);
     }

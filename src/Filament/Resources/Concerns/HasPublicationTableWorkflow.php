@@ -87,44 +87,42 @@ trait HasPublicationTableWorkflow
     {
         $modelClass = static::getContentModelClass();
 
-        return Action::make('togglePublicationStatus')
-            ->label('Změnit publikaci')
-            ->icon('far-arrows-rotate')
-            ->color('gray')
-            ->visible(fn (Model $record): bool => $record instanceof $modelClass
-                && auth()->user()?->can('publish', $record) === true
-                && ! $record->trashed())
-            ->modalHeading(fn (Model $record): string => 'Změnit publikaci: '.$record->title)
-            ->modalSubmitActionLabel('Uložit změny')
-            ->fillForm(fn (Model $record): array => [
-                'status' => $record->status->value,
-                'published_at' => $record->scheduled_at ?? $record->published_at,
-            ])
-            ->schema(fn (Model $record): array => static::getPublicationWorkflowSchema($record))
-            ->action(function (Model $record, array $data, $livewire): void {
-                $previousStatus = $record->status;
+        return static::refreshesPublicationStatusOverview(
+            Action::make('togglePublicationStatus')
+                ->label('Změnit publikaci')
+                ->icon('far-arrows-rotate')
+                ->color('gray')
+                ->visible(fn (Model $record): bool => $record instanceof $modelClass
+                    && auth()->user()?->can('publish', $record) === true
+                    && ! $record->trashed())
+                ->modalHeading(fn (Model $record): string => 'Změnit publikaci: '.$record->title)
+                ->modalSubmitActionLabel('Uložit změny')
+                ->fillForm(fn (Model $record): array => [
+                    'status' => $record->status->value,
+                    'published_at' => $record->scheduled_at ?? $record->published_at,
+                ])
+                ->schema(fn (Model $record): array => static::getPublicationWorkflowSchema($record))
+                ->action(function (Model $record, array $data): void {
+                    $previousStatus = $record->status;
 
-                if (! static::applyPublicationWorkflowData($record, $data)) {
+                    if (! static::applyPublicationWorkflowData($record, $data)) {
+                        Notification::make()
+                            ->title('Bez změny')
+                            ->warning()
+                            ->send();
+
+                        return;
+                    }
+
+                    static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
+
                     Notification::make()
-                        ->title('Bez změny')
-                        ->warning()
+                        ->title(static::getPublicationNotificationTitle($previousStatus, $record->status))
+                        ->body(static::getPublicationNotificationBody($record))
+                        ->success()
                         ->send();
-
-                    return;
-                }
-
-                static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
-
-                Notification::make()
-                    ->title(static::getPublicationNotificationTitle($previousStatus, $record->status))
-                    ->body(static::getPublicationNotificationBody($record))
-                    ->success()
-                    ->send();
-
-                if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
-                    $livewire->dispatch('entry-publication-status-updated');
-                }
-            });
+                })
+        );
     }
 
     protected static function makeBulkPublicationAction(): BulkAction
@@ -132,48 +130,68 @@ trait HasPublicationTableWorkflow
         $modelClass = static::getContentModelClass();
         $label = static::getContentLabelPlural();
 
-        return BulkAction::make('changePublicationStatus')
-            ->label('Změnit publikaci')
-            ->icon('far-arrows-rotate')
-            ->visible(fn (): bool => auth()->user()?->hasPermissionTo(static::getPublishPermission()) === true)
-            ->modalHeading("Změnit publikaci vybraných {$label}")
-            ->modalSubmitActionLabel('Uložit změny')
-            ->schema(static::getPublicationWorkflowSchema())
-            ->action(function (EloquentCollection $records, array $data, $livewire) use ($modelClass): void {
-                $updated = 0;
-                $skipped = 0;
+        return static::refreshesPublicationStatusOverviewBulkAction(
+            BulkAction::make('changePublicationStatus')
+                ->label('Změnit publikaci')
+                ->icon('far-arrows-rotate')
+                ->visible(fn (): bool => auth()->user()?->hasPermissionTo(static::getPublishPermission()) === true)
+                ->modalHeading("Změnit publikaci vybraných {$label}")
+                ->modalSubmitActionLabel('Uložit změny')
+                ->schema(static::getPublicationWorkflowSchema())
+                ->action(function (EloquentCollection $records, array $data) use ($modelClass): void {
+                    $updated = 0;
+                    $skipped = 0;
 
-                foreach ($records as $record) {
-                    if (! $record instanceof $modelClass || auth()->user()?->can('publish', $record) !== true) {
+                    foreach ($records as $record) {
+                        if (! $record instanceof $modelClass || auth()->user()?->can('publish', $record) !== true) {
+                            $skipped++;
+
+                            continue;
+                        }
+
+                        $previousStatus = $record->status;
+                        $statusChanged = static::applyPublicationWorkflowData($record, $data);
+
+                        if ($statusChanged) {
+                            $updated++;
+
+                            static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
+
+                            continue;
+                        }
+
                         $skipped++;
-
-                        continue;
                     }
 
-                    $previousStatus = $record->status;
-                    $statusChanged = static::applyPublicationWorkflowData($record, $data);
+                    Notification::make()
+                        ->title($updated > 0 ? 'Stav publikace změněn' : 'Bez změny')
+                        ->body("Aktualizováno {$updated} položek, přeskočeno {$skipped}.")
+                        ->{$updated > 0 ? 'success' : 'warning'}()
+                        ->send();
+                })
+        );
+    }
 
-                    if ($statusChanged) {
-                        $updated++;
+    protected static function refreshesPublicationStatusOverview(Action $action): Action
+    {
+        return $action->after(fn ($livewire) => static::dispatchPublicationStatusOverviewRefresh($livewire));
+    }
 
-                        static::sendReviewRequestedNotificationIfNeeded($record, $previousStatus);
+    protected static function refreshesPublicationStatusOverviewBulkAction(BulkAction $action): BulkAction
+    {
+        return $action->after(fn ($livewire) => static::dispatchPublicationStatusOverviewRefresh($livewire));
+    }
 
-                        continue;
-                    }
+    protected static function dispatchPublicationStatusOverviewRefresh(mixed $livewire): void
+    {
+        if (is_object($livewire) && method_exists($livewire, 'dispatch')) {
+            $livewire->dispatch(static::getPublicationStatusOverviewRefreshEventName());
+        }
+    }
 
-                    $skipped++;
-                }
-
-                Notification::make()
-                    ->title($updated > 0 ? 'Stav publikace změněn' : 'Bez změny')
-                    ->body("Aktualizováno {$updated} položek, přeskočeno {$skipped}.")
-                    ->{$updated > 0 ? 'success' : 'warning'}()
-                    ->send();
-
-                if (($updated > 0) && is_object($livewire) && method_exists($livewire, 'dispatch')) {
-                    $livewire->dispatch('entry-publication-status-updated');
-                }
-            });
+    protected static function getPublicationStatusOverviewRefreshEventName(): string
+    {
+        return 'entry-publication-status-updated';
     }
 
     // ── Workflow Schema ──
