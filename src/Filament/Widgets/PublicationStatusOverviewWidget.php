@@ -13,14 +13,12 @@ abstract class PublicationStatusOverviewWidget extends Widget
 {
     protected static bool $isLazy = false;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected string $view = 'mipress::filament.widgets.entry-publication-status-overview';
 
     #[On('entry-publication-status-updated')]
-    public function refreshStatusOverview(): void
-    {
-    }
+    public function refreshStatusOverview(): void {}
 
     /**
      * @return array<string, array<int, array{key: string, label: string, count: int, icon: ?string, color: string, isActive: bool, url: string}>>
@@ -126,6 +124,10 @@ abstract class PublicationStatusOverviewWidget extends Widget
         $filters = request()->query($this->getTableFiltersQueryStringProperty());
 
         if (! is_array($filters)) {
+            $filters = request()->query($this->getLegacyTableFiltersQueryStringProperty());
+        }
+
+        if (! is_array($filters)) {
             return 'all';
         }
 
@@ -148,9 +150,13 @@ abstract class PublicationStatusOverviewWidget extends Widget
 
         $query = request()->query();
         $filtersProperty = $this->getTableFiltersQueryStringProperty();
-        $filters = is_array($query[$filtersProperty] ?? null) ? $query[$filtersProperty] : [];
+        $legacyFiltersProperty = $this->getLegacyTableFiltersQueryStringProperty();
+        $filters = is_array($query[$filtersProperty] ?? null)
+            ? $query[$filtersProperty]
+            : (is_array($query[$legacyFiltersProperty] ?? null) ? $query[$legacyFiltersProperty] : []);
 
         unset($query[$this->getTablePaginationQueryStringProperty()], $query['page']);
+        unset($query[$legacyFiltersProperty]);
 
         unset($filters['status'], $filters['trashed']);
 
@@ -174,6 +180,11 @@ abstract class PublicationStatusOverviewWidget extends Widget
     }
 
     private function getTableFiltersQueryStringProperty(): string
+    {
+        return 'filters';
+    }
+
+    private function getLegacyTableFiltersQueryStringProperty(): string
     {
         return $this->getTableQueryStringIdentifier().'TableFilters';
     }
