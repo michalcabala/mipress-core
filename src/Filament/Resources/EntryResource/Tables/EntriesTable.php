@@ -22,8 +22,8 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use MiPress\Core\Enums\ContentStatus;
 use MiPress\Core\FieldTypes\FieldTypeRegistry;
 use MiPress\Core\Filament\Resources\Concerns\HasPublicationTableWorkflow;
 use MiPress\Core\Filament\Resources\EntryResource;
@@ -149,10 +149,10 @@ class EntriesTable
 
         return EntryLikeTableBuilders::getAuthorFilterOptions(
             Entry::query()
-            ->when(
-                $collection,
-                fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
-            ),
+                ->when(
+                    $collection,
+                    fn (Builder $query): Builder => $query->where('collection_id', $collection->id),
+                ),
         );
     }
 
