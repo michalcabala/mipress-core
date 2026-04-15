@@ -1,7 +1,7 @@
 <x-filament-widgets::widget>
-    <div class="flex flex-wrap items-start gap-x-3 gap-y-2">
+    <div class="flex flex-wrap items-start">
         @foreach ($items as $item)
-            <div class="shrink-0">
+            <div class="mb-2 me-3 shrink-0">
                 <x-filament::button
                     tag="a"
                     :href="$item['url']"
