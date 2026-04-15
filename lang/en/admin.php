@@ -14,7 +14,7 @@ return [
     ],
     'clusters' => [
         'content' => [
-            'navigation_group' => 'Content',
+            'navigation_group' => 'Settings',
             'navigation_label' => 'Content',
             'label' => 'Content',
             'plural_label' => 'Content',

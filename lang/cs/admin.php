@@ -14,7 +14,7 @@ return [
     ],
     'clusters' => [
         'content' => [
-            'navigation_group' => 'Obsah',
+            'navigation_group' => 'Nastavení',
             'navigation_label' => 'Obsah',
             'label' => 'Obsah',
             'plural_label' => 'Obsah',
