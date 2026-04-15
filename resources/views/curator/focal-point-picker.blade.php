@@ -122,7 +122,7 @@
             </div>
             <div>
                 <p class="text-sm font-medium text-gray-950 dark:text-white">
-                    Ohniskový bod: <span x-text="`${x}% / ${y}%`" class="text-primary-600 dark:text-primary-400"></span>
+                    {{ __('mipress::admin.curator_media.focal_point_editor.label') }} <span x-text="`${x}% / ${y}%`" class="text-primary-600 dark:text-primary-400"></span>
                 </p>
                 <button
                     type="button"
@@ -130,7 +130,7 @@
                     x-on:click="openModal()"
                 >
                     <x-filament::icon icon="far-crosshairs" class="size-4" />
-                    Otevřít editor
+                    {{ __('mipress::admin.curator_media.focal_point_editor.open_editor') }}
                 </button>
             </div>
         </div>
@@ -154,7 +154,7 @@
                     {{-- Header --}}
                     <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-3 dark:border-white/10">
                         <div class="flex items-center gap-3">
-                            <h2 class="text-base font-semibold text-gray-950 dark:text-white">Editor ohniskového bodu</h2>
+                            <h2 class="text-base font-semibold text-gray-950 dark:text-white">{{ __('mipress::admin.curator_media.focal_point_editor.modal_title') }}</h2>
                             <span class="rounded-full bg-primary-50 px-2.5 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-400" x-text="`${x}% / ${y}%`"></span>
                         </div>
                         <div class="flex items-center gap-2">
@@ -163,20 +163,20 @@
                                 class="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-white"
                                 x-on:click="reset()"
                             >
-                                Reset (50/50)
+                                {{ __('mipress::admin.curator_media.focal_point_editor.reset') }}
                             </button>
                             <button
                                 type="button"
                                 class="rounded-lg bg-primary-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-700"
                                 x-on:click="closeModal()"
                             >
-                                Hotovo
+                                {{ __('mipress::admin.curator_media.focal_point_editor.done') }}
                             </button>
                             <button
                                 type="button"
                                 class="rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-white/5 dark:hover:text-gray-300"
                                 x-on:click="closeModal()"
-                                title="Zavřít"
+                                title="{{ __('mipress::admin.curator_media.focal_point_editor.close') }}"
                             >
                                 <x-filament::icon icon="fas-xmark" class="size-5" />
                             </button>
@@ -189,7 +189,7 @@
                         <div class="flex w-1/2 flex-col gap-4 overflow-y-auto border-r border-gray-200 p-6 dark:border-white/10">
                             <div>
                                 <p class="text-xs leading-5 text-gray-500 dark:text-gray-400">
-                                    Klikněte nebo táhněte na obrázku pro nastavení bodu kompozice.
+                                    {{ __('mipress::admin.curator_media.focal_point_editor.instruction') }}
                                 </p>
                             </div>
 
@@ -245,13 +245,13 @@
                             </div>
 
                             <p class="rounded-xl bg-gray-50 px-3 py-2 text-xs leading-5 text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                                Ohniskový bod určuje, která část obrázku zůstane viditelná při ořezu do různých poměrů stran.
+                                {{ __('mipress::admin.curator_media.focal_point_editor.hint') }}
                             </p>
                         </div>
 
                         {{-- Right: Live aspect ratio previews --}}
                         <div class="flex w-1/2 flex-col overflow-y-auto p-6">
-                            <h3 class="mb-4 text-sm font-semibold text-gray-950 dark:text-white">Živé náhledy</h3>
+                            <h3 class="mb-4 text-sm font-semibold text-gray-950 dark:text-white">{{ __('mipress::admin.curator_media.focal_point_editor.live_previews') }}</h3>
                             <div class="grid grid-cols-2 gap-4 xl:grid-cols-3">
                                 <template x-for="ratio in ratios" :key="ratio.label">
                                     <div class="space-y-1.5">
@@ -282,6 +282,6 @@
     </div>
 @else
     <div class="py-4 text-center text-sm text-gray-500 dark:text-gray-400">
-        Ohniskový bod je dostupný pouze pro obrázky.
+        {{ __('mipress::admin.curator_media.focal_point_editor.image_only') }}
     </div>
 @endif

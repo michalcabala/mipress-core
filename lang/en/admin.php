@@ -935,6 +935,18 @@ return [
         'tabs' => [
             'focal_point' => 'Focal point',
         ],
+        'focal_point_editor' => [
+            'label' => 'Focal point:',
+            'open_editor' => 'Open editor',
+            'modal_title' => 'Focal point editor',
+            'reset' => 'Reset (50/50)',
+            'done' => 'Done',
+            'close' => 'Close',
+            'instruction' => 'Click or drag on the image to set the composition point.',
+            'hint' => 'The focal point determines which part of the image remains visible when cropped to different aspect ratios.',
+            'live_previews' => 'Live previews',
+            'image_only' => 'Focal point is only available for images.',
+        ],
         'actions' => [
             'cancel' => 'Cancel',
             'regenerate' => 'Regenerate curations',

@@ -935,6 +935,18 @@ return [
         'tabs' => [
             'focal_point' => 'Ohniskový bod',
         ],
+        'focal_point_editor' => [
+            'label' => 'Ohniskový bod:',
+            'open_editor' => 'Otevřít editor',
+            'modal_title' => 'Editor ohniskového bodu',
+            'reset' => 'Reset (50/50)',
+            'done' => 'Hotovo',
+            'close' => 'Zavřít',
+            'instruction' => 'Klikněte nebo táhněte na obrázku pro nastavení bodu kompozice.',
+            'hint' => 'Ohniskový bod určuje, která část obrázku zůstane viditelná při ořezu do různých poměrů stran.',
+            'live_previews' => 'Živé náhledy',
+            'image_only' => 'Ohniskový bod je dostupný pouze pro obrázky.',
+        ],
         'actions' => [
             'cancel' => 'Zrušit',
             'regenerate' => 'Přegenerovat ořezy',
