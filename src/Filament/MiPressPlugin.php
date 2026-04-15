@@ -6,6 +6,7 @@ namespace MiPress\Core\Filament;
 
 use Awcodes\Curator\CuratorPlugin;
 use Filament\Contracts\Plugin;
+use Filament\Navigation\NavigationGroup;
 use Filament\Panel;
 use Filament\Support\Facades\FilamentIcon;
 use Filament\Tables\Table;
@@ -40,11 +41,11 @@ class MiPressPlugin implements Plugin
         $panel
             ->discoverClusters(in: __DIR__.'/Clusters', for: 'MiPress\\Core\\Filament\\Clusters')
             ->navigationGroups([
-                __('mipress::admin.plugin.navigation_groups.content'),
-                __('mipress::admin.plugin.navigation_groups.forms'),
-                __('mipress::admin.plugin.navigation_groups.social_feeds'),
-                __('mipress::admin.plugin.navigation_groups.settings'),
-                __('mipress::admin.plugin.navigation_groups.users'),
+                NavigationGroup::make(fn (): string => __('mipress::admin.plugin.navigation_groups.content')),
+                NavigationGroup::make(fn (): string => __('mipress::admin.plugin.navigation_groups.forms')),
+                NavigationGroup::make(fn (): string => __('mipress::admin.plugin.navigation_groups.social_feeds')),
+                NavigationGroup::make(fn (): string => __('mipress::admin.plugin.navigation_groups.settings')),
+                NavigationGroup::make(fn (): string => __('mipress::admin.plugin.navigation_groups.users')),
             ])
             ->resources([
                 UserResource::class,
@@ -64,13 +65,13 @@ class MiPressPlugin implements Plugin
             ->plugin(
                 BotlyPlugin::make()
                     ->navigationIcon('fal-user-robot')
-                    ->title(__('mipress::admin.plugin.botly_title'))
+                    ->title(fn (): string => __('mipress::admin.plugin.botly_title'))
             )
             ->plugin(
                 CuratorPlugin::make()
-                    ->label(__('mipress::admin.plugin.curator.label'))
-                    ->pluralLabel(__('mipress::admin.plugin.curator.plural_label'))
-                    ->navigationGroup(__('mipress::admin.plugin.curator.navigation_group'))
+                    ->label(fn (): string => __('mipress::admin.plugin.curator.label'))
+                    ->pluralLabel(fn (): string => __('mipress::admin.plugin.curator.plural_label'))
+                    ->navigationGroup(fn (): string => __('mipress::admin.plugin.curator.navigation_group'))
                     ->navigationIcon('fal-photo-film-music')
                     ->navigationSort(90)
                     ->curations()
