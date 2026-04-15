@@ -39,31 +39,31 @@ trait ConfiguresRevisionTable
         return $table
             ->columns([
                 TextColumn::make('created_at')
-                    ->label('Uloženo')
+                    ->label(__('mipress::admin.revisions.columns.saved_at'))
                     ->isoDateTime('LLL')
                     ->description(fn (Revision $record): ?string => $record->created_at?->diffForHumans())
                     ->sortable(),
                 TextColumn::make('status_snapshot')
-                    ->label('Stav obsahu')
+                    ->label(__('mipress::admin.revisions.columns.status'))
                     ->state(fn (Revision $record): ?ContentStatus => $this->resolveRevisionStatus($record))
-                    ->formatStateUsing(fn (?ContentStatus $state): string => $state?->getLabel() ?? 'Bez stavu')
+                    ->formatStateUsing(fn (?ContentStatus $state): string => $state?->getLabel() ?? __('mipress::admin.revisions.columns.no_status'))
                     ->badge()
                     ->icon(fn (?ContentStatus $state): ?string => $state?->getIcon())
                     ->color(fn (?ContentStatus $state): string|array|null => $state?->getColor() ?? 'gray')
                     ->toggleable(),
                 TextColumn::make('user.name')
-                    ->label('Uložil')
-                    ->default('Systém')
+                    ->label(__('mipress::admin.revisions.columns.saved_by'))
+                    ->default(__('mipress::admin.revisions.defaults.system'))
                     ->badge()
                     ->color('gray')
                     ->toggleable(),
                 TextColumn::make('note')
-                    ->label('Poznámka')
-                    ->default('Bez poznámky')
+                    ->label(__('mipress::admin.revisions.columns.note'))
+                    ->default(__('mipress::admin.revisions.columns.no_note'))
                     ->limit(110)
                     ->toggleable(),
                 TextColumn::make('snapshot_summary')
-                    ->label('Zachycený obsah')
+                    ->label(__('mipress::admin.revisions.columns.snapshot'))
                     ->state(fn (Revision $record): string => $this->revisionDiffPresenter()->summarizeSnapshot($record->data ?? []))
                     ->description(fn (Revision $record): string => $this->revisionDiffPresenter()->summarizeSnapshotMeta($record->data ?? []))
                     ->limit(110),
@@ -71,13 +71,13 @@ trait ConfiguresRevisionTable
             ->defaultSort('created_at', 'desc')
             ->recordAction('diff')
             ->recordActionsAlignment('end')
-            ->recordActionsColumnLabel('Akce')
+            ->recordActionsColumnLabel(__('mipress::admin.revisions.columns.actions'))
             ->paginated([10, 25, 50])
-            ->emptyStateHeading('Zatím nejsou dostupné žádné revize')
-            ->emptyStateDescription('Revize se vytváří automaticky při změně obsahu nebo při workflow přechodech.')
+            ->emptyStateHeading(__('mipress::admin.revisions.empty_heading'))
+            ->emptyStateDescription(__('mipress::admin.revisions.empty_description'))
             ->filters([
                 SelectFilter::make('user_id')
-                    ->label('Uložil')
+                    ->label(__('mipress::admin.revisions.filters.saved_by'))
                     ->relationship('user', 'name')
                     ->searchable()
                     ->preload()
@@ -85,7 +85,7 @@ trait ConfiguresRevisionTable
             ])
             ->headerActions([
                 Action::make('compareRevisions')
-                    ->label('Porovnat dvě revize')
+                    ->label(__('mipress::admin.revisions.actions.compare.label'))
                     ->icon('far-left-right')
                     ->color('info')
                     ->slideOver()
@@ -94,24 +94,24 @@ trait ConfiguresRevisionTable
                     ->schema(fn (): array => $this->getCompareRevisionSchema())
                     ->action(fn () => null)
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Zavřít')
-                    ->modalHeading(fn (): string => 'Porovnání revizí: '.$this->resolveRevisionOwnerTitle($this->resolveRevisionOwner()))
-                    ->modalDescription('Vyberte dvě uložené verze záznamu a zobrazíme jen pole, která se mezi nimi změnila.'),
+                    ->modalCancelActionLabel(__('mipress::admin.revisions.actions.compare.close'))
+                    ->modalHeading(fn (): string => __('mipress::admin.revisions.actions.compare.heading', ['title' => $this->resolveRevisionOwnerTitle($this->resolveRevisionOwner())]))
+                    ->modalDescription(__('mipress::admin.revisions.actions.compare.description')),
             ])
             ->recordActions([
                 Action::make('diff')
-                    ->label('Detail změn')
+                    ->label(__('mipress::admin.revisions.actions.diff.label'))
                     ->icon('far-code-compare')
                     ->color('info')
                     ->slideOver()
                     ->stickyModalHeader()
                     ->modalWidth(Width::SevenExtraLarge)
-                    ->modalHeading(fn (Revision $record): string => 'Porovnání revize s aktuálním stavem: '.$this->resolveRevisionOwnerTitle($this->resolveRevisionOwner()))
-                    ->modalDescription(fn (Revision $record): string => 'Zobrazujeme rozdíly mezi revizí z '.$record->created_at?->format('j. n. Y H:i:s').' a aktuálně uloženou verzí záznamu.')
+                    ->modalHeading(fn (Revision $record): string => __('mipress::admin.revisions.actions.diff.heading', ['title' => $this->resolveRevisionOwnerTitle($this->resolveRevisionOwner())]))
+                    ->modalDescription(fn (Revision $record): string => __('mipress::admin.revisions.actions.diff.description', ['date' => $record->created_at?->format('j. n. Y H:i:s')]))
                     ->schema(fn (Revision $record): array => $this->buildRevisionDiffSchema($record))
                     ->action(fn () => null)
                     ->modalSubmitAction(false)
-                    ->modalCancelActionLabel('Zavřít'),
+                    ->modalCancelActionLabel(__('mipress::admin.revisions.actions.diff.close')),
                 Action::make('restore')
                     ->label('Obnovit verzi')
                     ->icon('far-rotate-left')
@@ -144,30 +144,30 @@ trait ConfiguresRevisionTable
             ->get()
             ->mapWithKeys(fn (Revision $r): array => [
                 $r->getKey() => $r->created_at->format('j. n. Y H:i:s')
-                    .($r->user?->name ? ' — '.$r->user->name : ' — Systém')
+                    .($r->user?->name ? ' — '.$r->user->name : ' — '.__('mipress::admin.revisions.defaults.system'))
                     .($r->note ? ' ('.$r->note.')' : ''),
             ])
             ->toArray();
 
-        $currentLabel = 'Aktuální stav';
+        $currentLabel = __('mipress::admin.revisions.compare.current_state');
 
         return [
             Select::make('revision_a')
-                ->label('Starší revize (vlevo)')
+                ->label(__('mipress::admin.revisions.compare.older_label'))
                 ->options($options)
                 ->required()
                 ->live()
                 ->searchable()
                 ->native(false),
             Select::make('revision_b')
-                ->label('Novější revize (vpravo)')
+                ->label(__('mipress::admin.revisions.compare.newer_label'))
                 ->options(['__current__' => $currentLabel] + $options)
                 ->required()
                 ->default('__current__')
                 ->live()
                 ->searchable()
                 ->native(false),
-            Section::make('Rozdíly')
+            Section::make(__('mipress::admin.revisions.compare.differences'))
                 ->schema(function (Get $get): array {
                     $revisionAId = $get('revision_a');
                     $revisionBId = $get('revision_b');
@@ -176,7 +176,7 @@ trait ConfiguresRevisionTable
                         return [
                             Placeholder::make('comparison_hint')
                                 ->hiddenLabel()
-                                ->content('Vyberte obě revize k porovnání.'),
+                                ->content(__('mipress::admin.revisions.compare.select_both')),
                         ];
                     }
 
@@ -195,7 +195,7 @@ trait ConfiguresRevisionTable
             return [
                 Placeholder::make($prefix.'_missing_revision_a')
                     ->hiddenLabel()
-                    ->content('Revize nebyla nalezena.'),
+                    ->content(__('mipress::admin.revisions.compare.not_found')),
             ];
         }
 
@@ -204,7 +204,7 @@ trait ConfiguresRevisionTable
 
         if ($revisionBId === null) {
             $rightData = $this->resolveCurrentOwnerData($owner);
-            $rightLabel = 'Aktuální stav';
+            $rightLabel = __('mipress::admin.revisions.compare.current_state');
         } else {
             $revisionB = Revision::find($revisionBId);
 
@@ -212,7 +212,7 @@ trait ConfiguresRevisionTable
                 return [
                     Placeholder::make($prefix.'_missing_revision_b')
                         ->hiddenLabel()
-                        ->content('Revize nebyla nalezena.'),
+                        ->content(__('mipress::admin.revisions.compare.not_found')),
                 ];
             }
 
@@ -233,7 +233,7 @@ trait ConfiguresRevisionTable
             $leftData,
             $rightData,
             $record->created_at->format('j. n. Y H:i:s'),
-            'Aktuální stav',
+            __('mipress::admin.revisions.compare.current_state'),
             'record_'.$record->getKey(),
         );
     }
@@ -262,25 +262,25 @@ trait ConfiguresRevisionTable
             return [
                 Placeholder::make($prefix.'_no_changes')
                     ->hiddenLabel()
-                    ->content('Vybrané verze neobsahují žádné rozdíly.'),
+                    ->content(__('mipress::admin.revisions.compare.no_differences')),
             ];
         }
 
         $components = [
-            Section::make('Souhrn')
+            Section::make(__('mipress::admin.revisions.compare.summary'))
                 ->schema([
                     Grid::make([
                         'default' => 1,
                         'md' => 3,
                     ])->schema([
                         Placeholder::make($prefix.'_summary_count')
-                            ->label('Porovnávané položky')
+                            ->label(__('mipress::admin.revisions.compare.items_compared'))
                             ->content((string) ($payload['change_count'] ?? 0)),
                         Placeholder::make($prefix.'_summary_left')
-                            ->label('Levá verze')
+                            ->label(__('mipress::admin.revisions.compare.left_version'))
                             ->content((string) ($payload['left_label'] ?? $leftLabel)),
                         Placeholder::make($prefix.'_summary_right')
-                            ->label('Pravá verze')
+                            ->label(__('mipress::admin.revisions.compare.right_version'))
                             ->content((string) ($payload['right_label'] ?? $rightLabel)),
                     ]),
                 ]),
@@ -305,7 +305,7 @@ trait ConfiguresRevisionTable
                 $sectionSchema[] = Fieldset::make($changeField)
                     ->schema([
                         Placeholder::make($prefix.'_std_'.$sectionIndex.'_'.$changeIndex.'_path')
-                            ->label('Klíč')
+                            ->label(__('mipress::admin.revisions.compare.key'))
                             ->content($changePath),
                         Grid::make([
                             'default' => 1,
@@ -341,19 +341,19 @@ trait ConfiguresRevisionTable
                     'md' => 5,
                 ])->schema([
                     Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_total')
-                        ->label('Změny')
+                        ->label(__('mipress::admin.revisions.mason.changes'))
                         ->content((string) ($summary['total'] ?? 0)),
                     Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_added')
-                        ->label('Přidáno')
+                        ->label(__('mipress::admin.revisions.mason.added'))
                         ->content((string) ($summary['added'] ?? 0)),
                     Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_removed')
-                        ->label('Odebráno')
+                        ->label(__('mipress::admin.revisions.mason.removed'))
                         ->content((string) ($summary['removed'] ?? 0)),
                     Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_moved')
-                        ->label('Přesunuto')
+                        ->label(__('mipress::admin.revisions.mason.moved'))
                         ->content((string) ($summary['moved'] ?? 0)),
                     Placeholder::make($prefix.'_mason_'.$masonIndex.'_summary_changed')
-                        ->label('Upraveno')
+                        ->label(__('mipress::admin.revisions.mason.changed'))
                         ->content((string) ($summary['changed'] ?? 0)),
                 ]),
             ];
@@ -371,10 +371,10 @@ trait ConfiguresRevisionTable
                         ])->schema([
                             Placeholder::make($prefix.'_mason_'.$masonIndex.'_'.$changeIndex.'_left')
                                 ->label($leftLabel)
-                                ->content((string) ($change['left'] ?? 'Žádný blok')),
+                                ->content((string) ($change['left'] ?? __('mipress::admin.revisions.mason.no_block'))),
                             Placeholder::make($prefix.'_mason_'.$masonIndex.'_'.$changeIndex.'_right')
                                 ->label($rightLabel)
-                                ->content((string) ($change['right'] ?? 'Žádný blok')),
+                                ->content((string) ($change['right'] ?? __('mipress::admin.revisions.mason.no_block'))),
                         ]),
                     ]);
             }

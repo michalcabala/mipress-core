@@ -41,13 +41,13 @@ class EditCuratorMedia extends EditMedia
                 ->action('save')
                 ->label(trans('curator::views.panel.edit_save')),
             Action::make('regenerate_curations')
-                ->label('Přegenerovat ořezy')
+                ->label(__('mipress::admin.curator_media.actions.regenerate'))
                 ->icon('far-arrows-rotate')
                 ->color('warning')
                 ->visible(fn (): bool => $this->record && is_media_resizable($this->record->ext))
                 ->requiresConfirmation()
-                ->modalHeading('Přegenerovat ořezy')
-                ->modalDescription('Všechny stávající ořezy budou nahrazeny novými, vygenerovanými podle aktuálního ohniskového bodu.')
+                ->modalHeading(__('mipress::admin.curator_media.actions.regenerate'))
+                ->modalDescription(__('mipress::admin.curator_media.actions.regenerate_modal_description'))
                 ->action(function (): void {
                     $this->regenerateCurations(redirect: true);
                 }),
@@ -57,7 +57,7 @@ class EditCuratorMedia extends EditMedia
                 ->label(trans('curator::views.panel.view')),
             DeleteAction::make(),
             Action::make('cancel')
-                ->label('Zrušit')
+                ->label(__('mipress::admin.curator_media.actions.cancel'))
                 ->color('gray')
                 ->url(static::getResource()::getUrl()),
         ];
@@ -91,8 +91,8 @@ class EditCuratorMedia extends EditMedia
         if ($notify) {
             $count = count($curations);
             Notification::make()
-                ->title("Vygenerováno {$count} ořezů")
-                ->body('Ořezy byly přegenerovány podle ohniskového bodu ('.$record->focal_point_x.'% / '.$record->focal_point_y.'%).')
+                ->title(__('mipress::admin.curator_media.actions.regenerated_title', ['count' => $count]))
+                ->body(__('mipress::admin.curator_media.actions.regenerated_body', ['x' => $record->focal_point_x, 'y' => $record->focal_point_y]))
                 ->success()
                 ->send();
         }

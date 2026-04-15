@@ -13,9 +13,14 @@ class BotlyPage extends \Awcodes\Botly\Filament\Pages\BotlyPage
 {
     protected static ?string $cluster = SeoCluster::class;
 
-    protected static ?string $navigationLabel = 'Správa robots.txt';
+    protected static ?string $navigationLabel = null;
 
     protected static ?int $navigationSort = 20;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.plugin.botly_title');
+    }
 
     public static function getNavigationIcon(): string|\BackedEnum|Htmlable|null
     {

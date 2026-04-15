@@ -311,7 +311,7 @@ class GlobalSeoSettings extends Page
     private function renderSocialPreview(): HtmlString
     {
         $seo = $this->seoResolver()->resolve([
-            'title' => 'Ukázková služba',
+            'title' => __('mipress::admin.seo_preview.sample_title'),
             'title_is_final' => false,
             'url' => '/ukazkova-sluzba',
             'settings' => $this->data,

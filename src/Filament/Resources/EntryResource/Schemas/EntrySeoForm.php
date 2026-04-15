@@ -20,7 +20,7 @@ class EntrySeoForm
                 ->columnSpanFull()
                 ->disabled(fn (): bool => $record instanceof Entry ? EntryLikeFormBuilders::isReadOnlyForCurrentUser($record) : false)
                 ->schema([
-                    EntryLikeFormBuilders::makeSeoSection('položky', includeOgImage: true, collapsible: false, columnSpanFull: true),
+                    EntryLikeFormBuilders::makeSeoSection(__('mipress::admin.seo_subjects.entry'), includeOgImage: true, collapsible: false, columnSpanFull: true),
                 ]),
         ]);
     }

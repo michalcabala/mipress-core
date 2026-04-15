@@ -50,10 +50,10 @@ class EntriesTable
         return $table
             ->columns([
                 CuratorColumn::make('featured_image_id')
-                    ->label('Obrázek')
+                    ->label(__('mipress::admin.resources.page.table.columns.image'))
                     ->size(50),
                 TextColumn::make('title')
-                    ->label('Titulek')
+                    ->label(__('mipress::admin.entry_like_form.fields.title'))
                     ->searchable()
                     ->sortable()
                     ->description(fn (Entry $record): ?string => filled($record->slug) ? '/'.$record->slug : null),
@@ -138,12 +138,12 @@ class EntriesTable
 
     protected static function getContentLabel(): string
     {
-        return 'Položka';
+        return __('mipress::admin.resources.entry.content_label');
     }
 
     protected static function getContentLabelPlural(): string
     {
-        return 'položek';
+        return __('mipress::admin.resources.entry.content_label_plural');
     }
 
     /**
@@ -335,10 +335,10 @@ class EntriesTable
 
         return EntryLikeTableBuilders::buildBaseFiltersFormSchema($filters, [
             $taxonomyFilters !== []
-                ? Section::make('Taxonomie')->schema($taxonomyFilters)
+                ? Section::make(__('mipress::admin.filters.taxonomy'))->schema($taxonomyFilters)
                 : null,
             $blueprintFilters !== []
-                ? Section::make('Pole šablony')->schema($blueprintFilters)
+                ? Section::make(__('mipress::admin.filters.blueprint_fields'))->schema($blueprintFilters)
                 : null,
         ]);
     }

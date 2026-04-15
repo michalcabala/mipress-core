@@ -30,12 +30,6 @@ class CuratorMediaResource extends MediaResource
 {
     protected static ?string $slug = 'curator-media';
 
-    private const CZECH_MONTHS = [
-        1 => 'Leden', 2 => 'Únor', 3 => 'Březen', 4 => 'Duben',
-        5 => 'Květen', 6 => 'Červen', 7 => 'Červenec', 8 => 'Srpen',
-        9 => 'Září', 10 => 'Říjen', 11 => 'Listopad', 12 => 'Prosinec',
-    ];
-
     public static function form(Schema $schema): Schema
     {
         return CuratorMediaForm::configure($schema);
@@ -45,6 +39,7 @@ class CuratorMediaResource extends MediaResource
     {
         $livewire = $table->getLivewire();
         $isGrid = $livewire->layoutView === 'grid';
+        $months = __('mipress::admin.curator_media.months');
 
         return $table
             ->columns(
@@ -55,12 +50,12 @@ class CuratorMediaResource extends MediaResource
             ->searchable(['name', 'title', 'alt', 'caption', 'description'])
             ->filters([
                 SelectFilter::make('media_type')
-                    ->label('Typ souboru')
+                    ->label(__('mipress::admin.curator_media.filters.media_type'))
                     ->options([
-                        'image' => 'Obrázek',
-                        'video' => 'Video',
-                        'audio' => 'Audio',
-                        'document' => 'Dokument',
+                        'image' => __('mipress::admin.curator_media.media_types.image'),
+                        'video' => __('mipress::admin.curator_media.media_types.video'),
+                        'audio' => __('mipress::admin.curator_media.media_types.audio'),
+                        'document' => __('mipress::admin.curator_media.media_types.document'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         $value = $data['value'] ?? null;
@@ -82,15 +77,15 @@ class CuratorMediaResource extends MediaResource
                         };
                     }),
                 SelectFilter::make('upload_month')
-                    ->label('Měsíc nahrání')
-                    ->options(function (): array {
+                    ->label(__('mipress::admin.curator_media.filters.upload_month'))
+                    ->options(function () use ($months): array {
                         return CuratorMedia::query()
                             ->selectRaw("DISTINCT DATE_FORMAT(created_at, '%Y-%m') as month_key")
                             ->selectRaw('MONTH(created_at) as m, YEAR(created_at) as y')
                             ->orderByDesc('month_key')
                             ->get()
                             ->mapWithKeys(fn (object $row): array => [
-                                $row->month_key => self::CZECH_MONTHS[(int) $row->m].' '.$row->y,
+                                $row->month_key => (is_array($months) ? ($months[(int) $row->m] ?? $row->m) : $row->m).' '.$row->y,
                             ])
                             ->all();
                     })
@@ -107,7 +102,7 @@ class CuratorMediaResource extends MediaResource
                             ->whereMonth('created_at', $month);
                     }),
                 UserSelectFilter::make('uploaded_by')
-                    ->label('Nahrál')
+                    ->label(__('mipress::admin.curator_media.filters.uploaded_by'))
                     ->relationship('uploadedBy', 'name')
                     ->searchable()
                     ->preload(),
@@ -157,15 +152,15 @@ class CuratorMediaResource extends MediaResource
     {
         return [
             CuratorColumn::make('url')
-                ->label('Náhled')
+                ->label(__('mipress::admin.curator_media.columns.preview'))
                 ->imageSize(60),
             TextColumn::make('name')
-                ->label('Název')
+                ->label(__('mipress::admin.curator_media.columns.name'))
                 ->searchable()
                 ->sortable()
                 ->description(fn (CuratorMedia $record): ?string => $record->alt),
             TextColumn::make('media_type_label')
-                ->label('Typ')
+                ->label(__('mipress::admin.curator_media.columns.type'))
                 ->badge()
                 ->color(fn (CuratorMedia $record): string => match (true) {
                     curator()->isPreviewable($record->ext) => 'success',
@@ -174,22 +169,22 @@ class CuratorMediaResource extends MediaResource
                     default => 'gray',
                 }),
             TextColumn::make('ext')
-                ->label('Přípona')
+                ->label(__('mipress::admin.curator_media.columns.ext'))
                 ->sortable(),
             TextColumn::make('size')
-                ->label('Velikost')
+                ->label(__('mipress::admin.curator_media.columns.size'))
                 ->formatStateUsing(fn (CuratorMedia $record): string => Curator::sizeForHumans($record->size))
                 ->sortable(),
             TextColumn::make('dimensions')
-                ->label('Rozměry')
+                ->label(__('mipress::admin.curator_media.columns.dimensions'))
                 ->getStateUsing(fn (CuratorMedia $record): ?string => $record->width ? $record->width.'×'.$record->height : null),
             UserColumn::make('uploaded_by')
-                ->label('Nahrál')
+                ->label(__('mipress::admin.curator_media.columns.uploaded_by'))
                 ->getStateUsing(fn (CuratorMedia $record) => $record->uploadedBy)
                 ->toggleable()
                 ->toggledHiddenByDefault(),
             TextColumn::make('created_at')
-                ->label('Nahráno')
+                ->label(__('mipress::admin.curator_media.columns.uploaded_at'))
                 ->date('j. n. Y')
                 ->sortable(),
         ];
@@ -200,20 +195,20 @@ class CuratorMediaResource extends MediaResource
         return [
             View::make('mipress::curator.grid-column'),
             TextColumn::make('name')
-                ->label('Název')
+                ->label(__('mipress::admin.curator_media.columns.name'))
                 ->extraAttributes(['style' => 'display: none;'])
                 ->searchable()
                 ->sortable(),
             TextColumn::make('ext')
-                ->label('Přípona')
+                ->label(__('mipress::admin.curator_media.columns.ext'))
                 ->extraAttributes(['style' => 'display: none;'])
                 ->sortable(),
             TextColumn::make('directory')
-                ->label('Složka')
+                ->label(__('mipress::admin.curator_media.columns.directory'))
                 ->extraAttributes(['style' => 'display: none;'])
                 ->sortable(),
             TextColumn::make('created_at')
-                ->label('Nahráno')
+                ->label(__('mipress::admin.curator_media.columns.uploaded_at'))
                 ->extraAttributes(['style' => 'display: none;'])
                 ->sortable(),
         ];

@@ -36,7 +36,7 @@ trait HasRecordStateLinks
 
         $links = [
             $this->makeRecordStateLink(
-                label: 'Celkem',
+                label: __('mipress::admin.record_state.total'),
                 count: $visibleTotal,
                 url: $this->getRecordStateLinkUrl(),
                 active: $this->isRecordStateLinkActive(),
@@ -64,7 +64,7 @@ trait HasRecordStateLinks
 
         if ($trashedCount > 0) {
             $links[] = $this->makeRecordStateLink(
-                label: 'Koš',
+                label: __('mipress::admin.record_state.trash'),
                 count: $trashedCount,
                 url: $this->getRecordStateLinkUrl(trashed: true),
                 active: $this->isRecordStateLinkActive(trashed: true),

@@ -16,7 +16,7 @@ class CreateCuratorMedia extends CreateMedia
     {
         return [
             Action::make('cancel')
-                ->label('Zrušit')
+                ->label(__('mipress::admin.curator_media.actions.cancel'))
                 ->color('gray')
                 ->url(static::getResource()::getUrl()),
         ];

@@ -23,7 +23,7 @@ class ListCuratorMedia extends ListMedia
         return [
             Action::make('toggle-grid-density')
                 ->color('gray')
-                ->label(fn (): string => $this->gridDensity === 'normal' ? 'Hustší mřížka' : 'Normální mřížka')
+                ->label(fn (): string => $this->gridDensity === 'normal' ? __('mipress::admin.curator_media.actions.toggle_dense_grid') : __('mipress::admin.curator_media.actions.toggle_normal_grid'))
                 ->icon(fn (): string => $this->gridDensity === 'normal' ? 'far-grid' : 'far-grid-2')
                 ->visible(fn (): bool => $this->layoutView === 'grid')
                 ->action(function (): void {
@@ -31,12 +31,12 @@ class ListCuratorMedia extends ListMedia
                     $this->dispatch('layoutViewChanged', $this->layoutView);
                 }),
             Action::make('regenerate_all_curations')
-                ->label('Přegenerovat všechny ořezy')
+                ->label(__('mipress::admin.curator_media.actions.regenerate_all'))
                 ->icon('far-arrows-rotate')
                 ->color('warning')
                 ->requiresConfirmation()
-                ->modalHeading('Přegenerovat všechny ořezy')
-                ->modalDescription('Ořezy všech obrázků budou přegenerovány podle jejich ohniskových bodů. Tato operace může chvíli trvat.')
+                ->modalHeading(__('mipress::admin.curator_media.actions.regenerate_all'))
+                ->modalDescription(__('mipress::admin.curator_media.actions.regenerate_all_modal_description'))
                 ->action(function (): void {
                     $cropper = app(FocalPointCropper::class);
                     $count = 0;
@@ -54,17 +54,17 @@ class ListCuratorMedia extends ListMedia
                         });
 
                     Notification::make()
-                        ->title("Ořezy přegenerovány pro {$count} médií")
+                        ->title(__('mipress::admin.curator_media.actions.regenerated_all_title', ['count' => $count]))
                         ->success()
                         ->send();
                 }),
             Action::make('cleanup_unused_files')
-                ->label('Smazat nepoužívané soubory')
+                ->label(__('mipress::admin.curator_media.actions.cleanup'))
                 ->icon('far-broom')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->modalHeading('Smazat nepoužívané soubory')
-                ->modalDescription('Budou smazány soubory ve storage, které nemají odpovídající záznam v databázi, a dočasné soubory. Tato akce je nevratná.')
+                ->modalHeading(__('mipress::admin.curator_media.actions.cleanup'))
+                ->modalDescription(__('mipress::admin.curator_media.actions.cleanup_modal_description'))
                 ->action(function (): void {
                     $this->cleanupOrphanedFiles();
                 }),
@@ -132,8 +132,8 @@ class ListCuratorMedia extends ListMedia
         }
 
         Notification::make()
-            ->title('Úklid dokončen')
-            ->body("Smazáno {$deleted} nepoužívaných souborů a {$tmpDeleted} dočasných souborů.")
+            ->title(__('mipress::admin.curator_media.actions.cleanup_done_title'))
+            ->body(__('mipress::admin.curator_media.actions.cleanup_done_body', ['deleted' => $deleted, 'tmp' => $tmpDeleted]))
             ->success()
             ->send();
     }

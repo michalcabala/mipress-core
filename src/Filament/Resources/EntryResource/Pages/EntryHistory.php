@@ -22,13 +22,22 @@ class EntryHistory extends ManageRelatedRecords
 
     protected static string $relationship = 'revisions';
 
-    protected static ?string $title = 'Revize';
-
-    protected static ?string $breadcrumb = 'Revize';
-
-    protected static ?string $navigationLabel = 'Revize';
-
     protected static string|\BackedEnum|null $navigationIcon = 'far-code-compare';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('mipress::admin.revisions.title');
+    }
+
+    public function getTitle(): string
+    {
+        return __('mipress::admin.revisions.title');
+    }
+
+    public function getBreadcrumb(): string
+    {
+        return __('mipress::admin.revisions.title');
+    }
 
     /**
      * @param  array<string, mixed>  $urlParameters
@@ -58,12 +67,12 @@ class EntryHistory extends ManageRelatedRecords
 
     public static function getNavigationBadgeTooltip(): string
     {
-        return 'Počet revizí';
+        return __('mipress::admin.revisions.badge_tooltip');
     }
 
     public function getHeading(): string
     {
-        return 'Revize: '.$this->getRecord()->title;
+        return __('mipress::admin.revisions.heading', ['title' => $this->getRecord()->title]);
     }
 
     /**
@@ -99,8 +108,8 @@ class EntryHistory extends ManageRelatedRecords
         $revisionCount = $this->getRecord()->revisions()->count();
 
         return $revisionCount === 0
-            ? 'Revize se vytvoří při první úpravě obsahu nebo při workflow změně.'
-            : 'K dispozici je '.$revisionCount.' uložených verzí. Kliknutím na řádek otevřete detail změn, případně můžete starší verzi obnovit.';
+            ? __('mipress::admin.revisions.subheading_empty')
+            : __('mipress::admin.revisions.subheading_available', ['count' => $revisionCount]);
     }
 
     /**

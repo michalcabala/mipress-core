@@ -46,7 +46,7 @@ class CuratorMediaForm
                                                 $component->state($record);
                                             }),
                                     ]),
-                                Tab::make('Ohniskový bod')
+                                Tab::make(__('mipress::admin.curator_media.tabs.focal_point'))
                                     ->icon('far-crosshairs')
                                     ->visible(fn ($record): bool => $record && is_media_resizable($record->ext))
                                     ->schema([

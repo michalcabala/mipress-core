@@ -42,7 +42,7 @@ abstract class PublicationStatusOverviewWidget extends Widget
         $items = [
             $this->makeItem(
                 key: 'all',
-                label: 'Vše',
+                label: __('mipress::admin.widget.all'),
                 count: $allCount,
                 icon: 'far-layer-group',
                 color: 'gray',
@@ -70,7 +70,7 @@ abstract class PublicationStatusOverviewWidget extends Widget
         if ($trashedCount > 0) {
             $items[] = $this->makeItem(
                 key: 'trashed',
-                label: 'Koš',
+                label: __('mipress::admin.widget.trash'),
                 count: $trashedCount,
                 icon: 'far-trash-can',
                 color: 'danger',

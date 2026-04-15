@@ -49,6 +49,10 @@ class MiPressServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__.'/../config/mipress.php', 'mipress');
 
+        // Must be in register() so translations are available before Filament plugins
+        // call __() during panel configuration (AdminPanelProvider::register phase).
+        $this->loadTranslationsFrom(__DIR__.'/../lang', 'mipress');
+
         $this->app->singleton(ThemeManager::class, function (): ThemeManager {
             return new ThemeManager(resource_path('themes'));
         });
@@ -94,7 +98,6 @@ class MiPressServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->loadTranslationsFrom(__DIR__.'/../lang', 'mipress');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'mipress');
         $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
