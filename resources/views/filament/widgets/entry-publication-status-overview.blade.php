@@ -9,9 +9,7 @@
                 :badge-color="$item['isActive'] && ($item['key'] === 'all') ? 'primary' : $item['color']"
                 size="sm"
                 :weight="$item['isActive'] ? 'semibold' : 'medium'"
-                :class="[
-                    'underline decoration-2 underline-offset-4' => $item['isActive'],
-                ]"
+                class="{{ $item['isActive'] ? 'underline decoration-2 underline-offset-4' : '' }}"
                 wire:navigate
                 :aria-current="$item['isActive'] ? 'page' : null"
             >
