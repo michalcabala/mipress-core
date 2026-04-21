@@ -1,6 +1,6 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "mipress/core",
+    "name": "michalcabala/mipress-core",
     "type": "library",
     "description": "MiPress CMS core package.",
     "license": "MIT",
