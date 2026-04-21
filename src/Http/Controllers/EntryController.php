@@ -72,14 +72,25 @@ class EntryController extends Controller
         }
 
         $normalizedPath = str_replace('\\', '/', ltrim($path, '/'));
+
+        if (! str_starts_with($normalizedPath, 'assets/')) {
+            return null;
+        }
+
+        $assetsRoot = realpath($resolvedThemeRoot.DIRECTORY_SEPARATOR.'assets');
+
+        if ($assetsRoot === false) {
+            return null;
+        }
+
         $candidatePath = realpath($resolvedThemeRoot.DIRECTORY_SEPARATOR.$normalizedPath);
 
         if ($candidatePath === false) {
             return null;
         }
 
-        if (! str_starts_with($candidatePath, $resolvedThemeRoot.DIRECTORY_SEPARATOR)
-            && $candidatePath !== $resolvedThemeRoot) {
+        if (! str_starts_with($candidatePath, $assetsRoot.DIRECTORY_SEPARATOR)
+            && $candidatePath !== $assetsRoot) {
             return null;
         }
 

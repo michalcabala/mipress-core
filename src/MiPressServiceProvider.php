@@ -8,6 +8,7 @@ use Awcodes\Curator\Curations\CurationPreset;
 use Awcodes\Curator\Facades\Curation;
 use Awcodes\Curator\Facades\Glide;
 use Awcodes\Curator\Glide\SymfonyResponseFactory;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -166,6 +167,11 @@ class MiPressServiceProvider extends ServiceProvider
         Gate::policy(Taxonomy::class, TaxonomyPolicy::class);
         Gate::policy(Term::class, TermPolicy::class);
         Gate::policy(CuratorMedia::class, CuratorMediaPolicy::class);
+
+        $this->callAfterResolving(Schedule::class, function (Schedule $schedule): void {
+            $schedule->command(PublishScheduledEntries::class)->everyMinute();
+            $schedule->command(PublishScheduledPages::class)->everyMinute();
+        });
 
         if ($this->app->runningInConsole()) {
             $this->publishes([

@@ -7,6 +7,9 @@ use MiPress\Core\Http\Controllers\EntryController;
 use MiPress\Core\Http\Controllers\PagePreviewController;
 use MiPress\Core\Http\Controllers\PreviewController;
 
+Route::get('/', [EntryController::class, 'home'])
+    ->name('home');
+
 Route::get('theme-files/{theme}/{path}', [EntryController::class, 'asset'])
     ->where('path', '.*')
     ->name('mipress.theme.asset');
