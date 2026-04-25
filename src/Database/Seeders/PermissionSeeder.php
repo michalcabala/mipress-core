@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MiPress\Core\Database\Seeders;
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use MiPress\Core\Enums\UserRole;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -12,6 +13,13 @@ use Spatie\Permission\PermissionRegistrar;
 
 class PermissionSeeder extends Seeder
 {
+    private const LEGACY_PERMISSIONS = [
+        'global_set.view',
+        'global_set.create',
+        'global_set.update',
+        'global_set.delete',
+    ];
+
     private const PERMISSIONS = [
         'entry.view',
         'entry.create',
@@ -30,10 +38,6 @@ class PermissionSeeder extends Seeder
         'media.upload',
         'media.update',
         'media.delete',
-        'global_set.view',
-        'global_set.create',
-        'global_set.update',
-        'global_set.delete',
         'settings.manage',
         'taxonomy.view',
         'taxonomy.create',
@@ -99,6 +103,8 @@ class PermissionSeeder extends Seeder
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
+        $this->purgeLegacyPermissions();
+
         foreach (self::PERMISSIONS as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
@@ -108,6 +114,36 @@ class PermissionSeeder extends Seeder
             $role->syncPermissions(self::ROLE_PERMISSIONS[$roleEnum->value] ?? []);
         }
 
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
         $this->command->info('MiPress permissions and roles seeded successfully.');
+    }
+
+    private function purgeLegacyPermissions(): void
+    {
+        $tableNames = config('permission.table_names');
+        $permissionsTable = $tableNames['permissions'] ?? 'permissions';
+        $roleHasPermissionsTable = $tableNames['role_has_permissions'] ?? 'role_has_permissions';
+        $modelHasPermissionsTable = $tableNames['model_has_permissions'] ?? 'model_has_permissions';
+
+        $legacyPermissionIds = DB::table($permissionsTable)
+            ->whereIn('name', self::LEGACY_PERMISSIONS)
+            ->pluck('id');
+
+        if ($legacyPermissionIds->isEmpty()) {
+            return;
+        }
+
+        DB::table($roleHasPermissionsTable)
+            ->whereIn('permission_id', $legacyPermissionIds)
+            ->delete();
+
+        DB::table($modelHasPermissionsTable)
+            ->whereIn('permission_id', $legacyPermissionIds)
+            ->delete();
+
+        DB::table($permissionsTable)
+            ->whereIn('id', $legacyPermissionIds)
+            ->delete();
     }
 }
